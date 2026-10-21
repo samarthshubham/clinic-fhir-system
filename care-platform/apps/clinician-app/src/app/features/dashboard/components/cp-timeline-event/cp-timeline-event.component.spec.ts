@@ -6,7 +6,7 @@ import {
   TimelineEvent,
   TrendsResponse,
 } from '../../dashboard.model';
-import { ToastService } from '../../../../toast.service';
+import { ToastService } from '@core/toast.service';
 
 function event(overrides: Partial<TimelineEvent> = {}): TimelineEvent {
   return {

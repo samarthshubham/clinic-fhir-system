@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { DatePipe, TitleCasePipe } from '@angular/common';
 import { PatientHeaderData } from '../../dashboard.model';
-import { ToastService } from '../../../../toast.service';
+import { ToastService } from '@core/toast.service';
 
 @Component({
   selector: 'cp-patient-header',

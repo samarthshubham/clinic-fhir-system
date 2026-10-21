@@ -7,7 +7,7 @@ import {
   Output,
 } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
-import { ToastService } from '../../../../toast.service';
+import { ToastService } from '@core/toast.service';
 import {
   BpSeries,
   DataPoint,

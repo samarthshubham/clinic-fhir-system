@@ -8,7 +8,7 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { MatIconRegistry } from '@angular/material/icon';
 import { appRoutes } from './app.routes';
-import { ThemeService } from './theme.service';
+import { ThemeService } from '@core/theme.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [

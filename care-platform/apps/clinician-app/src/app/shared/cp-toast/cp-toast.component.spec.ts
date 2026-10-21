@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { CpToastComponent } from './cp-toast.component';
-import { ToastService } from '../../toast.service';
+import { ToastService } from '@core/toast.service';
 
 describe('CpToastComponent', () => {
   beforeEach(async () => {
