@@ -4,6 +4,7 @@ import io.github.samarthshubham.clinic.dto.EncounterRequest;
 import io.github.samarthshubham.clinic.dto.EncounterResponse;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.Objects;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Encounter;
@@ -63,16 +64,15 @@ public class EncounterMapper {
   public String attendingPractitionerId(Encounter encounter) {
     return encounter.getParticipant().stream()
         .filter(EncounterMapper::isAttender)
-        .map(participant -> participant.getIndividual().getReference())
-        .filter(ref -> ref != null && ref.startsWith("Practitioner/"))
-        .map(ref -> ref.substring("Practitioner/".length()))
+        .map(participant -> FhirValues.referenceId(participant.getIndividual(), "Practitioner"))
+        .filter(Objects::nonNull)
         .findFirst()
         .orElse(null);
   }
 
   public String note(Encounter encounter) {
     var extension = encounter.getExtensionByUrl(NOTE_EXTENSION_URL);
-    return extension != null ? extension.getValue().primitiveValue() : null;
+    return extension != null && extension.hasValue() ? extension.getValue().primitiveValue() : null;
   }
 
   private static boolean isAttender(Encounter.EncounterParticipantComponent participant) {

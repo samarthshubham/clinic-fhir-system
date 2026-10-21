@@ -99,4 +99,13 @@ class AppointmentMapperTest {
     assertThat(response.start()).isEqualTo(OffsetDateTime.parse("2026-11-20T09:00:00-05:00"));
     assertThat(response.end()).isEqualTo(OffsetDateTime.parse("2026-11-20T09:30:00+05:30"));
   }
+
+  @Test
+  void toResponseAcceptsAbsoluteParticipantReferences() {
+    Appointment appointment = new Appointment();
+    appointment.addParticipant().setActor(new Reference("http://hapi.example/fhir/Patient/p1"));
+    appointment.setId("a1");
+
+    assertThat(mapper.toResponse(appointment).patientId()).isEqualTo("p1");
+  }
 }

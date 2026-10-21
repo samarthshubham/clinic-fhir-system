@@ -22,6 +22,12 @@ final class FhirValues {
     return reference.hasReference() ? reference.getReferenceElement().getIdPart() : null;
   }
 
+  static String referenceId(Reference reference, String resourceType) {
+    return resourceType.equals(reference.getReferenceElement().getResourceType())
+        ? referenceId(reference)
+        : null;
+  }
+
   static LocalDate localDate(BaseDateTimeType value) {
     if (value == null
         || value.isEmpty()

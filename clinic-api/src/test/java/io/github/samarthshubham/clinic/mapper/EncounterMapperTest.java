@@ -112,4 +112,25 @@ class EncounterMapperTest {
 
     assertThat(mapper.toResponse(encounter).visitDate()).isEqualTo(LocalDate.of(2026, 5, 1));
   }
+
+  @Test
+  void attendingPractitionerAcceptsAbsoluteReferences() {
+    Encounter encounter = new Encounter();
+    encounter
+        .addParticipant()
+        .setIndividual(new Reference("http://hapi.example/fhir/Practitioner/dr1"))
+        .addType()
+        .addCoding()
+        .setCode("ATND");
+
+    assertThat(mapper.attendingPractitionerId(encounter)).isEqualTo("dr1");
+  }
+
+  @Test
+  void noteIsNullWhenTheExtensionHasNoValue() {
+    Encounter encounter = new Encounter();
+    encounter.addExtension().setUrl(EncounterMapper.NOTE_EXTENSION_URL);
+
+    assertThat(mapper.note(encounter)).isNull();
+  }
 }

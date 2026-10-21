@@ -4,6 +4,7 @@ import io.github.samarthshubham.clinic.dto.AppointmentRequest;
 import io.github.samarthshubham.clinic.dto.AppointmentResponse;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.Objects;
 import org.hl7.fhir.r4.model.Appointment;
 import org.hl7.fhir.r4.model.Reference;
 import org.springframework.stereotype.Component;
@@ -51,9 +52,8 @@ public class AppointmentMapper {
 
   private static String participantId(Appointment appointment, String resourceType) {
     return appointment.getParticipant().stream()
-        .map(participant -> participant.getActor().getReferenceElement())
-        .filter(ref -> resourceType.equals(ref.getResourceType()))
-        .map(ref -> ref.getIdPart())
+        .map(participant -> FhirValues.referenceId(participant.getActor(), resourceType))
+        .filter(Objects::nonNull)
         .findFirst()
         .orElse(null);
   }
