@@ -6,10 +6,13 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.withSettings;
 
+import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.api.MethodOutcome;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.ICreate;
 import ca.uhn.fhir.rest.gclient.ICreateTyped;
+import ca.uhn.fhir.rest.gclient.ICriterion;
+import ca.uhn.fhir.rest.gclient.ICriterionInternal;
 import ca.uhn.fhir.rest.gclient.IQuery;
 import ca.uhn.fhir.rest.gclient.IRead;
 import ca.uhn.fhir.rest.gclient.IReadExecutable;
@@ -40,6 +43,8 @@ public final class FhirClientStub {
   private final Map<Class<?>, ISort<?>> sorts = new HashMap<>();
   private final Map<Class<?>, Deque<Bundle>> searchResults = new HashMap<>();
   private final Map<Class<?>, Map<String, IBaseResource>> stored = new HashMap<>();
+  private final Map<Class<?>, List<String>> pendingCriteria = new HashMap<>();
+  private final Map<Class<?>, List<List<String>>> executedSearches = new HashMap<>();
   private final List<IBaseResource> created = new ArrayList<>();
   private int nextId = 1;
 
@@ -76,6 +81,14 @@ public final class FhirClientStub {
     return sorts.get(type);
   }
 
+  public List<String> lastSearchCriteria(Class<? extends IBaseResource> type) {
+    List<List<String>> searches = executedSearches.getOrDefault(type, List.of());
+    if (searches.isEmpty()) {
+      throw new AssertionError("No " + type.getSimpleName() + " search was executed");
+    }
+    return searches.get(searches.size() - 1);
+  }
+
   public void givenSearchResult(Class<? extends IBaseResource> type, Bundle... bundles) {
     searchResults.put(type, new ArrayDeque<>(Arrays.asList(bundles)));
   }
@@ -107,9 +120,36 @@ public final class FhirClientStub {
     lenient().doReturn(sort).when(query).sort();
     lenient().doReturn(query).when(sort).descending(anyString());
     lenient().doReturn(query).when(sort).ascending(anyString());
-    lenient().doAnswer(inv -> nextSearchResult(type)).when(query).execute();
+    lenient()
+        .doAnswer(inv -> recordCriterion(type, inv.getArgument(0), query))
+        .when(query)
+        .where(any(ICriterion.class));
+    lenient()
+        .doAnswer(inv -> recordCriterion(type, inv.getArgument(0), query))
+        .when(query)
+        .and(any(ICriterion.class));
+    lenient().doAnswer(inv -> executeSearch(type)).when(query).execute();
     sorts.put(type, sort);
     return query;
+  }
+
+  private IQuery<?> recordCriterion(Class<?> type, ICriterion<?> criterion, IQuery<?> query) {
+    ICriterionInternal internal = (ICriterionInternal) criterion;
+    pendingCriteria
+        .computeIfAbsent(type, k -> new ArrayList<>())
+        .add(
+            internal.getParameterName()
+                + "="
+                + internal.getParameterValue(FhirContext.forR4Cached()));
+    return query;
+  }
+
+  private Bundle executeSearch(Class<?> type) {
+    List<String> criteria = pendingCriteria.remove(type);
+    executedSearches
+        .computeIfAbsent(type, k -> new ArrayList<>())
+        .add(criteria == null ? List.of() : List.copyOf(criteria));
+    return nextSearchResult(type);
   }
 
   private Bundle nextSearchResult(Class<?> type) {

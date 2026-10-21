@@ -45,6 +45,7 @@ class ConditionEvaluationServiceTest {
   @Test
   void threeSystolicReadingsAboveWarnCreateHypertension() {
     givenReadings(150, 145, 141);
+    LocalDate before = LocalDate.now();
 
     service.evaluate(PATIENT_ID, "systolic", 150);
 
@@ -54,15 +55,17 @@ class ConditionEvaluationServiceTest {
     assertThat(request.code()).isEqualTo(HYPERTENSION);
     assertThat(request.display()).isEqualTo("Essential hypertension");
     assertThat(request.clinicalStatus()).isEqualTo("active");
-    assertThat(request.onsetDate()).isEqualTo(LocalDate.now());
+    assertThat(request.onsetDate()).isBetween(before, LocalDate.now());
   }
 
   @Test
-  void hypertensionSearchAsksForLatestThreeSystolicReadings() {
+  void hypertensionSearchAsksForThisPatientsLatestThreeSystolicReadings() {
     givenReadings(150, 145, 141);
 
     service.evaluate(PATIENT_ID, "systolic", 150);
 
+    assertThat(fhir.lastSearchCriteria(Observation.class))
+        .containsExactly("subject=Patient/" + PATIENT_ID, "code=http://loinc.org|8480-6");
     verify(fhir.query(Observation.class)).count(3);
     verify(fhir.sort(Observation.class)).descending("date");
   }
@@ -105,7 +108,23 @@ class ConditionEvaluationServiceTest {
   }
 
   @Test
-  void nonQuantityReadingsAreIgnored() {
+  void nonQuantityReadingsAreSkippedRatherThanCountedAsNormal() {
+    Observation textReading = new Observation().setValue(new StringType("high"));
+    fhir.givenSearchResult(
+        Observation.class,
+        bundleOf(
+            textReading,
+            quantityObservation(150),
+            quantityObservation(160),
+            quantityObservation(170)));
+
+    service.evaluate(PATIENT_ID, "systolic", 150);
+
+    assertThat(capturedCondition().code()).isEqualTo(HYPERTENSION);
+  }
+
+  @Test
+  void nonQuantityReadingsDoNotCountTowardsTheMinimum() {
     Observation textReading = new Observation().setValue(new StringType("high"));
     fhir.givenSearchResult(
         Observation.class,
@@ -135,6 +154,8 @@ class ConditionEvaluationServiceTest {
     assertThat(request.code()).isEqualTo(HYPOXEMIA);
     assertThat(request.display()).isEqualTo("Hypoxemia");
     assertThat(request.clinicalStatus()).isEqualTo("active");
+    assertThat(fhir.lastSearchCriteria(Observation.class))
+        .containsExactly("subject=Patient/" + PATIENT_ID, "code=http://loinc.org|59408-5");
     verify(fhir.query(Observation.class)).count(2);
   }
 
