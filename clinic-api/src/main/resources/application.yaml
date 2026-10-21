@@ -20,6 +20,8 @@ clinical:
 
 clinic:
   default-org-id: seed-default-org
+  alerts:
+    webhook-url: http://host.docker.internal:9090/api/alerts/bp-subscription
 
 logging:
   level:
