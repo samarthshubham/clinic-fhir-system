@@ -20,7 +20,7 @@ HAPI FHIR JPA Server v7.4.0  (port 8080)
 PostgreSQL 15  (owned entirely by HAPI — Spring Boot never queries it directly)
 ```
 
-**Spring Boot is not a pass-through proxy.** It owns all business logic, DTO validation, and DTO↔FHIR mapping. FHIR types never reach the HTTP client.
+**Spring Boot is not a pass-through proxy.** It owns all business logic, DTO validation, and DTO↔FHIR mapping. The target is that FHIR types never reach the HTTP client (see **Known gap** under Key Rules).
 
 ---
 
@@ -60,9 +60,10 @@ clinic-api/         Spring Boot backend (Maven)
 care-platform/      Angular 21 Nx monorepo
   apps/clinician-app/   Clinician-facing UI (active development)
   apps/patient-app/     Patient-facing UI (scaffolded, empty)
-  apps/seed-demo-data/  Cucumber-driven idempotent seed data (5 patient profiles)
+  apps/seed-demo-data/  Cucumber-driven idempotent seed data (8 patient profiles)
     src/features/       marcus-webb.feature, priya-nair.feature, gerald-horton.feature,
-                        sandra-okafor.feature, ramon-castillo.feature
+                        sandra-okafor.feature, ramon-castillo.feature, aisha-chen.feature,
+                        robert-osei.feature, tony-stark.feature
     src/step-definitions/  background.steps.ts, patient.steps.ts, encounter.steps.ts,
                            vitals.steps.ts, clinical.steps.ts
     src/support/        api-client.ts, world.ts, date-helpers.ts
@@ -89,7 +90,7 @@ docs/
 
 ## Serena (semantic code tools)
 
-Serena is active for this project. **Always prefer Serena tools over Grep/Read/Glob for code exploration and editing.**
+Use Serena tools when they are available in the session; otherwise use the standard Read/Grep/Glob/Edit tools. Serena is not required.
 
 | Task | Serena tool | Do NOT use |
 |---|---|---|
@@ -99,9 +100,7 @@ Serena is active for this project. **Always prefer Serena tools over Grep/Read/G
 | Find callers of a function | `find_referencing_symbols` | Grep |
 | Add code to end/start of file | `insert_after_symbol` / `insert_before_symbol` | Write |
 
-**Session startup:** call `mcp__serena__initial_instructions` then `mcp__serena__check_onboarding_performed` before starting any code task. Serena has 4 project memories: `code_style`, `project_overview`, `suggested_commands`, `tech_stack` — read whichever are relevant.
-
-Use Grep/Read/Edit only for non-code files (YAML, Markdown, JSON) or editing a few lines within a large method body.
+When Serena is available, call `mcp__serena__initial_instructions` then `mcp__serena__check_onboarding_performed` before starting a code task. Its project memories are `code_style`, `project_overview`, `suggested_commands`, `tech_stack`.
 
 ---
 
@@ -134,7 +133,7 @@ npx nx test clinician-app
 ### Seed data
 ```bash
 bash clinic-api/seed-data/load.sh           # loads 13 Synthea patients into HAPI FHIR
-npx nx run seed-demo-data:seed              # idempotent Cucumber seed — 5 realistic patients
+npx nx run seed-demo-data:seed              # idempotent Cucumber seed — 8 realistic patients
 ```
 
 ---
@@ -175,7 +174,7 @@ This is a personal project. Keep commits lightweight.
 - **DTOs** are Java `record` types. Use `@NotBlank`, `@NotNull` from `jakarta.validation`. Annotate controller params with `@Valid`.
 - **Controllers** do HTTP routing only — `@RestController`, `@RequestMapping`, `ResponseEntity<T>`. No business logic.
 - **Services** hold business logic. Constructor injection only (no `@Autowired` on fields). Inject `IGenericClient` + mapper.
-- **Mappers** are `@Component` classes. FHIR types (`org.hl7.fhir.r4.model.*`) are confined here and in services — **never in controller signatures or DTOs**.
+- **Mappers** are `@Component` classes. FHIR types (`org.hl7.fhir.r4.model.*`) are confined here and in services — **never in controller signatures or DTOs** (see **Known gap** under Key Rules).
 - **Config** uses `@Configuration` + `@Bean`. `IGenericClient` is thread-safe; one shared bean.
 - **Error response shape**: `{ "status": int, "message": String }` — plain JSON, not FHIR.
 - **`ResourceNotFoundException(resourceType, id)`** — throw when HAPI returns 404.
@@ -521,7 +520,7 @@ color: #334155;
 
 **Frontend (care-platform):** Active revamp in progress — see [`revamp/`](revamp/README.md) for the full plan. The current `clinician-app` (patient roster + legacy patient-detail with ApexCharts) is being replaced by the **Praxis** 3-panel clinical dashboard. Do not add features to the existing `patient-detail` component — it will be removed at the end of the revamp.
 
-**Seed data:** `apps/seed-demo-data` — 5 idempotent patient profiles each in their own `.feature` file. Enrichment to 7 patients (adding Aisha Chen + Robert Osei) and richer clinical data is planned in [`revamp/demo-data-plan.md`](revamp/demo-data-plan.md).
+**Seed data:** `apps/seed-demo-data` — 8 idempotent patient profiles, each in its own `.feature` file.
 
 **Active work (revamp phases):**
 - Pre-Phase 0: Refactor `PatientRosterComponent` to RxJS (`toSignal`, `combineLatest`, `debounceTime`)
@@ -542,9 +541,11 @@ color: #334155;
 
 ## Key Rules (do not violate)
 
-1. FHIR types (`org.hl7.fhir.r4.model.*`) never appear in controller signatures or DTOs.
+1. FHIR types (`org.hl7.fhir.r4.model.*`) never appear in controller signatures or DTOs. New code must follow this.
 2. Spring Boot never queries PostgreSQL directly — all data access goes through HAPI FHIR REST.
 3. Do not reimplement Angular Material components with custom SCSS.
 4. One shared `IGenericClient` bean (thread-safe). `IParser` instances are per-request (not thread-safe).
 5. All request bodies annotated with `@Valid` at the controller.
 6. Error responses are `{ "status": int, "message": String }` plain JSON, not FHIR OperationOutcome.
+
+**Known gap:** the FHIR CRUD controllers still return HAPI types (`ResponseEntity<Patient>`, `ResponseEntity<Bundle>`) and are documented that way under "Response format". Rule 1 is enforced for new code; existing controllers move to response DTOs in issue #4.
