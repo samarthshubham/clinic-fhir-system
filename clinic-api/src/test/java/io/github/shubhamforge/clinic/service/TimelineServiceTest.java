@@ -115,6 +115,8 @@ class TimelineServiceTest {
 
   @Test
   void sourcesAreQueriedNewestFirstForThisPatient() {
+    LocalDate before = LocalDate.now();
+
     service.getTimeline("p1", null, null, null);
 
     assertThat(fhir.lastSearchCriteria(Encounter.class))
@@ -123,9 +125,17 @@ class TimelineServiceTest {
         .containsExactlyInAnyOrder("subject=Patient/p1", "_sort=-issued", "_count=20");
     assertThat(fhir.lastSearchCriteria(ServiceRequest.class))
         .containsExactlyInAnyOrder("subject=Patient/p1", "_sort=-authored", "_count=20");
-    assertThat(fhir.lastSearchCriteria(Appointment.class))
-        .containsExactlyInAnyOrder(
-            "actor=Patient/p1", "date=ge" + LocalDate.now(), "_sort=date", "_count=20");
+    List<String> appointmentCriteria = fhir.lastSearchCriteria(Appointment.class);
+    assertThat(appointmentCriteria)
+        .filteredOn(c -> !c.startsWith("date="))
+        .containsExactlyInAnyOrder("actor=Patient/p1", "_sort=date", "_count=20");
+    assertThat(appointmentCriteria)
+        .filteredOn(c -> c.startsWith("date="))
+        .singleElement()
+        .satisfies(
+            c ->
+                assertThat(LocalDate.parse(c.substring("date=ge".length())))
+                    .isBetween(before, LocalDate.now()));
   }
 
   @Test
@@ -152,6 +162,7 @@ class TimelineServiceTest {
     assertThat(fhir.lastSearchCriteria(Encounter.class)).contains("date=lt" + cursor);
     assertThat(fhir.lastSearchCriteria(DiagnosticReport.class)).contains("issued=lt" + cursor);
     assertThat(fhir.lastSearchCriteria(ServiceRequest.class)).contains("authored=lt" + cursor);
+    assertThat(fhir.lastSearchCriteria(Appointment.class)).noneMatch(c -> c.contains(cursor));
   }
 
   @Test
@@ -251,12 +262,70 @@ class TimelineServiceTest {
     verify(practitionerService, times(2)).getPractitioner(anyString());
   }
 
+  @ParameterizedTest(name = "{0}={1} flagged={2}")
+  @CsvSource({
+    "8480-6,141,true",
+    "8480-6,140,false",
+    "8462-4,91,true",
+    "8462-4,90,false",
+    "59408-5,94.9,true",
+    "59408-5,95,false",
+    "8867-4,101,true",
+    "8867-4,100,false",
+    "8867-4,60,false",
+    "8867-4,59,true",
+    "8310-5,37.9,true",
+    "8310-5,37.8,false",
+    "29463-7,250,false"
+  })
+  void groupedVitalsAreFlaggedOutsideTheWarningRange(
+      String loincCode, double value, boolean flagged) {
+    givenEncounters(encounter("e1", TODAY.minusDays(1), null));
+    fhir.givenSearchResultWhen(
+        Observation.class, bundleOf(vital(loincCode, value, TODAY)), "encounter=Encounter/e1");
+
+    TimelineEvent event = service.getTimeline("p1", null, null, "encounter").get(0);
+
+    assertThat(event.groupedObservations())
+        .singleElement()
+        .extracting(GroupedObservation::flagged)
+        .isEqualTo(flagged);
+  }
+
+  @Test
+  void practitionerWithoutANameIsShownByItsId() {
+    when(practitionerService.getPractitioner("dr2")).thenReturn(new Practitioner());
+    givenEncounters(encounter("e1", TODAY.minusDays(1), "dr2"));
+
+    TimelineEvent event = service.getTimeline("p1", null, null, "encounter").get(0);
+
+    assertThat(event.metadata()).containsEntry("provider", "dr2");
+  }
+
+  @Test
+  void eventsOnTheSameDayKeepSourceOrder() {
+    givenEncounters(encounter("e1", TODAY.minusDays(1), null));
+    givenReports(report("r1", TODAY.minusDays(1), null));
+    givenServiceRequests(serviceRequest("sr1", TODAY.minusDays(1), null));
+
+    assertThat(service.getTimeline("p1", null, null, null))
+        .extracting(TimelineEvent::id)
+        .containsExactly("e1", "r1", "sr1");
+  }
+
   @Test
   void eventsWithoutADateAreSkipped() {
-    Encounter undated = encounter("e1", TODAY, null).setPeriod(null);
-    givenEncounters(undated, encounter("e2", TODAY.minusDays(1), null));
+    Encounter undatedEncounter = encounter("e1", TODAY, null).setPeriod(null);
+    DiagnosticReport undatedReport = report("r1", TODAY, null).setIssued(null);
+    ServiceRequest undatedOrder = serviceRequest("sr1", TODAY, null);
+    undatedOrder.setAuthoredOnElement(null);
+    Appointment undatedAppointment = appointment("a1", TODAY.plusDays(1), null).setStart(null);
+    givenEncounters(undatedEncounter, encounter("e2", TODAY.minusDays(1), null));
+    givenReports(undatedReport);
+    givenServiceRequests(undatedOrder);
+    givenAppointments(undatedAppointment);
 
-    assertThat(service.getTimeline("p1", null, null, "encounter"))
+    assertThat(service.getTimeline("p1", null, null, null))
         .extracting(TimelineEvent::id)
         .containsExactly("e2");
   }

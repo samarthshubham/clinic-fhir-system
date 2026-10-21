@@ -14,6 +14,7 @@ import io.github.shubhamforge.clinic.support.FhirClientStub;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 import org.hl7.fhir.r4.model.Observation;
 import org.hl7.fhir.r4.model.Quantity;
 import org.hl7.fhir.r4.model.Resource;
@@ -157,16 +158,20 @@ class TrendsServiceTest {
     assertThat(weight.values()).containsExactly(new DataPoint("2026-05-01", 81.0));
   }
 
-  @ParameterizedTest
-  @ValueSource(ints = {31, 45, 59, 60, 89, 90, 365})
-  void longSeriesAreDownsampledToAtMostThirtyPoints(int readings) {
+  @ParameterizedTest(name = "{0} readings -> every {1}th, {2} points")
+  @CsvSource({"31,2,16", "45,2,23", "59,2,30", "60,2,30", "89,3,30", "90,3,30", "365,13,29"})
+  void longSeriesKeepEveryNthReadingAndStayWithinThirtyPoints(int readings, int step, int points) {
     givenDailySeries(readings);
 
     SimpleSeries weight =
         (SimpleSeries) service.getTrends("p1", "weight", "1y").series().get("weight");
 
-    assertThat(weight.values()).hasSizeLessThanOrEqualTo(30).hasSizeGreaterThanOrEqualTo(15);
-    assertThat(weight.values().get(0)).isEqualTo(new DataPoint(DAY.toString(), 0.0));
+    List<DataPoint> expected =
+        IntStream.range(0, points)
+            .mapToObj(
+                i -> new DataPoint(DAY.plusDays((long) i * step).toString(), (double) i * step))
+            .toList();
+    assertThat(weight.values()).isEqualTo(expected);
   }
 
   @ParameterizedTest
