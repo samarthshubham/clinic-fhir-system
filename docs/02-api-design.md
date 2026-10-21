@@ -4,9 +4,9 @@ Base URL: `http://localhost:9090`
 
 All responses are plain JSON with `Content-Type: application/json`. FHIR R4 is how clinic-api stores data in HAPI; it is not the public contract.
 
-- **Single resource** (`POST`, `GET /{id}`) → a flat response record. References are flattened to ids (`patientId`, `encounterId`, `practitionerId`, …). Fields the stored resource lacks are `null`.
-- **Lists** (`GET ?patientId=`, `GET /api/patients`) → `PageResponse` `{ "items": [...], "total": n }`. `total` is the server-side match count; `items` holds the first page of results.
-- **Dates** are ISO strings: `yyyy-MM-dd` for dates, ISO-8601 with offset for appointment times.
+- **Single resource** (`POST`, `GET /{id}`) → a flat response record with `id` plus the matching `*Request` fields, and a few read-only extras (`PatientResponse.active`). References are flattened to ids (`patientId`, `encounterId`, `practitionerId`, …). Fields the stored resource lacks are `null`.
+- **Lists** (`GET ?patientId=`, `GET /api/patients`) → `PageResponse` `{ "items": [...], "total": n }`. `items` is only the first page of HAPI's search results (HAPI's default page size) and `total` is HAPI's total match count, so `total` can exceed `items.length`. There is no paging yet: no `limit`/`offset` parameters and no next link.
+- **Dates** are ISO strings taken from the stored FHIR value, independent of the server's time zone: `yyyy-MM-dd` for dates, ISO-8601 with the stored offset for appointment times. `ObservationResponse.effectiveDateTime` is the stored string as-is (see Vitals).
 
 ---
 

@@ -45,7 +45,7 @@ io.github.samarthshubham.clinic
 All endpoints return plain JSON (`application/json`) serialized by Spring's default Jackson converter:
 
 - Single-resource endpoints (`POST`, `GET /{id}`) → a flat response record (`PatientResponse`, `EncounterResponse`, …) whose references are flattened to ids (`patientId`, `encounterId`, …)
-- List endpoints → `PageResponse<T>` `{ "items": [...], "total": n }`, built from the HAPI search `Bundle` by `PageMapper`
+- List endpoints → `PageResponse<T>` `{ "items": [...], "total": n }`, built from the HAPI search result by `PageMapper`. `items` is the first page of HAPI results and `total` is HAPI's total; there is no paging yet
 - `POST /api/vitals` → a JSON array of `ObservationResponse`, one per recorded vital
 
 ## Core Rule

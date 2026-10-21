@@ -45,7 +45,7 @@ clinic-api/         Spring Boot backend (Maven)
     mapper/         PatientMapper, EncounterMapper, ObservationMapper,
                     PractitionerMapper, ConditionMapper, MedicationMapper,
                     AppointmentMapper, ServiceRequestMapper, DiagnosticReportMapper,
-                    CarePlanMapper, GoalMapper, PageMapper (Bundle → PageResponse)
+                    CarePlanMapper, GoalMapper, PageMapper (search result → PageResponse)
     dto/            PatientRequest, EncounterRequest, VitalsRequest,
                     PractitionerRequest, ConditionRequest, MedicationRequest,
                     AppointmentRequest, ServiceRequestRequest, DiagnosticReportRequest,
@@ -193,9 +193,9 @@ This is a personal project. Keep commits lightweight.
 
 ### Response format
 All endpoints return plain JSON (`Content-Type: application/json`) via Spring's default Jackson converter. No FHIR resource is ever serialized to the client.
-- **CRUD endpoints** return flat response records that mirror the `*Request` fields plus `id`, with references flattened to ids (`patientId`, `encounterId`, …). Missing fields are `null`.
+- **CRUD endpoints** return flat response records: `id`, the matching `*Request` fields, and a few read-only extras (e.g. `PatientResponse.active`). References are flattened to ids (`patientId`, `encounterId`, …). Missing fields are `null`. Dates come from the stored FHIR value, not the server's time zone.
   - `POST`, `GET /{id}` → single `XResponse`
-  - `GET ?query` → `PageResponse<XResponse>` `{ "items": [...], "total": n }` (`total` from the HAPI search, `items` = first page)
+  - `GET ?query` → `PageResponse<XResponse>` `{ "items": [...], "total": n }` (`items` = first page of HAPI results, `total` = HAPI's total; no paging yet)
   - `POST /api/vitals` → `ObservationResponse[]` (one per recorded vital)
 - **Experience API endpoints** (`/snapshot`, `/trends`, `/timeline`, `/dashboard`) return aggregated DTOs.
 

@@ -5,7 +5,7 @@ info:
     REST API for the clinic-fhir-system Spring Boot backend.
 
     Every endpoint returns `application/json`. FHIR R4 is the storage format behind the API, not the contract.
-    **CRUD endpoints** return flat response DTOs; list endpoints wrap them in `{ items, total }`.
+    **CRUD endpoints** return flat response DTOs; list endpoints wrap them in `{ items, total }`, where `items` is the first page of HAPI results and `total` is HAPI's total (no paging yet).
     **Experience API endpoints** (`/snapshot`, `/trends`, `/timeline`, `/dashboard`) return aggregated DTOs.
   version: 1.0.0
   contact:
@@ -1206,7 +1206,8 @@ components:
           example: "2026-07-01"
 
     # ── Page wrappers ({ items, total }) ───────────────────────────────────
-    # total is the server-side match count; items holds the first page.
+    # items is only the first page of HAPI search results and total is HAPI's total match count;
+    # there is no paging yet (no limit/offset, no next link).
 
     PatientPage:
       type: object
