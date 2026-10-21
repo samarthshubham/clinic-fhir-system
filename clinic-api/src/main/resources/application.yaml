@@ -22,6 +22,8 @@ clinic:
   default-org-id: seed-default-org
   alerts:
     webhook-url: http://host.docker.internal:9090/api/alerts/bp-subscription
+    webhook-secret: ${CLINIC_ALERTS_WEBHOOK_SECRET:dev-only-alert-secret}
+    first-lookback: 24h
 
 logging:
   level:
