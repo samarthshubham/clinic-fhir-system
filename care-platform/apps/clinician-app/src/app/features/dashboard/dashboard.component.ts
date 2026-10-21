@@ -67,7 +67,7 @@ export class DashboardComponent implements AfterViewInit {
   private readonly svc = inject(DashboardService);
 
   private readonly patientId$ = this.route.paramMap.pipe(
-    map((p) => p.get('id')!),
+    map((p) => p.get('id') ?? ''),
     distinctUntilChanged(),
     shareReplay(1),
   );

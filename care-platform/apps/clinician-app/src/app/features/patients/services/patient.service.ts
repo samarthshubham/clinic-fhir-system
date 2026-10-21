@@ -178,27 +178,23 @@ export class PatientService {
     observations: FhirObservation[],
   ): ObservationPoint[] {
     return observations
-      .filter((o) => {
+      .flatMap((o) => {
         const code = o.code?.coding?.[0]?.code;
-        return (
-          code &&
-          LOINC_META[code] &&
-          o.valueQuantity?.value !== undefined &&
-          o.effectiveDateTime
-        );
-      })
-      .map((o) => {
-        const code = o.code!.coding![0].code!;
-        const meta = LOINC_META[code];
-        return {
-          id: o.id ?? '',
-          loincCode: code,
-          vitalType: meta.type,
-          label: meta.label,
-          value: o.valueQuantity!.value!,
-          unit: o.valueQuantity?.unit ?? '',
-          date: o.effectiveDateTime!,
-        };
+        const meta = code ? LOINC_META[code] : undefined;
+        const value = o.valueQuantity?.value;
+        const date = o.effectiveDateTime;
+        if (!code || !meta || value === undefined || !date) return [];
+        return [
+          {
+            id: o.id ?? '',
+            loincCode: code,
+            vitalType: meta.type,
+            label: meta.label,
+            value,
+            unit: o.valueQuantity?.unit ?? '',
+            date,
+          },
+        ];
       })
       .sort((a, b) => a.date.localeCompare(b.date));
   }
