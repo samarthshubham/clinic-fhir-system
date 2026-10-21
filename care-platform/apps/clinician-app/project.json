@@ -68,7 +68,8 @@
       "options": {
         "coverageInclude": ["apps/clinician-app/src/**/*.ts"],
         "coverageExclude": ["**/*.spec.ts", "**/main.ts"],
-        "coverageReporters": ["lcov", "text-summary"]
+        "coverageReporters": ["lcov", "text-summary"],
+        "coverageThresholds": { "lines": 90 }
       }
     },
     "serve-static": {
