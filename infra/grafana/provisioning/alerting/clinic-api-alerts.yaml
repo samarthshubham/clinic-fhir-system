@@ -1,0 +1,40 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: clinic-api
+    folder: Clinic
+    interval: 1m
+    rules:
+      - uid: clinic-api-5xx-rate
+        title: clinic-api 5xx error rate above 5%
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: >-
+                (sum(rate(http_server_requests_seconds_count{job="clinic-api", uri!~"/actuator.*", status=~"5.."}[5m])) or vector(0))
+                / sum(rate(http_server_requests_seconds_count{job="clinic-api", uri!~"/actuator.*"}[5m]))
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0.05]
+        noDataState: OK
+        execErrState: Error
+        for: 2m
+        annotations:
+          summary: More than 5% of clinic-api requests returned 5xx over the last 5 minutes.
+        labels:
+          severity: critical
