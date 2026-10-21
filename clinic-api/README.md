@@ -52,7 +52,7 @@ To point at a different FHIR server (e.g. staging), override at runtime:
 clinic-api/
 ├── integration-tests/   # Postman collection for end-to-end testing
 ├── seed-data/           # Synthea data generation + HAPI FHIR loader
-└── src/main/java/io/github/shubhamforge/clinic/
+└── src/main/java/io/github/samarthshubham/clinic/
 ├── config/        # Spring beans — FHIR client setup
 ├── controller/    # REST controllers (@RestController)
 ├── dto/           # Request/response POJOs
