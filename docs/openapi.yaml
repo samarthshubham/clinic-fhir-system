@@ -4,8 +4,9 @@ info:
   description: |
     REST API for the clinic-fhir-system Spring Boot backend.
 
-    **FHIR CRUD endpoints** return `application/fhir+json` (FHIR R4 resources).
-    **Experience API endpoints** (`/snapshot`, `/trends`, `/timeline`, `/dashboard`) return `application/json` flat DTOs.
+    Every endpoint returns `application/json`. FHIR R4 is the storage format behind the API, not the contract.
+    **CRUD endpoints** return flat response DTOs; list endpoints wrap them in `{ items, total }`.
+    **Experience API endpoints** (`/snapshot`, `/trends`, `/timeline`, `/dashboard`) return aggregated DTOs.
   version: 1.0.0
   contact:
     name: samarthshubham
@@ -66,11 +67,11 @@ paths:
               email: "marcus.webb@example.com"
       responses:
         '201':
-          description: Patient created — returns FHIR R4 Patient resource
+          description: Patient created
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirPatient'
+                $ref: '#/components/schemas/PatientResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
 
@@ -93,11 +94,11 @@ paths:
           example: "1978-04-15"
       responses:
         '200':
-          description: FHIR R4 Bundle (searchset) of matching patients
+          description: Page of Patient responses
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirBundle'
+                $ref: '#/components/schemas/PatientPage'
 
   /api/patients/{id}:
     get:
@@ -107,27 +108,11 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       responses:
         '200':
-          description: FHIR R4 Patient resource
+          description: Patient found
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirPatient'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/patients/{id}/summary:
-    get:
-      tags: [Patients]
-      summary: Get legacy FHIR Bundle summary (Patient + Encounters + Observations)
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
-      responses:
-        '200':
-          description: FHIR R4 Bundle (collection)
-          content:
-            application/fhir+json:
-              schema:
-                $ref: '#/components/schemas/FhirBundle'
+                $ref: '#/components/schemas/PatientResponse'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -232,11 +217,11 @@ paths:
               practitionerId: "prac456"
       responses:
         '201':
-          description: FHIR R4 Encounter resource
+          description: Encounter created
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirResource'
+                $ref: '#/components/schemas/EncounterResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
         '404':
@@ -254,11 +239,11 @@ paths:
           example: "abc123"
       responses:
         '200':
-          description: FHIR R4 Bundle of encounters
+          description: Page of Encounter responses
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirBundle'
+                $ref: '#/components/schemas/EncounterPage'
 
   /api/encounters/{id}:
     get:
@@ -268,11 +253,11 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       responses:
         '200':
-          description: FHIR R4 Encounter resource
+          description: Encounter found
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirResource'
+                $ref: '#/components/schemas/EncounterResponse'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -299,11 +284,13 @@ paths:
               temperatureCelsius: 36.8
       responses:
         '201':
-          description: FHIR R4 Bundle of created Observation resources
+          description: Created observations, one per recorded vital
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirBundle'
+                type: array
+                items:
+                  $ref: '#/components/schemas/ObservationResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
 
@@ -325,11 +312,11 @@ paths:
           description: Filter by vital type
       responses:
         '200':
-          description: FHIR R4 Bundle of Observation resources
+          description: Page of Observation responses
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirBundle'
+                $ref: '#/components/schemas/ObservationPage'
 
   # ── Practitioners ─────────────────────────────────────────────────────────
 
@@ -351,11 +338,11 @@ paths:
               email: "s.chen@clinic.example"
       responses:
         '201':
-          description: FHIR R4 Practitioner resource
+          description: Practitioner created
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirResource'
+                $ref: '#/components/schemas/PractitionerResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
 
@@ -367,11 +354,11 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       responses:
         '200':
-          description: FHIR R4 Practitioner resource
+          description: Practitioner found
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirResource'
+                $ref: '#/components/schemas/PractitionerResponse'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -395,11 +382,11 @@ paths:
               onsetDate: "2020-01-10"
       responses:
         '201':
-          description: FHIR R4 Condition resource
+          description: Condition created
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirResource'
+                $ref: '#/components/schemas/ConditionResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
 
@@ -414,11 +401,11 @@ paths:
             type: string
       responses:
         '200':
-          description: FHIR R4 Bundle of conditions
+          description: Page of Condition responses
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirBundle'
+                $ref: '#/components/schemas/ConditionPage'
 
   /api/conditions/{id}:
     get:
@@ -428,11 +415,11 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       responses:
         '200':
-          description: FHIR R4 Condition resource
+          description: Condition found
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirResource'
+                $ref: '#/components/schemas/ConditionResponse'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -456,11 +443,11 @@ paths:
               startDate: "2020-02-01"
       responses:
         '201':
-          description: FHIR R4 MedicationStatement resource
+          description: Medication created
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirResource'
+                $ref: '#/components/schemas/MedicationResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
 
@@ -475,11 +462,11 @@ paths:
             type: string
       responses:
         '200':
-          description: FHIR R4 Bundle of MedicationStatements
+          description: Page of Medication responses
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirBundle'
+                $ref: '#/components/schemas/MedicationPage'
 
   # ── Appointments ──────────────────────────────────────────────────────────
 
@@ -502,11 +489,11 @@ paths:
               status: "booked"
       responses:
         '201':
-          description: FHIR R4 Appointment resource
+          description: Appointment created
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirResource'
+                $ref: '#/components/schemas/AppointmentResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
 
@@ -521,11 +508,11 @@ paths:
             type: string
       responses:
         '200':
-          description: FHIR R4 Bundle of appointments
+          description: Page of Appointment responses
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirBundle'
+                $ref: '#/components/schemas/AppointmentPage'
 
   # ── Service Requests ──────────────────────────────────────────────────────
 
@@ -548,11 +535,11 @@ paths:
               authoredOn: "2026-05-15"
       responses:
         '201':
-          description: FHIR R4 ServiceRequest resource
+          description: Order created
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirResource'
+                $ref: '#/components/schemas/ServiceRequestResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
 
@@ -573,11 +560,11 @@ paths:
           description: Optional status filter
       responses:
         '200':
-          description: FHIR R4 Bundle of ServiceRequests
+          description: Page of ServiceRequest responses
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirBundle'
+                $ref: '#/components/schemas/ServiceRequestPage'
 
   /api/service-requests/{id}:
     get:
@@ -587,11 +574,11 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       responses:
         '200':
-          description: FHIR R4 ServiceRequest resource
+          description: Order found
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirResource'
+                $ref: '#/components/schemas/ServiceRequestResponse'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -616,11 +603,11 @@ paths:
               conclusion: "HbA1c 7.2% — well-controlled"
       responses:
         '201':
-          description: FHIR R4 DiagnosticReport resource
+          description: Report created
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirResource'
+                $ref: '#/components/schemas/DiagnosticReportResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
 
@@ -635,11 +622,11 @@ paths:
             type: string
       responses:
         '200':
-          description: FHIR R4 Bundle of DiagnosticReports
+          description: Page of DiagnosticReport responses
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirBundle'
+                $ref: '#/components/schemas/DiagnosticReportPage'
 
   # ── Care Plans ────────────────────────────────────────────────────────────
 
@@ -662,11 +649,11 @@ paths:
               goalIds: ["goal001"]
       responses:
         '201':
-          description: FHIR R4 CarePlan resource
+          description: Care plan created
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirResource'
+                $ref: '#/components/schemas/CarePlanResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
 
@@ -681,11 +668,11 @@ paths:
             type: string
       responses:
         '200':
-          description: FHIR R4 Bundle of CarePlans
+          description: Page of CarePlan responses
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirBundle'
+                $ref: '#/components/schemas/CarePlanPage'
 
   # ── Goals ─────────────────────────────────────────────────────────────────
 
@@ -710,11 +697,11 @@ paths:
               targetDate: "2026-12-31"
       responses:
         '201':
-          description: FHIR R4 Goal resource
+          description: Goal created
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirResource'
+                $ref: '#/components/schemas/GoalResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
 
@@ -729,11 +716,11 @@ paths:
             type: string
       responses:
         '200':
-          description: FHIR R4 Bundle of Goals
+          description: Page of Goal responses
           content:
-            application/fhir+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/FhirBundle'
+                $ref: '#/components/schemas/GoalPage'
 
   # ── Dashboard ─────────────────────────────────────────────────────────────
 
@@ -833,65 +820,509 @@ components:
           type: string
           example: "Patient abc123 not found"
 
-    # ── FHIR stubs ─────────────────────────────────────────────────────────
-    # Full FHIR R4 schema is defined at https://hl7.org/fhir/R4/
-    # These are placeholder representations only.
+    # ── Response DTOs ──────────────────────────────────────────────────────
+    # Fields missing from the stored FHIR resource are null.
 
-    FhirResource:
+    PatientResponse:
       type: object
-      description: FHIR R4 resource (application/fhir+json)
       properties:
-        resourceType:
-          type: string
-          example: "Encounter"
         id:
           type: string
           example: "abc123"
-      additionalProperties: true
-
-    FhirPatient:
-      type: object
-      description: FHIR R4 Patient resource
-      properties:
-        resourceType:
+        firstName:
           type: string
-          example: "Patient"
-        id:
+          nullable: true
+          example: "Marcus"
+        lastName:
           type: string
-          example: "abc123"
-        name:
-          type: array
-          items:
-            type: object
-        birthDate:
+          nullable: true
+          example: "Webb"
+        dateOfBirth:
           type: string
           format: date
+          nullable: true
+          example: "1978-04-15"
         gender:
           type: string
-          enum: [male, female, other, unknown]
-        telecom:
-          type: array
-          items:
-            type: object
-      additionalProperties: true
-
-    FhirBundle:
-      type: object
-      description: FHIR R4 Bundle resource
-      properties:
-        resourceType:
+          nullable: true
+          example: "male"
+        phone:
           type: string
-          example: "Bundle"
+          nullable: true
+          example: "555-0101"
+        email:
+          type: string
+          nullable: true
+          example: "marcus.webb@example.com"
+        active:
+          type: boolean
+          nullable: true
+          example: true
+
+    EncounterResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "enc1"
+        patientId:
+          type: string
+          nullable: true
+          example: "abc123"
+        visitDate:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-05-15"
+        reason:
+          type: string
+          nullable: true
+          example: "Hypertension follow-up"
+        status:
+          type: string
+          nullable: true
+          example: "finished"
+        practitionerId:
+          type: string
+          nullable: true
+          example: "pract1"
+        note:
+          type: string
+          nullable: true
+          example: "Advised low-salt diet"
+
+    ObservationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "obs1"
+        patientId:
+          type: string
+          nullable: true
+          example: "abc123"
+        encounterId:
+          type: string
+          nullable: true
+          example: "enc1"
         type:
           type: string
-          enum: [searchset, collection]
-        total:
-          type: integer
-        entry:
+          nullable: true
+          enum: [systolic, diastolic, weight, spo2, heartRate, temperature, null]
+          description: null for LOINC codes outside the vitals table
+          example: "systolic"
+        loincCode:
+          type: string
+          nullable: true
+          example: "8480-6"
+        value:
+          type: number
+          nullable: true
+          example: 135.0
+        unit:
+          type: string
+          nullable: true
+          example: "mm[Hg]"
+        effectiveDateTime:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-05-15T00:00:00-04:00"
+
+    PractitionerResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "pract1"
+        firstName:
+          type: string
+          nullable: true
+          example: "Aisha"
+        lastName:
+          type: string
+          nullable: true
+          example: "Patel"
+        specialty:
+          type: string
+          nullable: true
+          example: "Internal Medicine"
+        npi:
+          type: string
+          nullable: true
+          example: "1234567890"
+        email:
+          type: string
+          nullable: true
+          example: "a.patel@clinic.com"
+
+    ConditionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "cond1"
+        patientId:
+          type: string
+          nullable: true
+          example: "abc123"
+        encounterId:
+          type: string
+          nullable: true
+          example: "enc1"
+        code:
+          type: string
+          nullable: true
+          example: "59621000"
+        display:
+          type: string
+          nullable: true
+          example: "Essential hypertension"
+        clinicalStatus:
+          type: string
+          nullable: true
+          example: "active"
+        onsetDate:
+          type: string
+          format: date
+          nullable: true
+          example: "2024-01-15"
+
+    MedicationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "med1"
+        patientId:
+          type: string
+          nullable: true
+          example: "abc123"
+        medicationName:
+          type: string
+          nullable: true
+          example: "Lisinopril 10mg"
+        status:
+          type: string
+          nullable: true
+          example: "active"
+        dosageText:
+          type: string
+          nullable: true
+          example: "Once daily"
+        startDate:
+          type: string
+          format: date
+          nullable: true
+          example: "2024-01-20"
+
+    AppointmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "appt1"
+        patientId:
+          type: string
+          nullable: true
+          example: "abc123"
+        practitionerId:
+          type: string
+          nullable: true
+          example: "pract1"
+        start:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-06-01T09:00:00-04:00"
+        end:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-06-01T09:30:00-04:00"
+        description:
+          type: string
+          nullable: true
+          example: "3-month hypertension review"
+        status:
+          type: string
+          nullable: true
+          example: "booked"
+
+    ServiceRequestResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "sr1"
+        patientId:
+          type: string
+          nullable: true
+          example: "abc123"
+        encounterId:
+          type: string
+          nullable: true
+          example: "enc1"
+        practitionerId:
+          type: string
+          nullable: true
+          example: "pract1"
+        code:
+          type: string
+          nullable: true
+          example: "Lipid Panel"
+        category:
+          type: string
+          nullable: true
+          example: "laboratory"
+        status:
+          type: string
+          nullable: true
+          example: "active"
+        priority:
+          type: string
+          nullable: true
+          example: "routine"
+        authoredOn:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-04-14"
+
+    DiagnosticReportResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "rpt1"
+        patientId:
+          type: string
+          nullable: true
+          example: "abc123"
+        encounterId:
+          type: string
+          nullable: true
+          example: "enc1"
+        serviceRequestId:
+          type: string
+          nullable: true
+          example: "sr1"
+        title:
+          type: string
+          nullable: true
+          example: "Lipid Panel"
+        status:
+          type: string
+          nullable: true
+          example: "final"
+        issued:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-04-16"
+        conclusion:
+          type: string
+          nullable: true
+          example: "LDL 132 mg/dL"
+        resultIds:
+          type: array
+          items: { type: string }
+          example: ["obs1"]
+
+    CarePlanResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "cp1"
+        patientId:
+          type: string
+          nullable: true
+          example: "abc123"
+        conditionIds:
+          type: array
+          items: { type: string }
+          example: ["cond1"]
+        title:
+          type: string
+          nullable: true
+          example: "Hypertension Management"
+        status:
+          type: string
+          nullable: true
+          example: "active"
+        periodStart:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-01-01"
+        goalIds:
+          type: array
+          items: { type: string }
+          example: ["goal1"]
+
+    GoalResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "goal1"
+        patientId:
+          type: string
+          nullable: true
+          example: "abc123"
+        description:
+          type: string
+          nullable: true
+          example: "Reduce systolic BP below 130"
+        status:
+          type: string
+          nullable: true
+          example: "active"
+        targetMeasureCode:
+          type: string
+          nullable: true
+          example: "8480-6"
+        targetMeasureDisplay:
+          type: string
+          nullable: true
+          example: "Systolic blood pressure"
+        targetValue:
+          type: number
+          nullable: true
+          example: 130.0
+        targetUnit:
+          type: string
+          nullable: true
+          example: "mm[Hg]"
+        targetDate:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-07-01"
+
+    # ── Page wrappers ({ items, total }) ───────────────────────────────────
+    # total is the server-side match count; items holds the first page.
+
+    PatientPage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
           type: array
           items:
-            type: object
-      additionalProperties: true
+            $ref: '#/components/schemas/PatientResponse'
+        total:
+          type: integer
+          example: 1
+
+    EncounterPage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EncounterResponse'
+        total:
+          type: integer
+          example: 1
+
+    ObservationPage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ObservationResponse'
+        total:
+          type: integer
+          example: 1
+
+    ConditionPage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConditionResponse'
+        total:
+          type: integer
+          example: 1
+
+    MedicationPage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicationResponse'
+        total:
+          type: integer
+          example: 1
+
+    AppointmentPage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppointmentResponse'
+        total:
+          type: integer
+          example: 1
+
+    ServiceRequestPage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceRequestResponse'
+        total:
+          type: integer
+          example: 1
+
+    DiagnosticReportPage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiagnosticReportResponse'
+        total:
+          type: integer
+          example: 1
+
+    CarePlanPage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarePlanResponse'
+        total:
+          type: integer
+          example: 1
+
+    GoalPage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoalResponse'
+        total:
+          type: integer
+          example: 1
 
     # ── Request DTOs ───────────────────────────────────────────────────────
 

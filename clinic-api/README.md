@@ -73,7 +73,6 @@ clinic-api/
 | `GET` | `/api/encounters?patientId=` | List encounters for patient |
 | `POST` | `/api/vitals` | Record vitals (BP, weight, SpO2) |
 | `GET` | `/api/vitals?patientId=&type=` | Get vitals for patient |
-| `GET` | `/api/patients/{id}/summary` | Full patient summary |
 
 ## Building
 

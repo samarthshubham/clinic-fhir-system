@@ -2,7 +2,11 @@
 
 Base URL: `http://localhost:9090`
 
-All responses are native FHIR R4 resources with `Content-Type: application/fhir+json`.
+All responses are plain JSON with `Content-Type: application/json`. FHIR R4 is how clinic-api stores data in HAPI; it is not the public contract.
+
+- **Single resource** (`POST`, `GET /{id}`) → a flat response record. References are flattened to ids (`patientId`, `encounterId`, `practitionerId`, …). Fields the stored resource lacks are `null`.
+- **Lists** (`GET ?patientId=`, `GET /api/patients`) → `PageResponse` `{ "items": [...], "total": n }`. `total` is the server-side match count; `items` holds the first page of results.
+- **Dates** are ISO strings: `yyyy-MM-dd` for dates, ISO-8601 with offset for appointment times.
 
 ---
 
@@ -11,7 +15,7 @@ All responses are native FHIR R4 resources with `Content-Type: application/fhir+
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/api/patients` | Register a new patient |
-| `GET` | `/api/patients/{id}` | Get patient by FHIR ID |
+| `GET` | `/api/patients/{id}` | Get patient by ID |
 | `GET` | `/api/patients?name=John&dob=1990-01-01` | Search patients |
 
 ### POST /api/patients
@@ -28,31 +32,29 @@ All responses are native FHIR R4 resources with `Content-Type: application/fhir+
 }
 ```
 
-**Response `201 Created` — `Patient` resource:**
+**Response `201 Created` — `PatientResponse`:**
 ```json
 {
-  "resourceType": "Patient",
   "id": "123",
-  "name": [{ "family": "Doe", "given": ["John"] }],
-  "birthDate": "1990-05-15",
+  "firstName": "John",
+  "lastName": "Doe",
+  "dateOfBirth": "1990-05-15",
   "gender": "male",
-  "telecom": [
-    { "system": "phone", "value": "9876543210" },
-    { "system": "email", "value": "john.doe@email.com" }
-  ]
+  "phone": "9876543210",
+  "email": "john.doe@email.com",
+  "active": null
 }
 ```
 
 ### GET /api/patients?name=John
 
-**Response `200 OK` — `Bundle` (searchset):**
+**Response `200 OK` — `PageResponse<PatientResponse>`:**
 ```json
 {
-  "resourceType": "Bundle",
-  "type": "searchset",
-  "entry": [
-    { "resource": { "resourceType": "Patient", "id": "123", "name": [{ "family": "Doe", "given": ["John"] }], ... } }
-  ]
+  "items": [
+    { "id": "123", "firstName": "John", "lastName": "Doe", "dateOfBirth": "1990-05-15", "gender": "male", "phone": "9876543210", "email": "john.doe@email.com", "active": null }
+  ],
+  "total": 1
 }
 ```
 
@@ -74,33 +76,30 @@ All responses are native FHIR R4 resources with `Content-Type: application/fhir+
   "patientId": "123",
   "visitDate": "2025-04-25",
   "reason": "Routine checkup",
-  "status": "finished"
+  "status": "finished",
+  "practitionerId": "pract-01",
+  "note": "Advised low-salt diet"
 }
 ```
 
-**Response `201 Created` — `Encounter` resource:**
+**Response `201 Created` — `EncounterResponse`:**
 ```json
 {
-  "resourceType": "Encounter",
   "id": "456",
+  "patientId": "123",
+  "visitDate": "2025-04-25",
+  "reason": "Routine checkup",
   "status": "finished",
-  "subject": { "reference": "Patient/123" },
-  "period": { "start": "2025-04-25T00:00:00+05:30" },
-  "reasonCode": [{ "text": "Routine checkup" }]
+  "practitionerId": "pract-01",
+  "note": "Advised low-salt diet"
 }
 ```
 
 ### GET /api/encounters?patientId=123
 
-**Response `200 OK` — `Bundle` (searchset):**
+**Response `200 OK` — `PageResponse<EncounterResponse>`:**
 ```json
-{
-  "resourceType": "Bundle",
-  "type": "searchset",
-  "entry": [
-    { "resource": { "resourceType": "Encounter", "id": "456", ... } }
-  ]
-}
+{ "items": [ { "id": "456", "patientId": "123", "visitDate": "2025-04-25", ... } ], "total": 1 }
 ```
 
 ---
@@ -115,7 +114,7 @@ All responses are native FHIR R4 resources with `Content-Type: application/fhir+
 
 ### POST /api/vitals
 
-Send only the vitals you have — null fields are skipped. Each non-null vital becomes a separate `Observation`.
+Send only the vitals you have — null fields are skipped. Each non-null vital is stored as a separate FHIR `Observation`.
 
 **Request:**
 ```json
@@ -124,64 +123,23 @@ Send only the vitals you have — null fields are skipped. Each non-null vital b
   "encounterId": "456",
   "effectiveDate": "2025-04-25",
   "systolicBp": 120,
-  "diastolicBp": 80,
-  "weightKg": 72.5,
-  "spo2Percent": 98.0
+  "weightKg": 72.5
 }
 ```
 
-**Response `201 Created` — `Bundle` (collection) of created Observations:**
+**Response `201 Created` — `ObservationResponse[]`, one per recorded vital:**
 ```json
-{
-  "resourceType": "Bundle",
-  "type": "collection",
-  "entry": [
-    {
-      "resource": {
-        "resourceType": "Observation",
-        "id": "789",
-        "status": "final",
-        "code": { "coding": [{ "system": "http://loinc.org", "code": "8480-6", "display": "Systolic blood pressure" }] },
-        "subject": { "reference": "Patient/123" },
-        "encounter": { "reference": "Encounter/456" },
-        "valueQuantity": { "value": 120, "unit": "mm[Hg]", "system": "http://unitsofmeasure.org" }
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "Observation",
-        "id": "790",
-        "status": "final",
-        "code": { "coding": [{ "system": "http://loinc.org", "code": "29463-7", "display": "Body weight" }] },
-        "valueQuantity": { "value": 72.5, "unit": "kg" }
-      }
-    }
-  ]
-}
+[
+  { "id": "789", "patientId": "123", "encounterId": "456", "type": "systolic", "loincCode": "8480-6", "value": 120.0, "unit": "mm[Hg]", "effectiveDateTime": "2025-04-25T00:00:00-04:00" },
+  { "id": "790", "patientId": "123", "encounterId": "456", "type": "weight", "loincCode": "29463-7", "value": 72.5, "unit": "kg", "effectiveDateTime": "2025-04-25T00:00:00-04:00" }
+]
 ```
 
----
+`type` is one of `systolic`, `diastolic`, `weight`, `spo2`, `heartRate`, `temperature`, or `null` for observations with another LOINC code (e.g. imported Synthea data).
 
-## Summary API
+### GET /api/vitals?patientId=123
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/patients/{id}/summary` | Full patient summary (aggregation) |
-
-**Response `200 OK` — `Bundle` (collection) of Patient + Encounters + Observations:**
-```json
-{
-  "resourceType": "Bundle",
-  "type": "collection",
-  "entry": [
-    { "resource": { "resourceType": "Patient", "id": "123", ... } },
-    { "resource": { "resourceType": "Encounter", "id": "456", ... } },
-    { "resource": { "resourceType": "Observation", "id": "789", ... } }
-  ]
-}
-```
-
----
+**Response `200 OK` — `PageResponse<ObservationResponse>`.**
 
 ---
 
@@ -196,6 +154,8 @@ Send only the vitals you have — null fields are skipped. Each non-null vital b
 ```json
 { "firstName": "Aisha", "lastName": "Patel", "specialty": "Internal Medicine", "npi": "1234567890", "email": "a.patel@clinic.com" }
 ```
+
+**Response `201 Created` — `PractitionerResponse`:** the same fields plus `id`.
 
 ---
 
@@ -212,6 +172,8 @@ Send only the vitals you have — null fields are skipped. Each non-null vital b
 { "patientId": "123", "encounterId": "456", "code": "59621000", "display": "Essential hypertension", "clinicalStatus": "active", "onsetDate": "2024-01-15" }
 ```
 
+**Response `201 Created` — `ConditionResponse`:** the same fields plus `id`. The list returns `PageResponse<ConditionResponse>`.
+
 ---
 
 ## Medication APIs
@@ -226,6 +188,8 @@ Send only the vitals you have — null fields are skipped. Each non-null vital b
 { "patientId": "123", "medicationName": "Lisinopril 10mg", "status": "active", "dosageText": "Once daily", "startDate": "2024-01-20" }
 ```
 
+**Response `201 Created` — `MedicationResponse`:** the same fields plus `id`. The list returns `PageResponse<MedicationResponse>`.
+
 ---
 
 ## Appointment APIs
@@ -239,6 +203,13 @@ Send only the vitals you have — null fields are skipped. Each non-null vital b
 ```json
 { "patientId": "123", "practitionerId": "pract-01", "start": "2026-06-01T09:00:00", "end": "2026-06-01T09:30:00", "description": "3-month hypertension review", "status": "booked" }
 ```
+
+**Response `201 Created` — `AppointmentResponse`:**
+```json
+{ "id": "appt-01", "patientId": "123", "practitionerId": "pract-01", "start": "2026-06-01T09:00:00-04:00", "end": "2026-06-01T09:30:00-04:00", "description": "3-month hypertension review", "status": "booked" }
+```
+
+`start` and `end` carry the server's UTC offset. The list returns `PageResponse<AppointmentResponse>`.
 
 ---
 
@@ -255,6 +226,8 @@ Send only the vitals you have — null fields are skipped. Each non-null vital b
 { "patientId": "123", "encounterId": "456", "practitionerId": "pract-01", "code": "Basic Metabolic Panel", "category": "laboratory", "status": "active", "priority": "routine", "authoredOn": "2026-04-14" }
 ```
 
+**Response `201 Created` — `ServiceRequestResponse`:** the same fields plus `id`. The list returns `PageResponse<ServiceRequestResponse>`.
+
 **Note:** When a DiagnosticReport is created with `serviceRequestId`, the linked ServiceRequest is automatically marked `completed`.
 
 ---
@@ -268,8 +241,10 @@ Send only the vitals you have — null fields are skipped. Each non-null vital b
 
 ### POST /api/diagnostic-reports
 ```json
-{ "patientId": "123", "encounterId": "456", "serviceRequestId": "sr-789", "title": "Basic Metabolic Panel", "status": "final", "issued": "2026-04-16", "conclusion": "Electrolytes normal. Creatinine 1.1 mg/dL." }
+{ "patientId": "123", "encounterId": "456", "serviceRequestId": "sr-789", "title": "Basic Metabolic Panel", "status": "final", "issued": "2026-04-16", "conclusion": "Electrolytes normal. Creatinine 1.1 mg/dL.", "resultIds": ["obs-01"] }
 ```
+
+**Response `201 Created` — `DiagnosticReportResponse`:** the same fields plus `id`; `resultIds` is `[]` when there are no results. The list returns `PageResponse<DiagnosticReportResponse>`.
 
 ---
 
@@ -285,6 +260,8 @@ Send only the vitals you have — null fields are skipped. Each non-null vital b
 { "patientId": "123", "conditionIds": ["cond-01"], "title": "Hypertension Management", "status": "active", "periodStart": "2026-01-01", "goalIds": ["goal-01"] }
 ```
 
+**Response `201 Created` — `CarePlanResponse`:** the same fields plus `id`; `conditionIds` and `goalIds` are `[]` when empty. The list returns `PageResponse<CarePlanResponse>`.
+
 ---
 
 ## Goal APIs
@@ -298,6 +275,8 @@ Send only the vitals you have — null fields are skipped. Each non-null vital b
 ```json
 { "patientId": "123", "description": "Reduce systolic BP below 130", "status": "active", "targetMeasureCode": "8480-6", "targetMeasureDisplay": "Systolic blood pressure", "targetValue": 130.0, "targetUnit": "mm[Hg]", "targetDate": "2026-07-01" }
 ```
+
+**Response `201 Created` — `GoalResponse`:** the same fields plus `id`. The target fields are `null` for goals without a measurable target. The list returns `PageResponse<GoalResponse>`.
 
 ---
 
