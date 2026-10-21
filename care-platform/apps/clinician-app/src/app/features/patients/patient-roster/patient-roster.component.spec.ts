@@ -2,8 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { Subject } from 'rxjs';
 import { PatientRosterComponent } from './patient-roster.component';
-import { PatientService } from '../services/patient.service';
-import { PatientListItem } from '../models/patient-list-item.model';
+import { PatientService } from '@features/patients/services/patient.service';
+import { PatientListItem } from '@features/patients/models/patient-list-item.model';
 
 const patients: PatientListItem[] = [
   {

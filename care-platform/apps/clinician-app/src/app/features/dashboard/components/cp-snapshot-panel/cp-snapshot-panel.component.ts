@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { DatePipe, UpperCasePipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { CpVitalCellComponent } from '../cp-vital-cell/cp-vital-cell.component';
-import { SnapshotResponse } from '../../dashboard.model';
+import { CpVitalCellComponent } from '@features/dashboard/components/cp-vital-cell/cp-vital-cell.component';
+import { SnapshotResponse } from '@features/dashboard/dashboard.model';
 
 @Component({
   selector: 'cp-snapshot-panel',

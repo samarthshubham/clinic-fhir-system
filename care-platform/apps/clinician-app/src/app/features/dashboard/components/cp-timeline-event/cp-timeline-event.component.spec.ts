@@ -5,7 +5,7 @@ import {
   GroupedObservation,
   TimelineEvent,
   TrendsResponse,
-} from '../../dashboard.model';
+} from '@features/dashboard/dashboard.model';
 import { ToastService } from '@core/toast.service';
 
 function event(overrides: Partial<TimelineEvent> = {}): TimelineEvent {

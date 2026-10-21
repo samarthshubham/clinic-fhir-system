@@ -18,16 +18,16 @@ import {
   switchMap,
 } from 'rxjs';
 import { MatIconModule } from '@angular/material/icon';
-import { DashboardService } from '../../dashboard.service';
+import { DashboardService } from '@features/dashboard/dashboard.service';
 import {
   ActiveCarePlan,
   BpSeries,
   PendingOrder,
   SimpleSeries,
   TrendsResponse,
-} from '../../dashboard.model';
-import { CpGoalRowComponent } from '../cp-goal-row/cp-goal-row.component';
-import { CpTrendChartComponent } from '../cp-trend-chart/cp-trend-chart.component';
+} from '@features/dashboard/dashboard.model';
+import { CpGoalRowComponent } from '@features/dashboard/components/cp-goal-row/cp-goal-row.component';
+import { CpTrendChartComponent } from '@features/dashboard/components/cp-trend-chart/cp-trend-chart.component';
 
 type AsyncState<T> = T | null | 'error';
 

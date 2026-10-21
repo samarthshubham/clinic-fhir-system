@@ -5,8 +5,11 @@ import {
   Input,
   Output,
 } from '@angular/core';
-import { TimelineEvent, TrendsResponse } from '../../dashboard.model';
-import { CpTimelineEventComponent } from '../cp-timeline-event/cp-timeline-event.component';
+import {
+  TimelineEvent,
+  TrendsResponse,
+} from '@features/dashboard/dashboard.model';
+import { CpTimelineEventComponent } from '@features/dashboard/components/cp-timeline-event/cp-timeline-event.component';
 
 @Component({
   selector: 'cp-timeline-group',

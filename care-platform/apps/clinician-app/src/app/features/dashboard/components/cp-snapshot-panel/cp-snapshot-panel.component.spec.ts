@@ -4,7 +4,7 @@ import {
   LatestVitals,
   SnapshotResponse,
   VitalReading,
-} from '../../dashboard.model';
+} from '@features/dashboard/dashboard.model';
 
 function reading(
   value: number,

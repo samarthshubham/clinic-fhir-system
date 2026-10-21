@@ -4,7 +4,7 @@ import {
   computed,
   input,
 } from '@angular/core';
-import { DataPoint } from '../../dashboard.model';
+import { DataPoint } from '@features/dashboard/dashboard.model';
 
 @Component({
   selector: 'cp-obs-sparkline',

@@ -15,8 +15,8 @@ import {
   SimpleSeries,
   TimelineEvent,
   TrendsResponse,
-} from '../../dashboard.model';
-import { CpObsSparklineComponent } from '../cp-obs-sparkline/cp-obs-sparkline.component';
+} from '@features/dashboard/dashboard.model';
+import { CpObsSparklineComponent } from '@features/dashboard/components/cp-obs-sparkline/cp-obs-sparkline.component';
 
 const EVENT_TYPE_META: Record<
   string,

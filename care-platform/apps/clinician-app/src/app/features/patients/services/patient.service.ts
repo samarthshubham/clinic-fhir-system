@@ -9,15 +9,15 @@ import {
   isFhirPatient,
   isFhirEncounter,
   isFhirObservation,
-} from '../models/fhir-bundle.model';
-import { PatientListItem } from '../models/patient-list-item.model';
+} from '@features/patients/models/fhir-bundle.model';
+import { PatientListItem } from '@features/patients/models/patient-list-item.model';
 import {
   PatientSummary,
   EncounterItem,
   VitalsSnapshot,
   VitalReading,
   ObservationPoint,
-} from '../models/patient-detail.model';
+} from '@features/patients/models/patient-detail.model';
 
 const LOINC_SYSTOLIC = '8480-6';
 const LOINC_DIASTOLIC = '8462-4';

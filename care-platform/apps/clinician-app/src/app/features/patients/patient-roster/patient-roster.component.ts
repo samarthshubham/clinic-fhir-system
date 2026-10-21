@@ -33,8 +33,8 @@ import {
   toObservable,
   toSignal,
 } from '@angular/core/rxjs-interop';
-import { PatientService } from '../services/patient.service';
-import { PatientListItem } from '../models/patient-list-item.model';
+import { PatientService } from '@features/patients/services/patient.service';
+import { PatientListItem } from '@features/patients/models/patient-list-item.model';
 
 @Component({
   selector: 'app-patient-roster',

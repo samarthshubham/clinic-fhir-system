@@ -5,7 +5,7 @@ import {
   Input,
 } from '@angular/core';
 import { DatePipe, TitleCasePipe } from '@angular/common';
-import { PatientHeaderData } from '../../dashboard.model';
+import { PatientHeaderData } from '@features/dashboard/dashboard.model';
 import { ToastService } from '@core/toast.service';
 
 @Component({

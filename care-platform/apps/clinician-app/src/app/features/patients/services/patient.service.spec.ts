@@ -5,9 +5,9 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { PatientService } from './patient.service';
-import { FhirBundle } from '../models/fhir-bundle.model';
-import { PatientListItem } from '../models/patient-list-item.model';
-import { PatientSummary } from '../models/patient-detail.model';
+import { FhirBundle } from '@features/patients/models/fhir-bundle.model';
+import { PatientListItem } from '@features/patients/models/patient-list-item.model';
+import { PatientSummary } from '@features/patients/models/patient-detail.model';
 
 function observation(
   id: string,

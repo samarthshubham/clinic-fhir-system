@@ -1,12 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
 import { CpCarePanelComponent } from './cp-care-panel.component';
-import { DashboardService } from '../../dashboard.service';
+import { DashboardService } from '@features/dashboard/dashboard.service';
 import {
   ActiveCarePlan,
   PendingOrder,
   TrendsResponse,
-} from '../../dashboard.model';
+} from '@features/dashboard/dashboard.model';
 
 function order(
   id: string,

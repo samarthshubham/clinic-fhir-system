@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { CpPatientHeaderComponent } from './cp-patient-header.component';
-import { PatientHeaderData } from '../../dashboard.model';
+import { PatientHeaderData } from '@features/dashboard/dashboard.model';
 import { ToastService } from '@core/toast.service';
 
 const data: PatientHeaderData = {
