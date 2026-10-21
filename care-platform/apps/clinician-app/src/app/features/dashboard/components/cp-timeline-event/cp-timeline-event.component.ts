@@ -96,7 +96,7 @@ export class CpTimelineEventComponent {
   @Input() trends: TrendsResponse | null = null;
   @Input() expanded = false;
   @Input() density: 'compact' | 'comfortable' = 'comfortable';
-  @Output() select = new EventEmitter<string>();
+  @Output() eventSelect = new EventEmitter<string>();
 
   private readonly toastService = inject(ToastService);
 

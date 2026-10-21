@@ -82,7 +82,7 @@ describe('CpTimelineGroupComponent', () => {
   it('should re-emit select from its events', async () => {
     const fixture = await render('2024-06-08T09:00:00');
     const select = vi.fn();
-    fixture.componentInstance.select.subscribe(select);
+    fixture.componentInstance.eventSelect.subscribe(select);
 
     fixture.nativeElement.querySelectorAll('.tl-event')[1].click();
 

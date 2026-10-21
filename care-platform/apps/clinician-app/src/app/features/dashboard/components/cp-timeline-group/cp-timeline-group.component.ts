@@ -22,7 +22,7 @@ export class CpTimelineGroupComponent {
   @Input() trends: TrendsResponse | null = null;
   @Input() expandedId: string | null = null;
   @Input() density: 'compact' | 'comfortable' = 'comfortable';
-  @Output() select = new EventEmitter<string>();
+  @Output() eventSelect = new EventEmitter<string>();
 
   get isFuture(): boolean {
     return new Date(this.date) > new Date();

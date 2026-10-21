@@ -1,7 +1,12 @@
 <div
   class="goal-row"
+  role="button"
+  tabindex="0"
+  [attr.aria-expanded]="expanded()"
   [class.goal-row--expanded]="expanded()"
-  (click)="toggle.emit(goal().id)"
+  (click)="goalToggle.emit(goal().id)"
+  (keydown.enter)="goalToggle.emit(goal().id)"
+  (keydown.space)="goalToggle.emit(goal().id); $event.preventDefault()"
 >
   <div class="goal-row__head">
     <div class="goal-row__titles">
@@ -44,7 +49,12 @@
   }
 
   @if (expanded()) {
-    <div class="goal-row__detail" (click)="$event.stopPropagation()">
+    <div
+      class="goal-row__detail"
+      role="presentation"
+      (click)="$event.stopPropagation()"
+      (keydown)="$event.stopPropagation()"
+    >
       <div class="goal-row__triple">
         <div class="goal-row__stat">
           <span class="goal-row__stat-lab">Baseline</span>

@@ -13,7 +13,7 @@
       [trends]="trends"
       [expanded]="expandedId === ev.id"
       [density]="density"
-      (select)="select.emit($event)"
+      (eventSelect)="eventSelect.emit($event)"
     />
   }
 </div>

@@ -173,11 +173,40 @@ describe('CpTimelineEventComponent', () => {
   it('should emit select with the event id when clicked', async () => {
     const fixture = await render(event());
     const select = vi.fn();
-    fixture.componentInstance.select.subscribe(select);
+    fixture.componentInstance.eventSelect.subscribe(select);
 
     fixture.nativeElement.querySelector('.tl-event').click();
 
     expect(select).toHaveBeenCalledWith('e1');
+  });
+
+  it('should emit select from the keyboard with Enter or Space', async () => {
+    const fixture = await render(event());
+    const select = vi.fn();
+    fixture.componentInstance.eventSelect.subscribe(select);
+    const card: HTMLElement = fixture.nativeElement.querySelector('.tl-event');
+    const space = new KeyboardEvent('keydown', { key: ' ', cancelable: true });
+
+    card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    card.dispatchEvent(space);
+
+    expect(select).toHaveBeenCalledTimes(2);
+    expect(space.defaultPrevented).toBe(true);
+    expect(card.getAttribute('tabindex')).toBe('0');
+  });
+
+  it('should not emit select when pressing Enter on an action button', async () => {
+    const fixture = await render(event(), { expanded: true });
+    const select = vi.fn();
+    fixture.componentInstance.eventSelect.subscribe(select);
+
+    fixture.nativeElement
+      .querySelector('.tl-btn-primary')
+      .dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      );
+
+    expect(select).not.toHaveBeenCalled();
   });
 
   it('should compute expanded observation rows with history and deltas', async () => {
@@ -313,7 +342,7 @@ describe('CpTimelineEventComponent', () => {
     const el: HTMLElement = fixture.nativeElement;
     const show = vi.spyOn(TestBed.inject(ToastService), 'show');
     const select = vi.fn();
-    fixture.componentInstance.select.subscribe(select);
+    fixture.componentInstance.eventSelect.subscribe(select);
 
     expect(el.querySelector('.tl-event')?.classList).toContain('expanded');
     expect(
