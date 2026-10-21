@@ -25,6 +25,20 @@ check_port() {
   curl -s --connect-timeout 1 "http://localhost:$1/" > /dev/null 2>&1
 }
 
+wait_for_http() {
+  local name=$1 health_url=$2 display_url=$3
+  pending "Waiting for $name (up to 60s)..."
+  for i in $(seq 1 12); do
+    if curl -sf --connect-timeout 2 "$health_url" > /dev/null 2>&1; then
+      ok "$name is healthy → $display_url"
+      return 0
+    fi
+    sleep 5
+  done
+  err "$name did not respond in time — check logs/docker.log"
+  exit 1
+}
+
 kill_port() {
   local port=$1
   if $IS_WINDOWS; then
@@ -101,7 +115,7 @@ startup() {
   rm -f "$LOG_DIR"/*.log
 
   # 1. Infrastructure
-  info "Infrastructure (Postgres + HAPI FHIR)"
+  info "Infrastructure (Postgres + HAPI FHIR + Prometheus + Grafana)"
 
   docker compose -f "$SCRIPT_DIR/infra/docker-compose.yml" up -d > "$LOG_DIR/docker.log" 2>&1
   ok "Containers started (logs → logs/docker.log)"
@@ -124,6 +138,9 @@ startup() {
     err "HAPI FHIR did not respond in time — check logs/docker.log"
     exit 1
   fi
+
+  wait_for_http "Prometheus" "http://localhost:9091/-/healthy" "http://localhost:9091"
+  wait_for_http "Grafana" "http://localhost:3000/api/health" "http://localhost:3000 (admin/admin)"
 
   # 2. Spring Boot
   info "clinic-api (Spring Boot :9090)"
@@ -191,6 +208,8 @@ startup() {
   echo -e "  clinician-app → http://localhost:4200"
   echo -e "  patient-app   → http://localhost:4201"
   echo -e "  Swagger UI    → http://localhost:8081"
+  echo -e "  Prometheus    → http://localhost:9091"
+  echo -e "  Grafana       → http://localhost:3000 (admin/admin)"
   echo ""
   echo -e "Logs are in ${CYAN}./logs/${NC} — tail any service in a separate terminal:"
   echo -e "  tail -f logs/clinic-api.log"
