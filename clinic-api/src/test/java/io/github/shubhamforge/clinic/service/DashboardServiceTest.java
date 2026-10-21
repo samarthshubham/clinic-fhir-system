@@ -46,7 +46,9 @@ import org.hl7.fhir.r4.model.Observation;
 import org.hl7.fhir.r4.model.Organization;
 import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.Practitioner;
+import org.hl7.fhir.r4.model.Quantity;
 import org.hl7.fhir.r4.model.ServiceRequest;
+import org.hl7.fhir.r4.model.StringType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -236,7 +238,8 @@ class DashboardServiceTest {
         "diagnostic-reports",
         "care-plans"
       })
-  void aFailingSectionIsReportedWithoutBreakingTheRest(String section) {
+  void aFailingSectionIsReportedWhileEveryOtherSectionStillLoads(String section) {
+    givenEverySectionHasData();
     RuntimeException failure = new InternalErrorException("FHIR server error");
     switch (section) {
       case "snapshot" -> when(snapshotService.getSnapshot("p1")).thenThrow(failure);
@@ -255,9 +258,16 @@ class DashboardServiceTest {
     assertThat(dashboard.warnings()).containsExactly(section + ": unavailable");
     assertThat(dashboard.patient().id()).isEqualTo("p1");
     assertThat(dashboard.careTeam()).containsKey("organization");
-    if (!"snapshot".equals(section)) {
-      assertThat(dashboard.snapshot()).isSameAs(snapshot);
-    }
+    assertThat(dashboard.snapshot() != null).isEqualTo(!section.equals("snapshot"));
+    assertThat(dashboard.recentEncounters().isEmpty()).isEqualTo(section.equals("encounters"));
+    assertThat(dashboard.careTeam().containsKey("primaryDoctor"))
+        .isEqualTo(!section.equals("encounters"));
+    assertThat(dashboard.upcomingAppointment() == null).isEqualTo(section.equals("appointments"));
+    assertThat(dashboard.pendingServiceRequests().isEmpty())
+        .isEqualTo(section.equals("service-requests"));
+    assertThat(dashboard.recentDiagnosticReport() == null)
+        .isEqualTo(section.equals("diagnostic-reports"));
+    assertThat(dashboard.activeCarePlan() == null).isEqualTo(section.equals("care-plans"));
   }
 
   @Test
@@ -313,6 +323,111 @@ class DashboardServiceTest {
   }
 
   @Test
+  void percentToGoalIsRounded() {
+    givenCarePlanWithGoals("g1");
+    when(goalService.getGoal("g1")).thenReturn(bpGoal("g1"));
+    givenSystolicReadings(150, 160);
+
+    assertThat(progressOfFirstGoal().percentToGoal()).isEqualTo(87);
+  }
+
+  @Test
+  void failedBaselineSearchStillReportsCurrentProgress() {
+    givenCarePlanWithGoals("g1");
+    when(goalService.getGoal("g1")).thenReturn(bpGoal("g1"));
+    fhir.givenSearchResultWhen(
+        Observation.class, bundleOf(vital("8480-6", 140, DAY)), SYSTOLIC, "_sort=-date");
+    fhir.givenSearchFails(
+        Observation.class, new InternalErrorException("down"), SYSTOLIC, "_sort=date");
+
+    assertThat(progressOfFirstGoal())
+        .isEqualTo(new GoalProgress(140.0, 130.0, false, 93, null, null));
+  }
+
+  @Test
+  void latestReadingWithoutANumberCountsAsNoMeasurement() {
+    givenCarePlanWithGoals("g1");
+    when(goalService.getGoal("g1")).thenReturn(bpGoal("g1"));
+    fhir.givenSearchResultWhen(
+        Observation.class,
+        bundleOf(vital("8480-6", 0, DAY).setValue(new StringType("high"))),
+        SYSTOLIC,
+        "_sort=-date");
+
+    assertThat(progressOfFirstGoal().message()).isEqualTo("No matching measurements found");
+  }
+
+  @Test
+  void baselineWithoutAValueIsLeftOut() {
+    givenCarePlanWithGoals("g1");
+    when(goalService.getGoal("g1")).thenReturn(bpGoal("g1"));
+    fhir.givenSearchResultWhen(
+        Observation.class, bundleOf(vital("8480-6", 140, DAY)), SYSTOLIC, "_sort=-date");
+    fhir.givenSearchResultWhen(
+        Observation.class,
+        bundleOf(vital("8480-6", 0, DAY).setValue(new Quantity())),
+        SYSTOLIC,
+        "_sort=date");
+
+    assertThat(progressOfFirstGoal().baselineValue()).isNull();
+  }
+
+  @Test
+  void zeroTargetGivesZeroPercent() {
+    givenCarePlanWithGoals("g1");
+    when(goalService.getGoal("g1")).thenReturn(goalWithTarget("g1", "8480-6", 0.0));
+    givenSystolicReadings(5, 10);
+
+    GoalProgress progress = progressOfFirstGoal();
+
+    assertThat(progress.onTrack()).isFalse();
+    assertThat(progress.percentToGoal()).isZero();
+  }
+
+  @Test
+  void readingsBelowOneAreClampedWhenComputingPercent() {
+    givenCarePlanWithGoals("g1");
+    when(goalService.getGoal("g1")).thenReturn(goalWithTarget("g1", "8480-6", 0.5));
+    givenSystolicReadings(0.2, 0.9);
+
+    GoalProgress progress = progressOfFirstGoal();
+
+    assertThat(progress.onTrack()).isTrue();
+    assertThat(progress.percentToGoal()).isEqualTo(50);
+  }
+
+  @Test
+  void targetMeasureWithoutCodeHasNoMeasurements() {
+    givenCarePlanWithGoals("g1");
+    when(goalService.getGoal("g1")).thenReturn(goalWithTarget("g1", null, 130.0));
+
+    assertThat(progressOfFirstGoal().message()).isEqualTo("No matching measurements found");
+    assertThat(fhir.searchCount(Observation.class)).isZero();
+  }
+
+  @Test
+  void targetWithoutMeasureHasNoMeasurements() {
+    givenCarePlanWithGoals("g1");
+    Goal goal = goalWithTarget("g1", "8480-6", 130.0);
+    goal.getTargetFirstRep().setMeasure(null);
+    when(goalService.getGoal("g1")).thenReturn(goal);
+
+    assertThat(progressOfFirstGoal().message()).isEqualTo("No matching measurements found");
+  }
+
+  @Test
+  void targetWithoutAValueHasNoProgress() {
+    givenCarePlanWithGoals("g1");
+    Goal goal = bpGoal("g1");
+    goal.getTargetFirstRep().setDetail(new Quantity().setUnit("mm[Hg]"));
+    when(goalService.getGoal("g1")).thenReturn(goal);
+
+    assertThat(goals(service.getDashboard("p1").activeCarePlan()).get(0))
+        .doesNotContainKey("progress")
+        .doesNotContainKey("targetValue");
+  }
+
+  @Test
   void goalWithoutReadingsSaysSo() {
     givenCarePlanWithGoals("g1");
     when(goalService.getGoal("g1")).thenReturn(bpGoal("g1"));
@@ -364,6 +479,35 @@ class DashboardServiceTest {
         .extracting(g -> g.get("id"))
         .containsExactly("g1");
     assertThat(dashboard.warnings()).containsExactly("care-plan.goal.g9: unavailable");
+  }
+
+  private GoalProgress progressOfFirstGoal() {
+    return (GoalProgress) goals(service.getDashboard("p1").activeCarePlan()).get(0).get("progress");
+  }
+
+  private void givenEverySectionHasData() {
+    givenRecentEncounters(encounter("e1", DAY, "dr1"));
+    lenient()
+        .when(appointmentService.getUpcomingAppointmentsForPatient("p1"))
+        .thenReturn(bundleOf(appointment()));
+    lenient()
+        .when(serviceRequestService.getPendingServiceRequestsForPatient("p1"))
+        .thenReturn(bundleOf(serviceRequest()));
+    lenient()
+        .when(diagnosticReportService.getMostRecentDiagnosticReport("p1"))
+        .thenReturn(bundleOf(report()));
+    CarePlan plan =
+        new CarePlanMapper()
+            .toFhir(new CarePlanRequest("p1", null, "BP control", "active", DAY, null));
+    plan.setId("cp1");
+    lenient().when(carePlanService.getActiveCarePlanForPatient("p1")).thenReturn(bundleOf(plan));
+  }
+
+  private static Goal goalWithTarget(String id, String loincCode, double targetValue) {
+    Goal goal = bpGoal(id);
+    goal.getTargetFirstRep().getMeasure().getCodingFirstRep().setCode(loincCode);
+    goal.getTargetFirstRep().getDetailQuantity().setValue(targetValue);
+    return goal;
   }
 
   @SuppressWarnings("unchecked")
