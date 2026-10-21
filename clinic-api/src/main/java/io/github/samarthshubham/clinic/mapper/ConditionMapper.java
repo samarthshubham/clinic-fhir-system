@@ -1,6 +1,7 @@
 package io.github.samarthshubham.clinic.mapper;
 
 import io.github.samarthshubham.clinic.dto.ConditionRequest;
+import io.github.samarthshubham.clinic.dto.ConditionResponse;
 import java.time.ZoneId;
 import java.util.Date;
 import org.hl7.fhir.r4.model.CodeableConcept;
@@ -33,5 +34,22 @@ public class ConditionMapper {
     Date onset = Date.from(request.onsetDate().atStartOfDay(ZoneId.systemDefault()).toInstant());
     condition.setOnset(new DateTimeType(onset));
     return condition;
+  }
+
+  public ConditionResponse toResponse(Condition condition) {
+    return new ConditionResponse(
+        FhirValues.idOf(condition),
+        FhirValues.referenceId(condition.getSubject()),
+        FhirValues.referenceId(condition.getEncounter()),
+        firstCode(condition.getCode()),
+        condition.getCode().getText(),
+        firstCode(condition.getClinicalStatus()),
+        condition.hasOnsetDateTimeType()
+            ? FhirValues.localDate(condition.getOnsetDateTimeType())
+            : null);
+  }
+
+  private static String firstCode(CodeableConcept concept) {
+    return concept.hasCoding() ? concept.getCodingFirstRep().getCode() : null;
   }
 }

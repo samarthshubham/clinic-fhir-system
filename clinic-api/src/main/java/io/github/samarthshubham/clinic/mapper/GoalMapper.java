@@ -1,6 +1,7 @@
 package io.github.samarthshubham.clinic.mapper;
 
 import io.github.samarthshubham.clinic.dto.GoalRequest;
+import io.github.samarthshubham.clinic.dto.GoalResponse;
 import java.time.ZoneId;
 import java.util.Date;
 import org.hl7.fhir.r4.model.CodeableConcept;
@@ -45,5 +46,27 @@ public class GoalMapper {
       goal.addTarget(target);
     }
     return goal;
+  }
+
+  public GoalResponse toResponse(Goal goal) {
+    Goal.GoalTargetComponent target = goal.hasTarget() ? goal.getTargetFirstRep() : null;
+    Coding measure =
+        target != null && target.getMeasure().hasCoding()
+            ? target.getMeasure().getCodingFirstRep()
+            : null;
+    Quantity detail =
+        target != null && target.hasDetailQuantity() ? target.getDetailQuantity() : null;
+    return new GoalResponse(
+        FhirValues.idOf(goal),
+        FhirValues.referenceId(goal.getSubject()),
+        goal.getDescription().getText(),
+        goal.hasLifecycleStatus() ? goal.getLifecycleStatus().toCode() : null,
+        measure != null ? measure.getCode() : null,
+        measure != null ? measure.getDisplay() : null,
+        detail != null && detail.hasValue() ? detail.getValue().doubleValue() : null,
+        detail != null ? detail.getUnit() : null,
+        target != null && target.hasDueDateType()
+            ? FhirValues.localDate(target.getDueDateType())
+            : null);
   }
 }

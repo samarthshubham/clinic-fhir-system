@@ -1,8 +1,10 @@
 package io.github.samarthshubham.clinic.mapper;
 
 import io.github.samarthshubham.clinic.dto.AppointmentRequest;
+import io.github.samarthshubham.clinic.dto.AppointmentResponse;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.Objects;
 import org.hl7.fhir.r4.model.Appointment;
 import org.hl7.fhir.r4.model.Reference;
 import org.springframework.stereotype.Component;
@@ -35,5 +37,24 @@ public class AppointmentMapper {
       appointment.addParticipant(providerParticipant);
     }
     return appointment;
+  }
+
+  public AppointmentResponse toResponse(Appointment appointment) {
+    return new AppointmentResponse(
+        FhirValues.idOf(appointment),
+        participantId(appointment, "Patient"),
+        participantId(appointment, "Practitioner"),
+        FhirValues.offsetDateTime(appointment.getStartElement()),
+        FhirValues.offsetDateTime(appointment.getEndElement()),
+        appointment.getDescription(),
+        appointment.hasStatus() ? appointment.getStatus().toCode() : null);
+  }
+
+  private static String participantId(Appointment appointment, String resourceType) {
+    return appointment.getParticipant().stream()
+        .map(participant -> FhirValues.referenceId(participant.getActor(), resourceType))
+        .filter(Objects::nonNull)
+        .findFirst()
+        .orElse(null);
   }
 }

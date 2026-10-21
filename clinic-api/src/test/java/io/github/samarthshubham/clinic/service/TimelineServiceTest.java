@@ -64,11 +64,12 @@ class TimelineServiceTest {
         new TimelineService(
             fhir.client(),
             practitionerService,
-            new ClinicalThresholds(140, 180, 90, 120, 95.0, 90.0));
+            new ClinicalThresholds(140, 180, 90, 120, 95.0, 90.0),
+            new EncounterMapper());
     Practitioner house =
         new PractitionerMapper()
             .toFhir(new PractitionerRequest("Gregory", "House", "Diagnostics", null, null));
-    lenient().when(practitionerService.getPractitioner("dr1")).thenReturn(house);
+    lenient().when(practitionerService.findPractitioner("dr1")).thenReturn(house);
   }
 
   @Test
@@ -244,7 +245,7 @@ class TimelineServiceTest {
 
   @Test
   void eachPractitionerIsLookedUpOnceAndUnknownOnesFallBackToTheirId() {
-    when(practitionerService.getPractitioner("ghost"))
+    when(practitionerService.findPractitioner("ghost"))
         .thenThrow(new ResourceNotFoundException("Practitioner", "ghost"));
     givenEncounters(
         encounter("e1", TODAY.minusDays(2), "dr1"), encounter("e2", TODAY.minusDays(3), "ghost"));
@@ -259,8 +260,8 @@ class TimelineServiceTest {
             tuple("sr1", "Dr. Gregory House"),
             tuple("e1", "Dr. Gregory House"),
             tuple("e2", "ghost"));
-    verify(practitionerService, times(1)).getPractitioner("dr1");
-    verify(practitionerService, times(2)).getPractitioner(anyString());
+    verify(practitionerService, times(1)).findPractitioner("dr1");
+    verify(practitionerService, times(2)).findPractitioner(anyString());
   }
 
   @ParameterizedTest(name = "{0}={1} flagged={2}")
@@ -295,7 +296,7 @@ class TimelineServiceTest {
 
   @Test
   void practitionerWithoutANameIsShownByItsId() {
-    when(practitionerService.getPractitioner("dr2")).thenReturn(new Practitioner());
+    when(practitionerService.findPractitioner("dr2")).thenReturn(new Practitioner());
     givenEncounters(encounter("e1", TODAY.minusDays(1), "dr2"));
 
     TimelineEvent event = service.getTimeline("p1", null, null, "encounter").get(0);

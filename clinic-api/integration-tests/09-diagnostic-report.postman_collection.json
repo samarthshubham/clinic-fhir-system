@@ -169,12 +169,17 @@
               "pm.test('Status 201', () => pm.response.to.have.status(201));",
               "",
               "const body = pm.response.json();",
-              "pm.test('resourceType is DiagnosticReport', () => pm.expect(body.resourceType).to.eql('DiagnosticReport'));",
+              "pm.test('Content-Type is application/json', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
               "pm.test('Has id', () => pm.expect(body.id).to.be.a('string').and.not.empty);",
               "pm.test('Status is final', () => pm.expect(body.status).to.eql('final'));",
               "pm.test('Conclusion matches', () => pm.expect(body.conclusion).to.include('LDL 132'));",
-              "pm.test('Links to ServiceRequest', () => {",
-              "  pm.expect(body.basedOn[0].reference).to.include(pm.collectionVariables.get('serviceRequestId'));",
+              "pm.test('Links to ServiceRequest', () => pm.expect(body.serviceRequestId).to.eql(pm.collectionVariables.get('serviceRequestId')));",
+              "pm.test('Fields match', () => {",
+              "  pm.expect(body.patientId).to.eql(pm.collectionVariables.get('patientId'));",
+              "  pm.expect(body.encounterId).to.eql(pm.collectionVariables.get('encounterId'));",
+              "  pm.expect(body.title).to.eql('Lipid Panel');",
+              "  pm.expect(body.issued).to.eql('2026-04-12');",
+              "  pm.expect(body.resultIds).to.eql([]);",
               "});",
               "pm.collectionVariables.set('diagnosticReportId', body.id);"
             ]
@@ -233,7 +238,8 @@
               "pm.test('Status 201', () => pm.response.to.have.status(201));",
               "pm.test('DR created without SR link', () => {",
               "  const body = pm.response.json();",
-              "  pm.expect(body.resourceType).to.eql('DiagnosticReport');",
+              "  pm.expect(body.id).to.be.a('string').and.not.empty;",
+              "  pm.expect(body.serviceRequestId).to.be.null;",
               "});",
               "pm.collectionVariables.set('diagnosticReportId2', pm.response.json().id);"
             ]
@@ -261,8 +267,10 @@
               "pm.test('Status 200', () => pm.response.to.have.status(200));",
               "",
               "const body = pm.response.json();",
-              "pm.test('resourceType is Bundle', () => pm.expect(body.resourceType).to.eql('Bundle'));",
-              "pm.test('Two reports returned', () => pm.expect(body.entry.length).to.eql(2));"
+              "pm.test('Two reports returned', () => {",
+              "  pm.expect(body.items.length).to.eql(2);",
+              "  pm.expect(body.total).to.eql(2);",
+              "});"
             ]
           }
         }

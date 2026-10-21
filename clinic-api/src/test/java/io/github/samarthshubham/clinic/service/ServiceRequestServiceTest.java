@@ -6,11 +6,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.samarthshubham.clinic.dto.ServiceRequestRequest;
+import io.github.samarthshubham.clinic.dto.ServiceRequestResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.ServiceRequestMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
 import java.time.LocalDate;
-import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.ServiceRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +31,7 @@ class ServiceRequestServiceTest {
 
   @Test
   void createStoresMappedOrderAndReturnsTheStoredCopy() {
-    ServiceRequest order =
+    ServiceRequestResponse order =
         service.createServiceRequest(
             new ServiceRequestRequest(
                 "p1",
@@ -43,9 +43,19 @@ class ServiceRequestServiceTest {
                 "routine",
                 LocalDate.now()));
 
-    assertThat(fhir.created()).singleElement().isNotSameAs(order);
-    assertThat(order.getIdElement().getIdPart()).isEqualTo("1");
-    assertThat(order.getCode().getText()).isEqualTo("Lipid panel");
+    assertThat(fhir.created()).singleElement().isInstanceOf(ServiceRequest.class);
+    assertThat(order)
+        .isEqualTo(
+            new ServiceRequestResponse(
+                "1",
+                "p1",
+                null,
+                null,
+                "Lipid panel",
+                "laboratory",
+                "active",
+                "routine",
+                LocalDate.now()));
   }
 
   @Test
@@ -53,7 +63,14 @@ class ServiceRequestServiceTest {
     ServiceRequest stored = new ServiceRequest();
     fhir.givenStored(stored, "sr1");
 
-    assertThat(service.getServiceRequest("sr1").getIdElement().getIdPart()).isEqualTo("sr1");
+    assertThat(service.getServiceRequest("sr1").id()).isEqualTo("sr1");
+  }
+
+  @Test
+  void findReturnsStoredFhirOrder() {
+    fhir.givenStored(new ServiceRequest(), "sr1");
+
+    assertThat(service.findServiceRequest("sr1").getIdElement().getIdPart()).isEqualTo("sr1");
   }
 
   @Test
@@ -75,10 +92,13 @@ class ServiceRequestServiceTest {
   @NullSource
   @ValueSource(strings = {"", "  "})
   void listWithoutStatusReturnsAllOrders(String status) {
-    Bundle orders = bundleOf(new ServiceRequest());
-    fhir.givenSearchResult(ServiceRequest.class, orders);
+    ServiceRequest stored = new ServiceRequest();
+    stored.setId("sr1");
+    fhir.givenSearchResult(ServiceRequest.class, bundleOf(stored));
 
-    assertThat(service.getServiceRequestsForPatient("p1", status)).isSameAs(orders);
+    assertThat(service.getServiceRequestsForPatient("p1", status).items())
+        .extracting(ServiceRequestResponse::id)
+        .containsExactly("sr1");
     assertThat(fhir.lastSearchCriteria(ServiceRequest.class))
         .containsExactlyInAnyOrder("subject=Patient/p1");
   }
@@ -93,7 +113,7 @@ class ServiceRequestServiceTest {
 
   @Test
   void pendingOrdersAreTheFiveMostRecentActiveOnes() {
-    service.getPendingServiceRequestsForPatient("p1");
+    service.findPendingServiceRequestsForPatient("p1");
 
     assertThat(fhir.lastSearchCriteria(ServiceRequest.class))
         .containsExactlyInAnyOrder("subject=Patient/p1", "status=active", "_count=5");

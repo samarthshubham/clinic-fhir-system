@@ -15,9 +15,10 @@ POST /api/patients  { firstName, lastName, dateOfBirth, gender, phone }
   │     │       .resource(fhirPatient)
   │     │       .execute()                      → POST to HAPI FHIR
   │     │       returns MethodOutcome (has new ID)
-  │     └─ fhirClient.read().withId(id)         → fetch saved Patient resource
+  │     ├─ fhirClient.read().withId(id)         → fetch saved Patient resource
+  │     └─ PatientMapper.toResponse(patient)    → flat PatientResponse
   │
-  └─ 201 Created  { "resourceType": "Patient", "id": "123", ... }
+  └─ 201 Created  { "id": "123", "firstName": "...", "lastName": "...", "dateOfBirth": "...", ... }
 ```
 
 ---
@@ -31,9 +32,10 @@ POST /api/encounters  { patientId: "123", visitDate, reason, status }
   │     ├─ EncounterMapper.toFhir(dto)
   │     │     sets subject = Reference("Patient/123")
   │     ├─ fhirClient.create().resource(encounter).execute()
-  │     └─ fhirClient.read().withId(id)         → fetch saved Encounter resource
+  │     ├─ fhirClient.read().withId(id)         → fetch saved Encounter resource
+  │     └─ EncounterMapper.toResponse(encounter) → EncounterResponse
   │
-  └─ 201 Created  { "resourceType": "Encounter", "id": "456", ... }
+  └─ 201 Created  { "id": "456", "patientId": "123", "visitDate": "...", "status": "...", ... }
 ```
 
 ---
@@ -52,42 +54,27 @@ POST /api/vitals  { patientId: "123", encounterId: "456",
   │     ├─ for each Observation:
   │     │     fhirClient.create().resource(obs).execute()
   │     │     fhirClient.read().withId(id)       → fetch saved Observation
-  │     │     add to Bundle (type: collection)
+  │     │     ObservationMapper.toResponse(obs)  → ObservationResponse
   │     │
-  │     └─ return Bundle
+  │     └─ return List<ObservationResponse>
   │
-  └─ 201 Created  { "resourceType": "Bundle", "type": "collection", "entry": [...] }
+  └─ 201 Created  [ { "id": "...", "type": "weight", "loincCode": "29463-7", "value": 72.5, ... }, ... ]
 ```
 
 ---
 
-## Flow 4: Fetch Patient Summary (Aggregation)
+## Flow 4: List a Patient's Encounters
 
 ```
-GET /api/patients/123/summary
+GET /api/encounters?patientId=123
   │
-  ├─ PatientController → SummaryService.getSummary("123")
-  │     │
-  │     ├─ PatientService.getPatient("123")
-  │     │     fhirClient.read().resource(Patient.class).withId("123")
-  │     │
-  │     ├─ EncounterService.getEncountersForPatient("123")
-  │     │     fhirClient.search().forResource(Encounter)
-  │     │       .where(subject = Patient/123) → Bundle
-  │     │
-  │     ├─ VitalsService.getVitals("123", null)
-  │     │     fhirClient.search().forResource(Observation)
-  │     │       .where(subject = Patient/123) → Bundle
-  │     │
-  │     └─ Build Bundle (type: collection):
-  │           entry[0] = Patient
-  │           entry[1..n] = Encounters
-  │           entry[n+1..] = Observations
+  ├─ EncounterController → EncounterService.getEncountersForPatient("123")
+  │     ├─ fhirClient.search().forResource(Encounter)
+  │     │       .where(subject = Patient/123)     → Bundle (searchset)
+  │     └─ PageMapper.toPage(bundle, Encounter.class, EncounterMapper::toResponse)
   │
-  └─ 200 OK  { "resourceType": "Bundle", "type": "collection", "entry": [...] }
+  └─ 200 OK  { "items": [ { "id": "456", "patientId": "123", ... } ], "total": 1 }
 ```
-
-**Note:** These 3 FHIR calls are sequential in MVP. In production, they can be parallelised with `CompletableFuture` or replaced with a single FHIR `$everything` operation.
 
 ---
 
@@ -96,7 +83,7 @@ GET /api/patients/123/summary
 ```
 GET /api/patients/999
   │
-  ├─ PatientService.getPatient("999")
+  ├─ PatientService.getPatient("999") → findPatient("999")
   │     fhirClient.read().resource(Patient.class).withId("999").execute()
   │     HAPI throws ResourceNotFoundException (HTTP 404)
   │     caught → rethrown as domain ResourceNotFoundException

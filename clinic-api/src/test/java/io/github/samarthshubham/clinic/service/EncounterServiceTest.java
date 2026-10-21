@@ -6,11 +6,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.samarthshubham.clinic.dto.EncounterRequest;
+import io.github.samarthshubham.clinic.dto.EncounterResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.EncounterMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
 import java.time.LocalDate;
-import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Encounter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,14 +28,16 @@ class EncounterServiceTest {
 
   @Test
   void createStoresMappedEncounterAndReturnsTheStoredCopy() {
-    Encounter encounter =
+    EncounterResponse encounter =
         service.createEncounter(
             new EncounterRequest(
                 "p1", LocalDate.of(2026, 5, 1), "Headache", "finished", null, null));
 
-    assertThat(fhir.created()).singleElement().isNotSameAs(encounter);
-    assertThat(encounter.getIdElement().getIdPart()).isEqualTo("1");
-    assertThat(encounter.getSubject().getReference()).isEqualTo("Patient/p1");
+    assertThat(fhir.created()).singleElement().isInstanceOf(Encounter.class);
+    assertThat(encounter)
+        .isEqualTo(
+            new EncounterResponse(
+                "1", "p1", LocalDate.of(2026, 5, 1), "Headache", "finished", null, null));
   }
 
   @Test
@@ -43,7 +45,7 @@ class EncounterServiceTest {
     Encounter stored = new Encounter();
     fhir.givenStored(stored, "e1");
 
-    assertThat(service.getEncounter("e1").getIdElement().getIdPart()).isEqualTo("e1");
+    assertThat(service.getEncounter("e1").id()).isEqualTo("e1");
   }
 
   @Test
@@ -62,10 +64,13 @@ class EncounterServiceTest {
 
   @Test
   void listsEncountersForPatient() {
-    Bundle encounters = bundleOf(new Encounter());
-    fhir.givenSearchResult(Encounter.class, encounters);
+    Encounter stored = new Encounter();
+    stored.setId("e1");
+    fhir.givenSearchResult(Encounter.class, bundleOf(stored));
 
-    assertThat(service.getEncountersForPatient("p1")).isSameAs(encounters);
+    assertThat(service.getEncountersForPatient("p1").items())
+        .extracting(EncounterResponse::id)
+        .containsExactly("e1");
     assertThat(fhir.lastSearchCriteria(Encounter.class))
         .containsExactlyInAnyOrder("subject=Patient/p1");
   }

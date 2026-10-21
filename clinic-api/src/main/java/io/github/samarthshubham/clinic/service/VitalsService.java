@@ -3,8 +3,12 @@ package io.github.samarthshubham.clinic.service;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.ReferenceClientParam;
 import ca.uhn.fhir.rest.gclient.TokenClientParam;
+import io.github.samarthshubham.clinic.dto.ObservationResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.dto.VitalsRequest;
 import io.github.samarthshubham.clinic.mapper.ObservationMapper;
+import io.github.samarthshubham.clinic.mapper.PageMapper;
+import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r4.model.Bundle;
@@ -38,24 +42,21 @@ public class VitalsService {
     this.conditionEvaluationService = conditionEvaluationService;
   }
 
-  public Bundle recordVitals(VitalsRequest request) {
-    Bundle result = new Bundle();
-    result.setType(Bundle.BundleType.COLLECTION);
-    observationMapper
-        .toFhirObservations(request)
-        .forEach(
+  public List<ObservationResponse> recordVitals(VitalsRequest request) {
+    return observationMapper.toFhirObservations(request).stream()
+        .map(
             obs -> {
               var outcome = fhirClient.create().resource(obs).execute();
               String id = outcome.getId().getIdPart();
               Observation created =
                   fhirClient.read().resource(Observation.class).withId(id).execute();
-              result.addEntry().setResource(created);
               triggerConditionEvaluation(request.patientId(), created);
-            });
-    return result;
+              return observationMapper.toResponse(created);
+            })
+        .toList();
   }
 
-  public Bundle getVitals(String patientId, String type) {
+  public PageResponse<ObservationResponse> getVitals(String patientId, String type) {
     var query =
         fhirClient
             .search()
@@ -69,7 +70,7 @@ public class VitalsService {
                   .exactly()
                   .systemAndCode(LOINC_SYSTEM, TYPE_TO_LOINC.get(type)));
     }
-    return query.execute();
+    return PageMapper.toPage(query.execute(), Observation.class, observationMapper::toResponse);
   }
 
   private void triggerConditionEvaluation(String patientId, Observation obs) {

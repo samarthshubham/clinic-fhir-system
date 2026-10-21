@@ -5,9 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.samarthshubham.clinic.dto.GoalRequest;
+import io.github.samarthshubham.clinic.dto.GoalResponse;
 import java.time.LocalDate;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.Coding;
+import org.hl7.fhir.r4.model.DateType;
 import org.hl7.fhir.r4.model.Goal;
 import org.hl7.fhir.r4.model.Quantity;
 import org.junit.jupiter.api.Test;
@@ -86,5 +88,49 @@ class GoalMapperTest {
 
     assertThat(withoutValue.getTarget()).isEmpty();
     assertThat(withoutCode.getTarget()).isEmpty();
+  }
+
+  @Test
+  void toResponseIsTheReverseOfToFhir() {
+    Goal goal =
+        mapper.toFhir(
+            new GoalRequest(
+                "p1", "Lower BP", "active", "8480-6", "Systolic BP", 130.0, "mm[Hg]", DUE));
+    goal.setId("g1");
+
+    assertThat(mapper.toResponse(goal))
+        .isEqualTo(
+            new GoalResponse(
+                "g1", "p1", "Lower BP", "active", "8480-6", "Systolic BP", 130.0, "mm[Hg]", DUE));
+  }
+
+  @Test
+  void toResponseWithoutTargetLeavesTargetFieldsNull() {
+    Goal goal =
+        mapper.toFhir(new GoalRequest("p1", "Walk daily", "active", null, null, null, null, DUE));
+    goal.setId("g1");
+
+    assertThat(mapper.toResponse(goal))
+        .isEqualTo(
+            new GoalResponse("g1", "p1", "Walk daily", "active", null, null, null, null, null));
+  }
+
+  @Test
+  void toResponseToleratesTargetWithoutMeasureOrDetail() {
+    Goal goal = new Goal();
+    goal.addTarget();
+    goal.setId("g1");
+
+    assertThat(mapper.toResponse(goal))
+        .isEqualTo(new GoalResponse("g1", null, null, null, null, null, null, null, null));
+  }
+
+  @Test
+  void toResponseKeepsTheStoredTargetDate() {
+    Goal goal = new Goal();
+    goal.addTarget().setDue(new DateType("2026-09-30"));
+    goal.setId("g1");
+
+    assertThat(mapper.toResponse(goal).targetDate()).isEqualTo(DUE);
   }
 }

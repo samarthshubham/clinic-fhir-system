@@ -6,11 +6,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.samarthshubham.clinic.dto.CarePlanRequest;
+import io.github.samarthshubham.clinic.dto.CarePlanResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.CarePlanMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
 import java.time.LocalDate;
-import org.hl7.fhir.r4.model.Bundle;
+import java.util.List;
 import org.hl7.fhir.r4.model.CarePlan;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,13 +29,15 @@ class CarePlanServiceTest {
 
   @Test
   void createStoresMappedPlanAndReturnsTheStoredCopy() {
-    CarePlan plan =
+    CarePlanResponse plan =
         service.createCarePlan(
             new CarePlanRequest("p1", null, "BP control", "active", LocalDate.now(), null));
 
-    assertThat(fhir.created()).singleElement().isNotSameAs(plan);
-    assertThat(plan.getIdElement().getIdPart()).isEqualTo("1");
-    assertThat(plan.getTitle()).isEqualTo("BP control");
+    assertThat(fhir.created()).singleElement().isInstanceOf(CarePlan.class);
+    assertThat(plan)
+        .isEqualTo(
+            new CarePlanResponse(
+                "1", "p1", List.of(), "BP control", "active", LocalDate.now(), List.of()));
   }
 
   @Test
@@ -61,10 +64,13 @@ class CarePlanServiceTest {
 
   @Test
   void listsPlansForPatient() {
-    Bundle plans = bundleOf(new CarePlan());
-    fhir.givenSearchResult(CarePlan.class, plans);
+    CarePlan stored = new CarePlan();
+    stored.setId("cp1");
+    fhir.givenSearchResult(CarePlan.class, bundleOf(stored));
 
-    assertThat(service.getCarePlansForPatient("p1")).isSameAs(plans);
+    assertThat(service.getCarePlansForPatient("p1").items())
+        .extracting(CarePlanResponse::id)
+        .containsExactly("cp1");
     assertThat(fhir.lastSearchCriteria(CarePlan.class))
         .containsExactlyInAnyOrder("subject=Patient/p1");
   }

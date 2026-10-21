@@ -4,8 +4,11 @@ import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.DateClientParam;
 import ca.uhn.fhir.rest.gclient.ReferenceClientParam;
 import io.github.samarthshubham.clinic.dto.AppointmentRequest;
+import io.github.samarthshubham.clinic.dto.AppointmentResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.AppointmentMapper;
+import io.github.samarthshubham.clinic.mapper.PageMapper;
 import java.time.LocalDate;
 import org.hl7.fhir.r4.model.Appointment;
 import org.hl7.fhir.r4.model.Bundle;
@@ -22,10 +25,11 @@ public class AppointmentService {
     this.appointmentMapper = appointmentMapper;
   }
 
-  public Appointment createAppointment(AppointmentRequest request) {
+  public AppointmentResponse createAppointment(AppointmentRequest request) {
     var outcome = fhirClient.create().resource(appointmentMapper.toFhir(request)).execute();
     String id = outcome.getId().getIdPart();
-    return fhirClient.read().resource(Appointment.class).withId(id).execute();
+    return appointmentMapper.toResponse(
+        fhirClient.read().resource(Appointment.class).withId(id).execute());
   }
 
   public Appointment getAppointment(String id) {
@@ -36,13 +40,15 @@ public class AppointmentService {
     }
   }
 
-  public Bundle getAppointmentsForPatient(String patientId) {
-    return fhirClient
-        .search()
-        .forResource(Appointment.class)
-        .where(new ReferenceClientParam("actor").hasId("Patient/" + patientId))
-        .returnBundle(Bundle.class)
-        .execute();
+  public PageResponse<AppointmentResponse> getAppointmentsForPatient(String patientId) {
+    Bundle bundle =
+        fhirClient
+            .search()
+            .forResource(Appointment.class)
+            .where(new ReferenceClientParam("actor").hasId("Patient/" + patientId))
+            .returnBundle(Bundle.class)
+            .execute();
+    return PageMapper.toPage(bundle, Appointment.class, appointmentMapper::toResponse);
   }
 
   public Bundle getUpcomingAppointmentsForPatient(String patientId) {

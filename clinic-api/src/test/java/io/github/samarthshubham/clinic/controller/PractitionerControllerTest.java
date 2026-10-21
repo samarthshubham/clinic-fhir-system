@@ -7,9 +7,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.github.samarthshubham.clinic.dto.PractitionerRequest;
+import io.github.samarthshubham.clinic.dto.PractitionerResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.service.PractitionerService;
-import org.hl7.fhir.r4.model.Practitioner;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -26,10 +26,11 @@ class PractitionerControllerTest {
   @MockitoBean private PractitionerService practitionerService;
 
   @Test
-  void createReturnsCreatedWithFhirPractitioner() {
-    Practitioner created = new Practitioner();
-    created.setId("pr1");
-    when(practitionerService.createPractitioner(any())).thenReturn(created);
+  void createReturnsCreatedWithPractitionerResponse() {
+    when(practitionerService.createPractitioner(any()))
+        .thenReturn(
+            new PractitionerResponse(
+                "pr1", "Anil", "Rao", "Cardiology", "1234567890", "anil@example.com"));
 
     assertThat(
             mvc.post()
@@ -41,10 +42,13 @@ class PractitionerControllerTest {
                      "npi":"1234567890","email":"anil@example.com"}
                     """))
         .hasStatus(HttpStatus.CREATED)
-        .hasContentType("application/fhir+json")
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.id")
-        .isEqualTo("pr1");
+        .isLenientlyEqualTo(
+            """
+            {"id":"pr1","firstName":"Anil","lastName":"Rao","specialty":"Cardiology",
+             "npi":"1234567890","email":"anil@example.com"}
+            """);
     verify(practitionerService)
         .createPractitioner(
             new PractitionerRequest("Anil", "Rao", "Cardiology", "1234567890", "anil@example.com"));
@@ -69,16 +73,17 @@ class PractitionerControllerTest {
 
   @Test
   void getReturnsPractitionerById() {
-    Practitioner practitioner = new Practitioner();
-    practitioner.setId("pr1");
-    when(practitionerService.getPractitioner("pr1")).thenReturn(practitioner);
+    when(practitionerService.getPractitioner("pr1"))
+        .thenReturn(new PractitionerResponse("pr1", "Anil", "Rao", "Cardiology", null, null));
 
     assertThat(mvc.get().uri("/api/practitioners/pr1"))
         .hasStatusOk()
-        .hasContentType("application/fhir+json")
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.id")
-        .isEqualTo("pr1");
+        .isLenientlyEqualTo(
+            """
+            {"id":"pr1","firstName":"Anil","lastName":"Rao","specialty":"Cardiology"}
+            """);
   }
 
   @Test

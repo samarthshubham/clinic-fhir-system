@@ -20,7 +20,7 @@ HAPI FHIR JPA Server v7.4.0  (port 8080)
 PostgreSQL 15  (owned entirely by HAPI — Spring Boot never queries it directly)
 ```
 
-**Spring Boot is not a pass-through proxy.** It owns all business logic, DTO validation, and DTO↔FHIR mapping. The target is that FHIR types never reach the HTTP client (see **Known gap** under Key Rules).
+**Spring Boot is not a pass-through proxy.** It owns all business logic, DTO validation, and DTO↔FHIR mapping. FHIR types never reach the HTTP client: every endpoint returns plain JSON DTOs.
 
 ---
 
@@ -29,13 +29,13 @@ PostgreSQL 15  (owned entirely by HAPI — Spring Boot never queries it directly
 ```
 clinic-api/         Spring Boot backend (Maven)
   src/main/java/io/github/samarthshubham/clinic/
-    config/         FhirConfig, FhirHttpMessageConverter, ClinicalThresholds
+    config/         FhirConfig, ClinicalThresholds
     controller/     PatientController, EncounterController, VitalsController,
                     PractitionerController, ConditionController, MedicationController,
                     AppointmentController, ServiceRequestController,
                     DiagnosticReportController, CarePlanController, GoalController,
                     DashboardController, AlertController
-    service/        PatientService, EncounterService, VitalsService, SummaryService,
+    service/        PatientService, EncounterService, VitalsService,
                     PractitionerService, ConditionService, MedicationService,
                     AppointmentService, ServiceRequestService, DiagnosticReportService,
                     CarePlanService, GoalService,
@@ -45,11 +45,15 @@ clinic-api/         Spring Boot backend (Maven)
     mapper/         PatientMapper, EncounterMapper, ObservationMapper,
                     PractitionerMapper, ConditionMapper, MedicationMapper,
                     AppointmentMapper, ServiceRequestMapper, DiagnosticReportMapper,
-                    CarePlanMapper, GoalMapper
+                    CarePlanMapper, GoalMapper, PageMapper (search result → PageResponse)
     dto/            PatientRequest, EncounterRequest, VitalsRequest,
                     PractitionerRequest, ConditionRequest, MedicationRequest,
                     AppointmentRequest, ServiceRequestRequest, DiagnosticReportRequest,
                     CarePlanRequest, GoalRequest,
+                    PatientResponse, EncounterResponse, ObservationResponse,
+                    PractitionerResponse, ConditionResponse, MedicationResponse,
+                    AppointmentResponse, ServiceRequestResponse, DiagnosticReportResponse,
+                    CarePlanResponse, GoalResponse, PageResponse<T>,
                     SnapshotResponse, TrendsResponse, TimelineEvent, DashboardResponse,
                     AlertItem, VitalReading, LatestVitals, GoalProgress,
                     DataPoint, BpSeries, SimpleSeries, ClinicianAlert  (all Java records)
@@ -178,7 +182,8 @@ This is a personal project. Keep commits lightweight.
 - **DTOs** are Java `record` types. Use `@NotBlank`, `@NotNull` from `jakarta.validation`. Annotate controller params with `@Valid`.
 - **Controllers** do HTTP routing only — `@RestController`, `@RequestMapping`, `ResponseEntity<T>`. No business logic.
 - **Services** hold business logic. Constructor injection only (no `@Autowired` on fields). Inject `IGenericClient` + mapper.
-- **Mappers** are `@Component` classes. FHIR types (`org.hl7.fhir.r4.model.*`) are confined here and in services — **never in controller signatures or DTOs** (see **Known gap** under Key Rules).
+- **Mappers** are `@Component` classes with `toFhir(request)` and `toResponse(resource)`. FHIR types (`org.hl7.fhir.r4.model.*`) are confined here and in services — **never in controllers or DTOs** (enforced by `ArchitectureTest`, ArchUnit).
+- **Services** return response DTOs to controllers. When another service needs the FHIR resource, expose a separate method (e.g. `PatientService.findPatient` → `Patient`, `getPatient` → `PatientResponse`).
 - **Config** uses `@Configuration` + `@Bean`. `IGenericClient` is thread-safe; one shared bean.
 - **Error response shape**: `{ "status": int, "message": String }` — plain JSON, not FHIR.
 - **`ResourceNotFoundException(resourceType, id)`** — throw when HAPI returns 404.
@@ -187,10 +192,12 @@ This is a personal project. Keep commits lightweight.
 - **No comments** unless the WHY is non-obvious.
 
 ### Response format
-- **FHIR CRUD endpoints** return native FHIR R4 with `Content-Type: application/fhir+json`. Serialization handled by `FhirHttpMessageConverter` (per-request `IParser` — not thread-safe, never share).
-  - `POST`, `GET /{id}` → single FHIR resource
-  - `GET ?query` → `Bundle` (`searchset` from HAPI, `collection` for manual aggregations)
-- **Experience API endpoints** (`/snapshot`, `/trends`, `/timeline`, `/dashboard`) return plain JSON POJOs (`Content-Type: application/json`). These are flat DTOs, not FHIR resources.
+All endpoints return plain JSON (`Content-Type: application/json`) via Spring's default Jackson converter. No FHIR resource is ever serialized to the client.
+- **CRUD endpoints** return flat response records: `id`, the matching `*Request` fields, and a few read-only extras (e.g. `PatientResponse.active`). References are flattened to ids (`patientId`, `encounterId`, …). Missing fields are `null`. Dates come from the stored FHIR value, not the server's time zone.
+  - `POST`, `GET /{id}` → single `XResponse`
+  - `GET ?query` → `PageResponse<XResponse>` `{ "items": [...], "total": n }` (`items` = first page of HAPI results, `total` = HAPI's total; no paging yet)
+  - `POST /api/vitals` → `ObservationResponse[]` (one per recorded vital)
+- **Experience API endpoints** (`/snapshot`, `/trends`, `/timeline`, `/dashboard`) return aggregated DTOs.
 
 ---
 
@@ -339,18 +346,17 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 
 Base URL: `http://localhost:9090`
 
-### FHIR CRUD — return `application/fhir+json`
+### CRUD — return response DTOs (`application/json`)
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/patients` | Register patient |
-| `GET` | `/api/patients/{id}` | Get patient |
-| `GET` | `/api/patients?name=&dob=` | Search patients |
-| `GET` | `/api/patients/{id}/summary` | Legacy FHIR Bundle summary (Patient + Encounters + Observations) |
+| `POST` | `/api/patients` | Register patient → `PatientResponse` |
+| `GET` | `/api/patients/{id}` | Get patient → `PatientResponse` |
+| `GET` | `/api/patients?name=&dob=` | Search patients → `PageResponse<PatientResponse>` |
 | `POST` | `/api/encounters` | Record visit (optional `practitionerId`) |
 | `GET` | `/api/encounters/{id}` | Get encounter |
 | `GET` | `/api/encounters?patientId={id}` | List encounters |
-| `POST` | `/api/vitals` | Record vitals — auto-evaluates conditions on creation |
+| `POST` | `/api/vitals` | Record vitals → `ObservationResponse[]` — auto-evaluates conditions on creation |
 | `GET` | `/api/vitals?patientId={id}` | All vitals for patient |
 | `GET` | `/api/vitals?patientId={id}&type=weight` | Filter by type (`systolic`, `diastolic`, `weight`, `spo2`) |
 | `POST` | `/api/practitioners` | Register practitioner |
@@ -559,11 +565,9 @@ color: #334155;
 
 ## Key Rules (do not violate)
 
-1. FHIR types (`org.hl7.fhir.r4.model.*`) never appear in controller signatures or DTOs. New code must follow this.
+1. FHIR types (`org.hl7.fhir.*`) never appear in controllers or DTOs. `ArchitectureTest` (ArchUnit) fails `./mvnw verify` otherwise.
 2. Spring Boot never queries PostgreSQL directly — all data access goes through HAPI FHIR REST.
 3. Do not reimplement Angular Material components with custom SCSS.
 4. One shared `IGenericClient` bean (thread-safe). `IParser` instances are per-request (not thread-safe).
 5. All request bodies annotated with `@Valid` at the controller.
 6. Error responses are `{ "status": int, "message": String }` plain JSON, not FHIR OperationOutcome.
-
-**Known gap:** the FHIR CRUD controllers still return HAPI types (`ResponseEntity<Patient>`, `ResponseEntity<Bundle>`) and are documented that way under "Response format". Rule 1 is enforced for new code; existing controllers move to response DTOs in issue #4.

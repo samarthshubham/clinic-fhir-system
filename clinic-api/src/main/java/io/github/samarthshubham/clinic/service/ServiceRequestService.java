@@ -3,8 +3,11 @@ package io.github.samarthshubham.clinic.service;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.ReferenceClientParam;
 import ca.uhn.fhir.rest.gclient.TokenClientParam;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.dto.ServiceRequestRequest;
+import io.github.samarthshubham.clinic.dto.ServiceRequestResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
+import io.github.samarthshubham.clinic.mapper.PageMapper;
 import io.github.samarthshubham.clinic.mapper.ServiceRequestMapper;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.ServiceRequest;
@@ -22,13 +25,18 @@ public class ServiceRequestService {
     this.serviceRequestMapper = serviceRequestMapper;
   }
 
-  public ServiceRequest createServiceRequest(ServiceRequestRequest request) {
+  public ServiceRequestResponse createServiceRequest(ServiceRequestRequest request) {
     var outcome = fhirClient.create().resource(serviceRequestMapper.toFhir(request)).execute();
     String id = outcome.getId().getIdPart();
-    return fhirClient.read().resource(ServiceRequest.class).withId(id).execute();
+    return serviceRequestMapper.toResponse(
+        fhirClient.read().resource(ServiceRequest.class).withId(id).execute());
   }
 
-  public ServiceRequest getServiceRequest(String id) {
+  public ServiceRequestResponse getServiceRequest(String id) {
+    return serviceRequestMapper.toResponse(findServiceRequest(id));
+  }
+
+  public ServiceRequest findServiceRequest(String id) {
     try {
       return fhirClient.read().resource(ServiceRequest.class).withId(id).execute();
     } catch (ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException e) {
@@ -36,7 +44,8 @@ public class ServiceRequestService {
     }
   }
 
-  public Bundle getServiceRequestsForPatient(String patientId, String status) {
+  public PageResponse<ServiceRequestResponse> getServiceRequestsForPatient(
+      String patientId, String status) {
     var query =
         fhirClient
             .search()
@@ -46,10 +55,11 @@ public class ServiceRequestService {
     if (status != null && !status.isBlank()) {
       query = query.and(new TokenClientParam("status").exactly().code(status));
     }
-    return query.execute();
+    return PageMapper.toPage(
+        query.execute(), ServiceRequest.class, serviceRequestMapper::toResponse);
   }
 
-  public Bundle getPendingServiceRequestsForPatient(String patientId) {
+  public Bundle findPendingServiceRequestsForPatient(String patientId) {
     return fhirClient
         .search()
         .forResource(ServiceRequest.class)
@@ -61,7 +71,7 @@ public class ServiceRequestService {
   }
 
   public void complete(String id) {
-    ServiceRequest sr = getServiceRequest(id);
+    ServiceRequest sr = findServiceRequest(id);
     sr.setStatus(ServiceRequest.ServiceRequestStatus.COMPLETED);
     fhirClient.update().resource(sr).execute();
   }

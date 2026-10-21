@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.samarthshubham.clinic.dto.DiagnosticReportRequest;
+import io.github.samarthshubham.clinic.dto.DiagnosticReportResponse;
 import java.time.LocalDate;
 import java.util.List;
 import org.hl7.fhir.exceptions.FHIRException;
@@ -65,5 +66,38 @@ class DiagnosticReportMapperTest {
     assertThat(report.getBasedOn()).isEmpty();
     assertThat(report.hasConclusion()).isFalse();
     assertThat(report.getResult()).isEmpty();
+  }
+
+  @Test
+  void toResponseIsTheReverseOfToFhir() {
+    DiagnosticReport report =
+        mapper.toFhir(
+            new DiagnosticReportRequest(
+                "p1", "e1", "sr1", "Lipid panel", "final", ISSUED, "Normal", List.of("o1", "o2")));
+    report.setId("r1");
+
+    assertThat(mapper.toResponse(report))
+        .isEqualTo(
+            new DiagnosticReportResponse(
+                "r1",
+                "p1",
+                "e1",
+                "sr1",
+                "Lipid panel",
+                "final",
+                ISSUED,
+                "Normal",
+                List.of("o1", "o2")));
+  }
+
+  @Test
+  void toResponseLeavesMissingFieldsNullAndResultsEmpty() {
+    DiagnosticReport report = new DiagnosticReport();
+    report.setId("r1");
+
+    assertThat(mapper.toResponse(report))
+        .isEqualTo(
+            new DiagnosticReportResponse(
+                "r1", null, null, null, null, null, null, null, List.of()));
   }
 }

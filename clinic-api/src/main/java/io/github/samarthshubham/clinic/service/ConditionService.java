@@ -4,8 +4,11 @@ import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.ReferenceClientParam;
 import ca.uhn.fhir.rest.gclient.TokenClientParam;
 import io.github.samarthshubham.clinic.dto.ConditionRequest;
+import io.github.samarthshubham.clinic.dto.ConditionResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.ConditionMapper;
+import io.github.samarthshubham.clinic.mapper.PageMapper;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Condition;
 import org.springframework.stereotype.Service;
@@ -24,30 +27,34 @@ public class ConditionService {
     this.conditionMapper = conditionMapper;
   }
 
-  public Condition createCondition(ConditionRequest request) {
+  public ConditionResponse createCondition(ConditionRequest request) {
     var outcome = fhirClient.create().resource(conditionMapper.toFhir(request)).execute();
     String id = outcome.getId().getIdPart();
-    return fhirClient.read().resource(Condition.class).withId(id).execute();
+    return conditionMapper.toResponse(
+        fhirClient.read().resource(Condition.class).withId(id).execute());
   }
 
-  public Condition getCondition(String id) {
+  public ConditionResponse getCondition(String id) {
     try {
-      return fhirClient.read().resource(Condition.class).withId(id).execute();
+      return conditionMapper.toResponse(
+          fhirClient.read().resource(Condition.class).withId(id).execute());
     } catch (ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException e) {
       throw new ResourceNotFoundException("Condition", id);
     }
   }
 
-  public Bundle getConditionsForPatient(String patientId) {
-    return fhirClient
-        .search()
-        .forResource(Condition.class)
-        .where(new ReferenceClientParam("subject").hasId("Patient/" + patientId))
-        .returnBundle(Bundle.class)
-        .execute();
+  public PageResponse<ConditionResponse> getConditionsForPatient(String patientId) {
+    Bundle bundle =
+        fhirClient
+            .search()
+            .forResource(Condition.class)
+            .where(new ReferenceClientParam("subject").hasId("Patient/" + patientId))
+            .returnBundle(Bundle.class)
+            .execute();
+    return PageMapper.toPage(bundle, Condition.class, conditionMapper::toResponse);
   }
 
-  public Bundle getActiveConditionsForPatient(String patientId) {
+  public Bundle findActiveConditionsForPatient(String patientId) {
     return fhirClient
         .search()
         .forResource(Condition.class)

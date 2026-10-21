@@ -4,6 +4,7 @@ import static io.github.samarthshubham.clinic.support.FhirDates.localDate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.samarthshubham.clinic.dto.ConditionRequest;
+import io.github.samarthshubham.clinic.dto.ConditionResponse;
 import java.time.LocalDate;
 import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Condition;
@@ -40,5 +41,28 @@ class ConditionMapperTest {
         mapper.toFhir(new ConditionRequest("p1", null, "86290005", "Hypoxemia", "active", ONSET));
 
     assertThat(condition.hasEncounter()).isFalse();
+  }
+
+  @Test
+  void toResponseIsTheReverseOfToFhir() {
+    Condition condition =
+        mapper.toFhir(
+            new ConditionRequest(
+                "p1", "e1", "59621000", "Essential hypertension", "active", ONSET));
+    condition.setId("c1");
+
+    assertThat(mapper.toResponse(condition))
+        .isEqualTo(
+            new ConditionResponse(
+                "c1", "p1", "e1", "59621000", "Essential hypertension", "active", ONSET));
+  }
+
+  @Test
+  void toResponseLeavesMissingFieldsNull() {
+    Condition condition = new Condition();
+    condition.setId("c1");
+
+    assertThat(mapper.toResponse(condition))
+        .isEqualTo(new ConditionResponse("c1", null, null, null, null, null, null));
   }
 }

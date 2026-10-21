@@ -1,11 +1,11 @@
 package io.github.samarthshubham.clinic.controller;
 
 import io.github.samarthshubham.clinic.dto.AppointmentRequest;
+import io.github.samarthshubham.clinic.dto.AppointmentResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.service.AppointmentService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import org.hl7.fhir.r4.model.Appointment;
-import org.hl7.fhir.r4.model.Bundle;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,14 +26,14 @@ public class AppointmentController {
   }
 
   @PostMapping
-  public ResponseEntity<Appointment> createAppointment(
+  public ResponseEntity<AppointmentResponse> createAppointment(
       @Valid @RequestBody AppointmentRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(appointmentService.createAppointment(request));
   }
 
   @GetMapping
-  public ResponseEntity<Bundle> getAppointmentsForPatient(
+  public ResponseEntity<PageResponse<AppointmentResponse>> getAppointmentsForPatient(
       @RequestParam @NotBlank String patientId) {
     return ResponseEntity.ok(appointmentService.getAppointmentsForPatient(patientId));
   }

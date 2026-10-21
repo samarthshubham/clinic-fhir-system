@@ -93,21 +93,23 @@ class DashboardServiceTest {
             carePlanService,
             goalService,
             practitionerService,
+            new PatientMapper(),
+            new EncounterMapper(),
             fhir.client(),
             ORG_ID);
-    lenient().when(patientService.getPatient("p1")).thenReturn(patient());
+    lenient().when(patientService.findPatient("p1")).thenReturn(patient());
     lenient().when(snapshotService.getSnapshot("p1")).thenReturn(snapshot);
     lenient()
         .when(appointmentService.getUpcomingAppointmentsForPatient("p1"))
         .thenReturn(new Bundle());
     lenient()
-        .when(serviceRequestService.getPendingServiceRequestsForPatient("p1"))
+        .when(serviceRequestService.findPendingServiceRequestsForPatient("p1"))
         .thenReturn(new Bundle());
     lenient()
         .when(diagnosticReportService.getMostRecentDiagnosticReport("p1"))
         .thenReturn(new Bundle());
     lenient().when(carePlanService.getActiveCarePlanForPatient("p1")).thenReturn(new Bundle());
-    lenient().when(practitionerService.getPractitioner("dr1")).thenReturn(house());
+    lenient().when(practitionerService.findPractitioner("dr1")).thenReturn(house());
     fhir.givenStored(new Organization().setName("Praxis Clinic"), ORG_ID);
   }
 
@@ -123,7 +125,7 @@ class DashboardServiceTest {
 
   @Test
   void unknownPatientFailsTheWholeDashboard() {
-    when(patientService.getPatient("missing"))
+    when(patientService.findPatient("missing"))
         .thenThrow(new ResourceNotFoundException("Patient", "missing"));
 
     assertThatThrownBy(() -> service.getDashboard("missing"))
@@ -135,7 +137,7 @@ class DashboardServiceTest {
     givenRecentEncounters(encounter("e1", DAY, "dr1"), encounter("e2", DAY.minusDays(30), null));
     when(appointmentService.getUpcomingAppointmentsForPatient("p1"))
         .thenReturn(bundleOf(appointment()));
-    when(serviceRequestService.getPendingServiceRequestsForPatient("p1"))
+    when(serviceRequestService.findPendingServiceRequestsForPatient("p1"))
         .thenReturn(bundleOf(serviceRequest()));
     when(diagnosticReportService.getMostRecentDiagnosticReport("p1"))
         .thenReturn(bundleOf(report()));
@@ -188,13 +190,13 @@ class DashboardServiceTest {
     DashboardResponse dashboard = service.getDashboard("p1");
 
     assertThat(dashboard.careTeam()).doesNotContainKey("primaryDoctor");
-    verify(practitionerService, never()).getPractitioner(anyString());
+    verify(practitionerService, never()).findPractitioner(anyString());
   }
 
   @Test
   void unresolvablePractitionerIsAWarningAndLeavesOutProviders() {
     givenRecentEncounters(encounter("e1", DAY, "dr1"));
-    when(practitionerService.getPractitioner("dr1"))
+    when(practitionerService.findPractitioner("dr1"))
         .thenThrow(new ResourceNotFoundException("Practitioner", "dr1"));
     when(appointmentService.getUpcomingAppointmentsForPatient("p1"))
         .thenReturn(bundleOf(appointment()));
@@ -247,7 +249,7 @@ class DashboardServiceTest {
       case "appointments" ->
           when(appointmentService.getUpcomingAppointmentsForPatient("p1")).thenThrow(failure);
       case "service-requests" ->
-          when(serviceRequestService.getPendingServiceRequestsForPatient("p1")).thenThrow(failure);
+          when(serviceRequestService.findPendingServiceRequestsForPatient("p1")).thenThrow(failure);
       case "diagnostic-reports" ->
           when(diagnosticReportService.getMostRecentDiagnosticReport("p1")).thenThrow(failure);
       default -> when(carePlanService.getActiveCarePlanForPatient("p1")).thenThrow(failure);
@@ -491,7 +493,7 @@ class DashboardServiceTest {
         .when(appointmentService.getUpcomingAppointmentsForPatient("p1"))
         .thenReturn(bundleOf(appointment()));
     lenient()
-        .when(serviceRequestService.getPendingServiceRequestsForPatient("p1"))
+        .when(serviceRequestService.findPendingServiceRequestsForPatient("p1"))
         .thenReturn(bundleOf(serviceRequest()));
     lenient()
         .when(diagnosticReportService.getMostRecentDiagnosticReport("p1"))

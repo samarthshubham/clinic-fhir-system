@@ -1,17 +1,17 @@
 package io.github.samarthshubham.clinic.controller;
 
-import static io.github.samarthshubham.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.dto.ServiceRequestRequest;
+import io.github.samarthshubham.clinic.dto.ServiceRequestResponse;
 import io.github.samarthshubham.clinic.service.ServiceRequestService;
 import java.time.LocalDate;
-import org.hl7.fhir.r4.model.ServiceRequest;
-import org.hl7.fhir.r4.model.ServiceRequest.ServiceRequestStatus;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -23,14 +23,32 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 @WebMvcTest(ServiceRequestController.class)
 class ServiceRequestControllerTest {
 
+  private static final ServiceRequestResponse LIPID_PANEL =
+      new ServiceRequestResponse(
+          "sr1",
+          "p1",
+          "e1",
+          "pr1",
+          "Lipid panel",
+          "laboratory",
+          "active",
+          "routine",
+          LocalDate.of(2024, 5, 1));
+
+  private static final String LIPID_PANEL_JSON =
+      """
+      {"id":"sr1","patientId":"p1","encounterId":"e1","practitionerId":"pr1",
+       "code":"Lipid panel","category":"laboratory","status":"active","priority":"routine",
+       "authoredOn":"2024-05-01"}
+      """;
+
   @Autowired private MockMvcTester mvc;
 
   @MockitoBean private ServiceRequestService serviceRequestService;
 
   @Test
-  void createReturnsCreatedWithFhirServiceRequest() {
-    when(serviceRequestService.createServiceRequest(any()))
-        .thenReturn(new ServiceRequest().setStatus(ServiceRequestStatus.ACTIVE));
+  void createReturnsCreatedWithServiceRequestResponse() {
+    when(serviceRequestService.createServiceRequest(any())).thenReturn(LIPID_PANEL);
 
     assertThat(
             mvc.post()
@@ -43,10 +61,9 @@ class ServiceRequestControllerTest {
                      "priority":"routine","authoredOn":"2024-05-01"}
                     """))
         .hasStatus(HttpStatus.CREATED)
-        .hasContentType("application/fhir+json")
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.status")
-        .isEqualTo("active");
+        .isStrictlyEqualTo(LIPID_PANEL_JSON);
     verify(serviceRequestService)
         .createServiceRequest(
             new ServiceRequestRequest(
@@ -80,21 +97,19 @@ class ServiceRequestControllerTest {
 
   @Test
   void getReturnsServiceRequestById() {
-    ServiceRequest serviceRequest = new ServiceRequest();
-    serviceRequest.setId("sr1");
-    when(serviceRequestService.getServiceRequest("sr1")).thenReturn(serviceRequest);
+    when(serviceRequestService.getServiceRequest("sr1")).thenReturn(LIPID_PANEL);
 
     assertThat(mvc.get().uri("/api/service-requests/sr1"))
         .hasStatusOk()
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.id")
-        .isEqualTo("sr1");
+        .isStrictlyEqualTo(LIPID_PANEL_JSON);
   }
 
   @Test
   void listForwardsPatientIdAndStatusFilter() {
     when(serviceRequestService.getServiceRequestsForPatient("p1", "active"))
-        .thenReturn(bundleOf(new ServiceRequest().setStatus(ServiceRequestStatus.ACTIVE)));
+        .thenReturn(new PageResponse<>(List.of(LIPID_PANEL), 1));
 
     assertThat(
             mvc.get()
@@ -102,21 +117,21 @@ class ServiceRequestControllerTest {
                 .param("patientId", "p1")
                 .param("status", "active"))
         .hasStatusOk()
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.entry[0].resource.status")
-        .isEqualTo("active");
+        .isStrictlyEqualTo("{\"items\":[" + LIPID_PANEL_JSON + "],\"total\":1}");
   }
 
   @Test
   void listWithoutStatusPassesNullFilter() {
     when(serviceRequestService.getServiceRequestsForPatient("p1", null))
-        .thenReturn(bundleOf(new ServiceRequest().setStatus(ServiceRequestStatus.COMPLETED)));
+        .thenReturn(new PageResponse<>(List.of(), 0));
 
     assertThat(mvc.get().uri("/api/service-requests").param("patientId", "p1"))
         .hasStatusOk()
         .bodyJson()
-        .extractingPath("$.entry[0].resource.status")
-        .isEqualTo("completed");
+        .extractingPath("$.total")
+        .isEqualTo(0);
   }
 
   @Test

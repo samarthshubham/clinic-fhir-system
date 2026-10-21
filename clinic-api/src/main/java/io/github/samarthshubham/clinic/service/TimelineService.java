@@ -58,14 +58,17 @@ public class TimelineService {
   private final IGenericClient fhirClient;
   private final PractitionerService practitionerService;
   private final ClinicalThresholds thresholds;
+  private final EncounterMapper encounterMapper;
 
   public TimelineService(
       IGenericClient fhirClient,
       PractitionerService practitionerService,
-      ClinicalThresholds thresholds) {
+      ClinicalThresholds thresholds,
+      EncounterMapper encounterMapper) {
     this.fhirClient = fhirClient;
     this.practitionerService = practitionerService;
     this.thresholds = thresholds;
+    this.encounterMapper = encounterMapper;
   }
 
   public List<TimelineEvent> getTimeline(
@@ -136,15 +139,14 @@ public class TimelineService {
       Encounter enc = (Encounter) entry.getResource();
       String date = extractEncounterDate(enc);
       if (date == null) continue;
-      String practitionerId = extractAttendingPractitionerId(enc);
+      String practitionerId = encounterMapper.attendingPractitionerId(enc);
       Map<String, Object> metadata = new LinkedHashMap<>();
       if (practitionerId != null) metadata.put("_practitionerId", practitionerId);
       String reason =
           enc.hasReasonCode() && !enc.getReasonCode().isEmpty()
               ? enc.getReasonCodeFirstRep().getText()
               : null;
-      var noteExt = enc.getExtensionByUrl(EncounterMapper.NOTE_EXTENSION_URL);
-      String note = noteExt != null ? noteExt.getValue().primitiveValue() : null;
+      String note = encounterMapper.note(enc);
       String encId = enc.getIdElement().getIdPart();
       List<GroupedObservation> groupedObs = fetchGroupedObservations(encId);
       events.add(
@@ -332,7 +334,7 @@ public class TimelineService {
     Map<String, String> names = new HashMap<>();
     for (String id : ids) {
       try {
-        Practitioner p = practitionerService.getPractitioner(id);
+        Practitioner p = practitionerService.findPractitioner(id);
         String name =
             p.hasName()
                 ? "Dr. "
@@ -378,25 +380,6 @@ public class TimelineService {
       return start.toInstant().atZone(ZoneId.systemDefault()).toLocalDate().toString();
     }
     return null;
-  }
-
-  private String extractAttendingPractitionerId(Encounter enc) {
-    if (!enc.hasParticipant()) return null;
-    return enc.getParticipant().stream()
-        .filter(
-            p ->
-                p.hasType()
-                    && p.getType().stream()
-                        .anyMatch(
-                            t ->
-                                t.hasCoding()
-                                    && t.getCoding().stream()
-                                        .anyMatch(c -> "ATND".equals(c.getCode()))))
-        .map(p -> p.getIndividual().getReference())
-        .filter(ref -> ref != null && ref.startsWith("Practitioner/"))
-        .map(ref -> ref.replace("Practitioner/", ""))
-        .findFirst()
-        .orElse(null);
   }
 
   private List<GroupedObservation> fetchGroupedObservations(String encounterId) {

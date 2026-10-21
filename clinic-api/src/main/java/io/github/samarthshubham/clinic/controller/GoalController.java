@@ -1,11 +1,11 @@
 package io.github.samarthshubham.clinic.controller;
 
 import io.github.samarthshubham.clinic.dto.GoalRequest;
+import io.github.samarthshubham.clinic.dto.GoalResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.service.GoalService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import org.hl7.fhir.r4.model.Bundle;
-import org.hl7.fhir.r4.model.Goal;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,12 +26,13 @@ public class GoalController {
   }
 
   @PostMapping
-  public ResponseEntity<Goal> createGoal(@Valid @RequestBody GoalRequest request) {
+  public ResponseEntity<GoalResponse> createGoal(@Valid @RequestBody GoalRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(goalService.createGoal(request));
   }
 
   @GetMapping
-  public ResponseEntity<Bundle> getGoalsForPatient(@RequestParam @NotBlank String patientId) {
+  public ResponseEntity<PageResponse<GoalResponse>> getGoalsForPatient(
+      @RequestParam @NotBlank String patientId) {
     return ResponseEntity.ok(goalService.getGoalsForPatient(patientId));
   }
 }

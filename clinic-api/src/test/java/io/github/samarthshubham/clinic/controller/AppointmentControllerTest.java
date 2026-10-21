@@ -1,6 +1,5 @@
 package io.github.samarthshubham.clinic.controller;
 
-import static io.github.samarthshubham.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -8,9 +7,12 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.github.samarthshubham.clinic.dto.AppointmentRequest;
+import io.github.samarthshubham.clinic.dto.AppointmentResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.service.AppointmentService;
 import java.time.LocalDateTime;
-import org.hl7.fhir.r4.model.Appointment;
+import java.time.OffsetDateTime;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -22,15 +24,29 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 @WebMvcTest(AppointmentController.class)
 class AppointmentControllerTest {
 
+  private static final AppointmentResponse FOLLOW_UP =
+      new AppointmentResponse(
+          "a1",
+          "p1",
+          "pr1",
+          OffsetDateTime.parse("2024-06-01T09:00:00-04:00"),
+          OffsetDateTime.parse("2024-06-01T09:30:00-04:00"),
+          "Follow-up",
+          "booked");
+
+  private static final String FOLLOW_UP_JSON =
+      """
+      {"id":"a1","patientId":"p1","practitionerId":"pr1","start":"2024-06-01T09:00:00-04:00",
+       "end":"2024-06-01T09:30:00-04:00","description":"Follow-up","status":"booked"}
+      """;
+
   @Autowired private MockMvcTester mvc;
 
   @MockitoBean private AppointmentService appointmentService;
 
   @Test
-  void createReturnsCreatedWithFhirAppointment() {
-    Appointment created = new Appointment();
-    created.setId("a1");
-    when(appointmentService.createAppointment(any())).thenReturn(created);
+  void createReturnsCreatedWithAppointmentResponse() {
+    when(appointmentService.createAppointment(any())).thenReturn(FOLLOW_UP);
 
     assertThat(
             mvc.post()
@@ -42,10 +58,9 @@ class AppointmentControllerTest {
                      "end":"2024-06-01T09:30:00","description":"Follow-up","status":"booked"}
                     """))
         .hasStatus(HttpStatus.CREATED)
-        .hasContentType("application/fhir+json")
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.resourceType")
-        .isEqualTo("Appointment");
+        .isStrictlyEqualTo(FOLLOW_UP_JSON);
     verify(appointmentService)
         .createAppointment(
             new AppointmentRequest(
@@ -77,14 +92,13 @@ class AppointmentControllerTest {
   @Test
   void listReturnsAppointmentsForPatient() {
     when(appointmentService.getAppointmentsForPatient("p1"))
-        .thenReturn(bundleOf(new Appointment().setDescription("Follow-up")));
+        .thenReturn(new PageResponse<>(List.of(FOLLOW_UP), 1));
 
     assertThat(mvc.get().uri("/api/appointments").param("patientId", "p1"))
         .hasStatusOk()
-        .hasContentType("application/fhir+json")
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.entry[0].resource.description")
-        .isEqualTo("Follow-up");
+        .isStrictlyEqualTo("{\"items\":[" + FOLLOW_UP_JSON + "],\"total\":1}");
   }
 
   @Test

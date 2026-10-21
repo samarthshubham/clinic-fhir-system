@@ -1,18 +1,8 @@
 const SPRING_API = 'http://localhost:9090';
 const HAPI_FHIR = 'http://localhost:8080';
 
-export interface FhirEncounterResponse {
-  resourceType: 'Encounter';
+export interface CreatedResource {
   id: string;
-}
-
-export interface FhirResourceResponse {
-  resourceType: string;
-  id: string;
-}
-
-export interface FhirBundleResponse {
-  resourceType: 'Bundle';
 }
 
 export interface CreateEncounterBody {
@@ -306,44 +296,30 @@ class ApiClient {
     });
   }
 
-  createEncounter(body: CreateEncounterBody): Promise<FhirEncounterResponse> {
-    return this.post<FhirEncounterResponse>(
-      `${SPRING_API}/api/encounters`,
-      body,
-    );
+  createEncounter(body: CreateEncounterBody): Promise<CreatedResource> {
+    return this.post<CreatedResource>(`${SPRING_API}/api/encounters`, body);
   }
 
-  recordVitals(body: CreateVitalsBody): Promise<FhirBundleResponse> {
-    return this.post<FhirBundleResponse>(`${SPRING_API}/api/vitals`, body);
+  recordVitals(body: CreateVitalsBody): Promise<CreatedResource[]> {
+    return this.post<CreatedResource[]>(`${SPRING_API}/api/vitals`, body);
   }
 
-  createCondition(body: CreateConditionBody): Promise<FhirResourceResponse> {
-    return this.post<FhirResourceResponse>(
-      `${SPRING_API}/api/conditions`,
-      body,
-    );
+  createCondition(body: CreateConditionBody): Promise<CreatedResource> {
+    return this.post<CreatedResource>(`${SPRING_API}/api/conditions`, body);
   }
 
-  createMedication(body: CreateMedicationBody): Promise<FhirResourceResponse> {
-    return this.post<FhirResourceResponse>(
-      `${SPRING_API}/api/medications`,
-      body,
-    );
+  createMedication(body: CreateMedicationBody): Promise<CreatedResource> {
+    return this.post<CreatedResource>(`${SPRING_API}/api/medications`, body);
   }
 
-  createAppointment(
-    body: CreateAppointmentBody,
-  ): Promise<FhirResourceResponse> {
-    return this.post<FhirResourceResponse>(
-      `${SPRING_API}/api/appointments`,
-      body,
-    );
+  createAppointment(body: CreateAppointmentBody): Promise<CreatedResource> {
+    return this.post<CreatedResource>(`${SPRING_API}/api/appointments`, body);
   }
 
   createServiceRequest(
     body: CreateServiceRequestBody,
-  ): Promise<FhirResourceResponse> {
-    return this.post<FhirResourceResponse>(
+  ): Promise<CreatedResource> {
+    return this.post<CreatedResource>(
       `${SPRING_API}/api/service-requests`,
       body,
     );
@@ -351,22 +327,19 @@ class ApiClient {
 
   createDiagnosticReport(
     body: CreateDiagnosticReportBody,
-  ): Promise<FhirResourceResponse> {
-    return this.post<FhirResourceResponse>(
+  ): Promise<CreatedResource> {
+    return this.post<CreatedResource>(
       `${SPRING_API}/api/diagnostic-reports`,
       body,
     );
   }
 
-  createCarePlan(body: CreateCarePlanBody): Promise<FhirResourceResponse> {
-    return this.post<FhirResourceResponse>(
-      `${SPRING_API}/api/care-plans`,
-      body,
-    );
+  createCarePlan(body: CreateCarePlanBody): Promise<CreatedResource> {
+    return this.post<CreatedResource>(`${SPRING_API}/api/care-plans`, body);
   }
 
-  createGoal(body: CreateGoalBody): Promise<FhirResourceResponse> {
-    return this.post<FhirResourceResponse>(`${SPRING_API}/api/goals`, body);
+  createGoal(body: CreateGoalBody): Promise<CreatedResource> {
+    return this.post<CreatedResource>(`${SPRING_API}/api/goals`, body);
   }
 }
 

@@ -11,7 +11,6 @@ import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
 import io.github.samarthshubham.clinic.controller.PatientController;
 import io.github.samarthshubham.clinic.service.PatientService;
 import io.github.samarthshubham.clinic.service.SnapshotService;
-import io.github.samarthshubham.clinic.service.SummaryService;
 import io.github.samarthshubham.clinic.service.TimelineService;
 import io.github.samarthshubham.clinic.service.TrendsService;
 import java.util.List;
@@ -34,7 +33,6 @@ class GlobalExceptionHandlerTest {
   @Autowired private MockMvcTester mvc;
 
   @MockitoBean private PatientService patientService;
-  @MockitoBean private SummaryService summaryService;
   @MockitoBean private SnapshotService snapshotService;
   @MockitoBean private TrendsService trendsService;
   @MockitoBean private TimelineService timelineService;

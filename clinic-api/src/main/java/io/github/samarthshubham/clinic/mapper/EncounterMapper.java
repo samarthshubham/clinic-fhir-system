@@ -1,8 +1,10 @@
 package io.github.samarthshubham.clinic.mapper;
 
 import io.github.samarthshubham.clinic.dto.EncounterRequest;
+import io.github.samarthshubham.clinic.dto.EncounterResponse;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.Objects;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Encounter;
@@ -46,5 +48,36 @@ public class EncounterMapper {
       encounter.addParticipant(participant);
     }
     return encounter;
+  }
+
+  public EncounterResponse toResponse(Encounter encounter) {
+    return new EncounterResponse(
+        FhirValues.idOf(encounter),
+        FhirValues.referenceId(encounter.getSubject()),
+        FhirValues.localDate(encounter.getPeriod().getStartElement()),
+        encounter.hasReasonCode() ? encounter.getReasonCodeFirstRep().getText() : null,
+        encounter.hasStatus() ? encounter.getStatus().toCode() : null,
+        attendingPractitionerId(encounter),
+        note(encounter));
+  }
+
+  public String attendingPractitionerId(Encounter encounter) {
+    return encounter.getParticipant().stream()
+        .filter(EncounterMapper::isAttender)
+        .map(participant -> FhirValues.referenceId(participant.getIndividual(), "Practitioner"))
+        .filter(Objects::nonNull)
+        .findFirst()
+        .orElse(null);
+  }
+
+  public String note(Encounter encounter) {
+    var extension = encounter.getExtensionByUrl(NOTE_EXTENSION_URL);
+    return extension != null && extension.hasValue() ? extension.getValue().primitiveValue() : null;
+  }
+
+  private static boolean isAttender(Encounter.EncounterParticipantComponent participant) {
+    return participant.getType().stream()
+        .flatMap(type -> type.getCoding().stream())
+        .anyMatch(coding -> "ATND".equals(coding.getCode()));
   }
 }

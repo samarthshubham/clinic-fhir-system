@@ -1,5 +1,6 @@
 package io.github.samarthshubham.clinic.mapper;
 
+import io.github.samarthshubham.clinic.dto.ObservationResponse;
 import io.github.samarthshubham.clinic.dto.VitalsRequest;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -74,5 +75,45 @@ public class ObservationMapper {
     obs.setValue(
         new Quantity().setValue(value).setUnit(meta[2]).setSystem(UCUM_SYSTEM).setCode(meta[2]));
     return obs;
+  }
+
+  public ObservationResponse toResponse(Observation observation) {
+    String loincCode =
+        observation.getCode().getCoding().stream()
+            .filter(coding -> LOINC_SYSTEM.equals(coding.getSystem()))
+            .map(Coding::getCode)
+            .findFirst()
+            .orElse(null);
+    Quantity quantity = observation.hasValueQuantity() ? observation.getValueQuantity() : null;
+    return new ObservationResponse(
+        FhirValues.idOf(observation),
+        FhirValues.referenceId(observation.getSubject()),
+        FhirValues.referenceId(observation.getEncounter()),
+        vitalType(loincCode),
+        loincCode,
+        quantity != null && quantity.hasValue() ? quantity.getValue().doubleValue() : null,
+        quantity != null ? quantity.getUnit() : null,
+        effective(observation));
+  }
+
+  private static String effective(Observation observation) {
+    if (observation.hasEffectiveDateTimeType()) {
+      return observation.getEffectiveDateTimeType().getValueAsString();
+    }
+    if (observation.hasEffectivePeriod()) {
+      return observation.getEffectivePeriod().getStartElement().getValueAsString();
+    }
+    if (observation.hasEffectiveInstantType()) {
+      return observation.getEffectiveInstantType().getValueAsString();
+    }
+    return null;
+  }
+
+  private static String vitalType(String loincCode) {
+    return VITAL_META.entrySet().stream()
+        .filter(entry -> entry.getValue()[0].equals(loincCode))
+        .map(Map.Entry::getKey)
+        .findFirst()
+        .orElse(null);
   }
 }

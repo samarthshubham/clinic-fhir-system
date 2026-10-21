@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.samarthshubham.clinic.dto.AppointmentRequest;
+import io.github.samarthshubham.clinic.dto.AppointmentResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.AppointmentMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
@@ -13,7 +14,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.hl7.fhir.r4.model.Appointment;
-import org.hl7.fhir.r4.model.Bundle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,14 +31,15 @@ class AppointmentServiceTest {
   @Test
   void createStoresMappedAppointmentAndReturnsTheStoredCopy() {
     LocalDateTime start = LocalDateTime.of(2026, 6, 1, 9, 30);
-    Appointment appointment =
+    AppointmentResponse appointment =
         service.createAppointment(
             new AppointmentRequest("p1", null, start, start.plusMinutes(30), null, "booked"));
 
-    assertThat(fhir.created()).singleElement().isNotSameAs(appointment);
-    assertThat(appointment.getIdElement().getIdPart()).isEqualTo("1");
-    assertThat(appointment.getParticipantFirstRep().getActor().getReference())
-        .isEqualTo("Patient/p1");
+    assertThat(fhir.created()).singleElement().isInstanceOf(Appointment.class);
+    assertThat(appointment.id()).isEqualTo("1");
+    assertThat(appointment.patientId()).isEqualTo("p1");
+    assertThat(appointment.start().toLocalDateTime()).isEqualTo(start);
+    assertThat(appointment.status()).isEqualTo("booked");
   }
 
   @Test
@@ -66,10 +67,13 @@ class AppointmentServiceTest {
 
   @Test
   void listsAppointmentsWherePatientIsAnActor() {
-    Bundle appointments = bundleOf(new Appointment());
-    fhir.givenSearchResult(Appointment.class, appointments);
+    Appointment stored = new Appointment();
+    stored.setId("a1");
+    fhir.givenSearchResult(Appointment.class, bundleOf(stored));
 
-    assertThat(service.getAppointmentsForPatient("p1")).isSameAs(appointments);
+    assertThat(service.getAppointmentsForPatient("p1").items())
+        .extracting(AppointmentResponse::id)
+        .containsExactly("a1");
     assertThat(fhir.lastSearchCriteria(Appointment.class))
         .containsExactlyInAnyOrder("actor=Patient/p1");
   }

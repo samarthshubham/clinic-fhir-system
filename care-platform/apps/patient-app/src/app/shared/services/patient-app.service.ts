@@ -8,6 +8,9 @@ import {
   TrendsApiResponse,
   AppointmentItem,
   PostVitalsRequest,
+  PageResponse,
+  PatientResponse,
+  AppointmentResponse,
 } from '../models/patient-app.models';
 
 function hashHue(str: string): number {
@@ -18,41 +21,25 @@ function hashHue(str: string): number {
   return ((h % 360) + 360) % 360;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractName(nameArray: any[]): {
-  firstName: string;
-  lastName: string;
-} {
-  const official =
-    nameArray?.find((n: any) => n.use === 'official') ?? nameArray?.[0];
-  const firstName = official?.given?.[0] ?? '';
-  const lastName = official?.family ?? '';
-  return { firstName, lastName };
-}
-
 @Injectable({ providedIn: 'root' })
 export class PatientAppService {
   private readonly http = inject(HttpClient);
 
   getPatients(): Observable<PatientListItem[]> {
-    return this.http.get<any>('/api/patients').pipe(
-      map((bundle) => {
-        const entries: any[] = bundle?.entry ?? [];
-        return entries
-          .map((e: any) => e.resource)
-          .filter((r: any) => r?.resourceType === 'Patient')
-          .map((p: any) => {
-            const { firstName, lastName } = extractName(p.name ?? []);
-            return {
+    return this.http.get<PageResponse<PatientResponse>>('/api/patients').pipe(
+      map((page) =>
+        page.items.map(
+          (p) =>
+            ({
               id: p.id,
-              firstName,
-              lastName,
-              dob: p.birthDate ?? '',
+              firstName: p.firstName ?? '',
+              lastName: p.lastName ?? '',
+              dob: p.dateOfBirth ?? '',
               gender: p.gender ?? '',
-              avatarHue: hashHue(p.id ?? ''),
-            } satisfies PatientListItem;
-          });
-      }),
+              avatarHue: hashHue(p.id),
+            }) satisfies PatientListItem,
+        ),
+      ),
     );
   }
 
@@ -81,23 +68,26 @@ export class PatientAppService {
   }
 
   getAppointments(patientId: string): Observable<AppointmentItem[]> {
-    return this.http.get<any>(`/api/appointments?patientId=${patientId}`).pipe(
-      map((bundle) => {
-        const entries: any[] = bundle?.entry ?? [];
-        const now = new Date().toISOString();
-        return entries
-          .map((e: any) => e.resource)
-          .filter(
-            (r: any) => r?.resourceType === 'Appointment' && r.start > now,
-          )
-          .map((a: any) => ({
-            id: a.id,
-            start: a.start,
-            description: a.description ?? '',
-            status: a.status ?? '',
-          }))
-          .sort((a, b) => a.start.localeCompare(b.start));
-      }),
-    );
+    return this.http
+      .get<
+        PageResponse<AppointmentResponse>
+      >(`/api/appointments?patientId=${patientId}`)
+      .pipe(
+        map((page) => {
+          const now = Date.now();
+          return page.items
+            .filter((a) => a.start && new Date(a.start).getTime() > now)
+            .map((a) => ({
+              id: a.id,
+              start: a.start as string,
+              description: a.description ?? '',
+              status: a.status ?? '',
+            }))
+            .sort(
+              (a, b) =>
+                new Date(a.start).getTime() - new Date(b.start).getTime(),
+            );
+        }),
+      );
   }
 }

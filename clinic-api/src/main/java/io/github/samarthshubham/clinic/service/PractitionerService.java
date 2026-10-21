@@ -2,6 +2,7 @@ package io.github.samarthshubham.clinic.service;
 
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import io.github.samarthshubham.clinic.dto.PractitionerRequest;
+import io.github.samarthshubham.clinic.dto.PractitionerResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.PractitionerMapper;
 import org.hl7.fhir.r4.model.Practitioner;
@@ -18,13 +19,18 @@ public class PractitionerService {
     this.practitionerMapper = practitionerMapper;
   }
 
-  public Practitioner createPractitioner(PractitionerRequest request) {
+  public PractitionerResponse createPractitioner(PractitionerRequest request) {
     var outcome = fhirClient.create().resource(practitionerMapper.toFhir(request)).execute();
     String id = outcome.getId().getIdPart();
-    return fhirClient.read().resource(Practitioner.class).withId(id).execute();
+    return practitionerMapper.toResponse(
+        fhirClient.read().resource(Practitioner.class).withId(id).execute());
   }
 
-  public Practitioner getPractitioner(String id) {
+  public PractitionerResponse getPractitioner(String id) {
+    return practitionerMapper.toResponse(findPractitioner(id));
+  }
+
+  public Practitioner findPractitioner(String id) {
     try {
       return fhirClient.read().resource(Practitioner.class).withId(id).execute();
     } catch (ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException e) {

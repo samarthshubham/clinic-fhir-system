@@ -1,10 +1,12 @@
 package io.github.samarthshubham.clinic.controller;
 
+import io.github.samarthshubham.clinic.dto.ObservationResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.dto.VitalsRequest;
 import io.github.samarthshubham.clinic.service.VitalsService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import org.hl7.fhir.r4.model.Bundle;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,12 +27,13 @@ public class VitalsController {
   }
 
   @PostMapping
-  public ResponseEntity<Bundle> recordVitals(@Valid @RequestBody VitalsRequest request) {
+  public ResponseEntity<List<ObservationResponse>> recordVitals(
+      @Valid @RequestBody VitalsRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(vitalsService.recordVitals(request));
   }
 
   @GetMapping
-  public ResponseEntity<Bundle> getVitals(
+  public ResponseEntity<PageResponse<ObservationResponse>> getVitals(
       @RequestParam @NotBlank String patientId, @RequestParam(required = false) String type) {
     return ResponseEntity.ok(vitalsService.getVitals(patientId, type));
   }
