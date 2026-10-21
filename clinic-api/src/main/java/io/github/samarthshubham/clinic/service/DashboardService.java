@@ -126,7 +126,7 @@ public class DashboardService {
 
     List<Map<String, Object>> pendingRequests = List.of();
     try {
-      Bundle srBundle = serviceRequestService.getPendingServiceRequestsForPatient(patientId);
+      Bundle srBundle = serviceRequestService.findPendingServiceRequestsForPatient(patientId);
       pendingRequests = buildPendingServiceRequests(srBundle, careTeam);
     } catch (Exception e) {
       log.warn("service-requests: failed for patient {} — {}", patientId, e.getMessage());

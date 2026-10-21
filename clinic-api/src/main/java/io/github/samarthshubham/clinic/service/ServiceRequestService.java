@@ -59,7 +59,7 @@ public class ServiceRequestService {
         query.execute(), ServiceRequest.class, serviceRequestMapper::toResponse);
   }
 
-  public Bundle getPendingServiceRequestsForPatient(String patientId) {
+  public Bundle findPendingServiceRequestsForPatient(String patientId) {
     return fhirClient
         .search()
         .forResource(ServiceRequest.class)

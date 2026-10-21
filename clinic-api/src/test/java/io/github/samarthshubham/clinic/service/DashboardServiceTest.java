@@ -103,7 +103,7 @@ class DashboardServiceTest {
         .when(appointmentService.getUpcomingAppointmentsForPatient("p1"))
         .thenReturn(new Bundle());
     lenient()
-        .when(serviceRequestService.getPendingServiceRequestsForPatient("p1"))
+        .when(serviceRequestService.findPendingServiceRequestsForPatient("p1"))
         .thenReturn(new Bundle());
     lenient()
         .when(diagnosticReportService.getMostRecentDiagnosticReport("p1"))
@@ -137,7 +137,7 @@ class DashboardServiceTest {
     givenRecentEncounters(encounter("e1", DAY, "dr1"), encounter("e2", DAY.minusDays(30), null));
     when(appointmentService.getUpcomingAppointmentsForPatient("p1"))
         .thenReturn(bundleOf(appointment()));
-    when(serviceRequestService.getPendingServiceRequestsForPatient("p1"))
+    when(serviceRequestService.findPendingServiceRequestsForPatient("p1"))
         .thenReturn(bundleOf(serviceRequest()));
     when(diagnosticReportService.getMostRecentDiagnosticReport("p1"))
         .thenReturn(bundleOf(report()));
@@ -249,7 +249,7 @@ class DashboardServiceTest {
       case "appointments" ->
           when(appointmentService.getUpcomingAppointmentsForPatient("p1")).thenThrow(failure);
       case "service-requests" ->
-          when(serviceRequestService.getPendingServiceRequestsForPatient("p1")).thenThrow(failure);
+          when(serviceRequestService.findPendingServiceRequestsForPatient("p1")).thenThrow(failure);
       case "diagnostic-reports" ->
           when(diagnosticReportService.getMostRecentDiagnosticReport("p1")).thenThrow(failure);
       default -> when(carePlanService.getActiveCarePlanForPatient("p1")).thenThrow(failure);
@@ -493,7 +493,7 @@ class DashboardServiceTest {
         .when(appointmentService.getUpcomingAppointmentsForPatient("p1"))
         .thenReturn(bundleOf(appointment()));
     lenient()
-        .when(serviceRequestService.getPendingServiceRequestsForPatient("p1"))
+        .when(serviceRequestService.findPendingServiceRequestsForPatient("p1"))
         .thenReturn(bundleOf(serviceRequest()));
     lenient()
         .when(diagnosticReportService.getMostRecentDiagnosticReport("p1"))

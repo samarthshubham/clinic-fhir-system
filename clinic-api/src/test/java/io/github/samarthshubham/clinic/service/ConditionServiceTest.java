@@ -81,7 +81,7 @@ class ConditionServiceTest {
 
   @Test
   void listsOnlyActiveConditions() {
-    service.getActiveConditionsForPatient("p1");
+    service.findActiveConditionsForPatient("p1");
 
     assertThat(fhir.lastSearchCriteria(Condition.class))
         .containsExactlyInAnyOrder("subject=Patient/p1", ACTIVE);

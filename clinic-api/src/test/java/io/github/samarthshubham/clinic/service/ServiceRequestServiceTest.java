@@ -113,7 +113,7 @@ class ServiceRequestServiceTest {
 
   @Test
   void pendingOrdersAreTheFiveMostRecentActiveOnes() {
-    service.getPendingServiceRequestsForPatient("p1");
+    service.findPendingServiceRequestsForPatient("p1");
 
     assertThat(fhir.lastSearchCriteria(ServiceRequest.class))
         .containsExactlyInAnyOrder("subject=Patient/p1", "status=active", "_count=5");

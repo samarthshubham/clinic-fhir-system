@@ -54,7 +54,7 @@ public class ConditionService {
     return PageMapper.toPage(bundle, Condition.class, conditionMapper::toResponse);
   }
 
-  public Bundle getActiveConditionsForPatient(String patientId) {
+  public Bundle findActiveConditionsForPatient(String patientId) {
     return fhirClient
         .search()
         .forResource(Condition.class)
