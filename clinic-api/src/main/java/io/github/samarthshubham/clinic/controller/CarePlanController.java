@@ -1,11 +1,11 @@
 package io.github.samarthshubham.clinic.controller;
 
 import io.github.samarthshubham.clinic.dto.CarePlanRequest;
+import io.github.samarthshubham.clinic.dto.CarePlanResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.service.CarePlanService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import org.hl7.fhir.r4.model.Bundle;
-import org.hl7.fhir.r4.model.CarePlan;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,12 +26,14 @@ public class CarePlanController {
   }
 
   @PostMapping
-  public ResponseEntity<CarePlan> createCarePlan(@Valid @RequestBody CarePlanRequest request) {
+  public ResponseEntity<CarePlanResponse> createCarePlan(
+      @Valid @RequestBody CarePlanRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(carePlanService.createCarePlan(request));
   }
 
   @GetMapping
-  public ResponseEntity<Bundle> getCarePlansForPatient(@RequestParam @NotBlank String patientId) {
+  public ResponseEntity<PageResponse<CarePlanResponse>> getCarePlansForPatient(
+      @RequestParam @NotBlank String patientId) {
     return ResponseEntity.ok(carePlanService.getCarePlansForPatient(patientId));
   }
 }

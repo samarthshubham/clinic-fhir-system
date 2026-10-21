@@ -339,11 +339,8 @@ class ApiClient {
     );
   }
 
-  createCarePlan(body: CreateCarePlanBody): Promise<FhirResourceResponse> {
-    return this.post<FhirResourceResponse>(
-      `${SPRING_API}/api/care-plans`,
-      body,
-    );
+  createCarePlan(body: CreateCarePlanBody): Promise<CreatedResource> {
+    return this.post<CreatedResource>(`${SPRING_API}/api/care-plans`, body);
   }
 
   createGoal(body: CreateGoalBody): Promise<FhirResourceResponse> {

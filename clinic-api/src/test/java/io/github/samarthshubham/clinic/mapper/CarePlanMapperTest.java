@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.samarthshubham.clinic.dto.CarePlanRequest;
+import io.github.samarthshubham.clinic.dto.CarePlanResponse;
 import java.time.LocalDate;
 import java.util.List;
 import org.hl7.fhir.exceptions.FHIRException;
@@ -49,5 +50,28 @@ class CarePlanMapperTest {
 
     assertThat(plan.getAddresses()).isEmpty();
     assertThat(plan.getGoal()).isEmpty();
+  }
+
+  @Test
+  void toResponseIsTheReverseOfToFhir() {
+    CarePlan plan =
+        mapper.toFhir(
+            new CarePlanRequest(
+                "p1", List.of("c1", "c2"), "BP control", "active", START, List.of("g1")));
+    plan.setId("cp1");
+
+    assertThat(mapper.toResponse(plan))
+        .isEqualTo(
+            new CarePlanResponse(
+                "cp1", "p1", List.of("c1", "c2"), "BP control", "active", START, List.of("g1")));
+  }
+
+  @Test
+  void toResponseLeavesMissingFieldsNullAndListsEmpty() {
+    CarePlan plan = new CarePlan();
+    plan.setId("cp1");
+
+    assertThat(mapper.toResponse(plan))
+        .isEqualTo(new CarePlanResponse("cp1", null, List.of(), null, null, null, List.of()));
   }
 }

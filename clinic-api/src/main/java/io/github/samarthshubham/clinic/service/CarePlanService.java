@@ -4,8 +4,11 @@ import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.ReferenceClientParam;
 import ca.uhn.fhir.rest.gclient.TokenClientParam;
 import io.github.samarthshubham.clinic.dto.CarePlanRequest;
+import io.github.samarthshubham.clinic.dto.CarePlanResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.CarePlanMapper;
+import io.github.samarthshubham.clinic.mapper.PageMapper;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.CarePlan;
 import org.springframework.stereotype.Service;
@@ -21,10 +24,11 @@ public class CarePlanService {
     this.carePlanMapper = carePlanMapper;
   }
 
-  public CarePlan createCarePlan(CarePlanRequest request) {
+  public CarePlanResponse createCarePlan(CarePlanRequest request) {
     var outcome = fhirClient.create().resource(carePlanMapper.toFhir(request)).execute();
     String id = outcome.getId().getIdPart();
-    return fhirClient.read().resource(CarePlan.class).withId(id).execute();
+    return carePlanMapper.toResponse(
+        fhirClient.read().resource(CarePlan.class).withId(id).execute());
   }
 
   public CarePlan getCarePlan(String id) {
@@ -35,13 +39,15 @@ public class CarePlanService {
     }
   }
 
-  public Bundle getCarePlansForPatient(String patientId) {
-    return fhirClient
-        .search()
-        .forResource(CarePlan.class)
-        .where(new ReferenceClientParam("subject").hasId("Patient/" + patientId))
-        .returnBundle(Bundle.class)
-        .execute();
+  public PageResponse<CarePlanResponse> getCarePlansForPatient(String patientId) {
+    Bundle bundle =
+        fhirClient
+            .search()
+            .forResource(CarePlan.class)
+            .where(new ReferenceClientParam("subject").hasId("Patient/" + patientId))
+            .returnBundle(Bundle.class)
+            .execute();
+    return PageMapper.toPage(bundle, CarePlan.class, carePlanMapper::toResponse);
   }
 
   public Bundle getActiveCarePlanForPatient(String patientId) {
