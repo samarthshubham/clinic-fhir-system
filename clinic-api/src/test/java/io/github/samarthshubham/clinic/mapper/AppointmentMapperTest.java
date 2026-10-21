@@ -6,9 +6,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.github.samarthshubham.clinic.dto.AppointmentRequest;
+import io.github.samarthshubham.clinic.dto.AppointmentResponse;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.Appointment;
+import org.hl7.fhir.r4.model.Reference;
 import org.junit.jupiter.api.Test;
 
 class AppointmentMapperTest {
@@ -50,5 +53,35 @@ class AppointmentMapperTest {
     assertThat(appointment.getParticipant())
         .extracting(p -> p.getActor().getReference())
         .containsExactly("Patient/p1");
+  }
+
+  @Test
+  void toResponseIsTheReverseOfToFhir() {
+    Appointment appointment =
+        mapper.toFhir(new AppointmentRequest("p1", "dr1", START, END, "Follow-up", "booked"));
+    appointment.setId("a1");
+
+    assertThat(mapper.toResponse(appointment))
+        .isEqualTo(
+            new AppointmentResponse(
+                "a1",
+                "p1",
+                "dr1",
+                START.atZone(ZoneId.systemDefault()).toOffsetDateTime(),
+                END.atZone(ZoneId.systemDefault()).toOffsetDateTime(),
+                "Follow-up",
+                "booked"));
+  }
+
+  @Test
+  void toResponseFindsParticipantsByResourceType() {
+    Appointment appointment = new Appointment();
+    appointment.addParticipant().setActor(new Reference("Location/l1"));
+    appointment.addParticipant().setActor(new Reference("Practitioner/dr1"));
+    appointment.addParticipant().setActor(new Reference("Patient/p1"));
+    appointment.setId("a1");
+
+    assertThat(mapper.toResponse(appointment))
+        .isEqualTo(new AppointmentResponse("a1", "p1", "dr1", null, null, null, null));
   }
 }

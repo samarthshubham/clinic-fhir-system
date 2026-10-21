@@ -1,6 +1,7 @@
 package io.github.samarthshubham.clinic.mapper;
 
 import io.github.samarthshubham.clinic.dto.AppointmentRequest;
+import io.github.samarthshubham.clinic.dto.AppointmentResponse;
 import java.time.ZoneId;
 import java.util.Date;
 import org.hl7.fhir.r4.model.Appointment;
@@ -35,5 +36,25 @@ public class AppointmentMapper {
       appointment.addParticipant(providerParticipant);
     }
     return appointment;
+  }
+
+  public AppointmentResponse toResponse(Appointment appointment) {
+    return new AppointmentResponse(
+        FhirValues.idOf(appointment),
+        participantId(appointment, "Patient"),
+        participantId(appointment, "Practitioner"),
+        FhirValues.offsetDateTime(appointment.getStart()),
+        FhirValues.offsetDateTime(appointment.getEnd()),
+        appointment.getDescription(),
+        appointment.hasStatus() ? appointment.getStatus().toCode() : null);
+  }
+
+  private static String participantId(Appointment appointment, String resourceType) {
+    return appointment.getParticipant().stream()
+        .map(participant -> participant.getActor().getReferenceElement())
+        .filter(ref -> resourceType.equals(ref.getResourceType()))
+        .map(ref -> ref.getIdPart())
+        .findFirst()
+        .orElse(null);
   }
 }

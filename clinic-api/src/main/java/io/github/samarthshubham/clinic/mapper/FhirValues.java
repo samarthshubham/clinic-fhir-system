@@ -1,6 +1,7 @@
 package io.github.samarthshubham.clinic.mapper;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
@@ -23,6 +24,10 @@ final class FhirValues {
 
   static LocalDate localDate(Date date) {
     return date == null ? null : date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+  }
+
+  static OffsetDateTime offsetDateTime(Date date) {
+    return date == null ? null : date.toInstant().atZone(ZoneId.systemDefault()).toOffsetDateTime();
   }
 
   static String given(List<HumanName> names) {
