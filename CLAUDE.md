@@ -220,6 +220,8 @@ All resources use **FHIR R4**. FHIR server: `http://localhost:8080/fhir` (config
 | Diastolic BP | `8462-4` | `mm[Hg]` |
 | Weight | `29463-7` | `kg` |
 | SpO2 | `59408-5` | `%` |
+| Heart rate | `8867-4` | `/min` |
+| Temperature | `8310-5` | `Cel` |
 
 LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`. Status always `final`.
 
@@ -231,6 +233,7 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 | `reason` | `Encounter.reasonCode[0].text` |
 | `status` | `Encounter.status` |
 | `practitionerId` *(optional)* | `Encounter.participant[type=ATND].individual` → `Practitioner/{id}` |
+| `note` *(optional)* | `Encounter.extension[url=http://praxis.clinic/fhir/extension/encounter-note].valueString` |
 
 ### Condition
 | Request field | FHIR path |
@@ -301,7 +304,9 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 | `description` | `Goal.description.text` |
 | `status` | `Goal.lifecycleStatus` |
 | `targetMeasureCode` | `Goal.target[0].measure.coding[0].code` (LOINC) |
+| `targetMeasureDisplay` *(optional)* | `Goal.target[0].measure.coding[0].display` |
 | `targetValue` | `Goal.target[0].detail[Quantity]` |
+| `targetUnit` *(optional)* | `Goal.target[0].detail[Quantity].unit` / `.code` (UCUM) |
 | `targetDate` | `Goal.target[0].due[DateType]` |
 
 ### Practitioner
