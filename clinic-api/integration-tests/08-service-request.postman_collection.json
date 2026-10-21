@@ -138,12 +138,19 @@
               "pm.test('Status 201', () => pm.response.to.have.status(201));",
               "",
               "const body = pm.response.json();",
-              "pm.test('resourceType is ServiceRequest', () => pm.expect(body.resourceType).to.eql('ServiceRequest'));",
+              "pm.test('Content-Type is application/json', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
               "pm.test('Has id', () => pm.expect(body.id).to.be.a('string').and.not.empty);",
               "pm.test('Status is active', () => pm.expect(body.status).to.eql('active'));",
               "pm.test('Priority is routine', () => pm.expect(body.priority).to.eql('routine'));",
-              "pm.test('Subject references patient', () => {",
-              "  pm.expect(body.subject.reference).to.include(pm.collectionVariables.get('patientId'));",
+              "pm.test('References flattened to ids', () => {",
+              "  pm.expect(body.patientId).to.eql(pm.collectionVariables.get('patientId'));",
+              "  pm.expect(body.encounterId).to.eql(pm.collectionVariables.get('encounterId'));",
+              "  pm.expect(body.practitionerId).to.eql(pm.collectionVariables.get('practitionerId'));",
+              "});",
+              "pm.test('Fields match', () => {",
+              "  pm.expect(body.code).to.eql('Lipid Panel');",
+              "  pm.expect(body.category).to.eql('laboratory');",
+              "  pm.expect(body.authoredOn).to.eql('2026-04-10');",
               "});",
               "pm.collectionVariables.set('serviceRequestId', body.id);"
             ]
@@ -227,7 +234,11 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('Status 200', () => pm.response.to.have.status(200));",
-              "pm.test('Two SRs returned', () => pm.expect(pm.response.json().entry.length).to.eql(2));"
+              "pm.test('Two SRs returned', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.items.length).to.eql(2);",
+              "  pm.expect(body.total).to.eql(2);",
+              "});"
             ]
           }
         }
@@ -256,8 +267,10 @@
               "pm.test('Status 200', () => pm.response.to.have.status(200));",
               "",
               "pm.test('All returned SRs have status active', () => {",
-              "  pm.response.json().entry.forEach(e => {",
-              "    pm.expect(e.resource.status).to.eql('active');",
+              "  const items = pm.response.json().items;",
+              "  pm.expect(items).to.not.be.empty;",
+              "  items.forEach(sr => {",
+              "    pm.expect(sr.status).to.eql('active');",
               "  });",
               "});"
             ]

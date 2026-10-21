@@ -323,8 +323,8 @@ class ApiClient {
 
   createServiceRequest(
     body: CreateServiceRequestBody,
-  ): Promise<FhirResourceResponse> {
-    return this.post<FhirResourceResponse>(
+  ): Promise<CreatedResource> {
+    return this.post<CreatedResource>(
       `${SPRING_API}/api/service-requests`,
       body,
     );

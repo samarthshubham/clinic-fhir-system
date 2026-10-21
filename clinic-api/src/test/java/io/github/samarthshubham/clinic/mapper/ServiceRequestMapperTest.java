@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.samarthshubham.clinic.dto.ServiceRequestRequest;
+import io.github.samarthshubham.clinic.dto.ServiceRequestResponse;
 import java.time.LocalDate;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.ServiceRequest;
@@ -74,5 +75,37 @@ class ServiceRequestMapperTest {
 
     assertThat(order.hasEncounter()).isFalse();
     assertThat(order.hasRequester()).isFalse();
+  }
+
+  @Test
+  void toResponseIsTheReverseOfToFhir() {
+    ServiceRequest serviceRequest =
+        mapper.toFhir(
+            new ServiceRequestRequest(
+                "p1", "e1", "dr1", "Lipid panel", "laboratory", "active", "urgent", AUTHORED));
+    serviceRequest.setId("sr1");
+
+    assertThat(mapper.toResponse(serviceRequest))
+        .isEqualTo(
+            new ServiceRequestResponse(
+                "sr1",
+                "p1",
+                "e1",
+                "dr1",
+                "Lipid panel",
+                "laboratory",
+                "active",
+                "urgent",
+                AUTHORED));
+  }
+
+  @Test
+  void toResponseLeavesMissingFieldsNull() {
+    ServiceRequest serviceRequest = new ServiceRequest();
+    serviceRequest.setId("sr1");
+
+    assertThat(mapper.toResponse(serviceRequest))
+        .isEqualTo(
+            new ServiceRequestResponse("sr1", null, null, null, null, null, null, null, null));
   }
 }
