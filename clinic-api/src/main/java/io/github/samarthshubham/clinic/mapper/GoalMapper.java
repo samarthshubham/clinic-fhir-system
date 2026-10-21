@@ -66,7 +66,7 @@ public class GoalMapper {
         detail != null && detail.hasValue() ? detail.getValue().doubleValue() : null,
         detail != null ? detail.getUnit() : null,
         target != null && target.hasDueDateType()
-            ? FhirValues.localDate(target.getDueDateType().getValue())
+            ? FhirValues.localDate(target.getDueDateType())
             : null);
   }
 }

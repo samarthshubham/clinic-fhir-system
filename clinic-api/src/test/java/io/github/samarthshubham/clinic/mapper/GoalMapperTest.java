@@ -9,6 +9,7 @@ import io.github.samarthshubham.clinic.dto.GoalResponse;
 import java.time.LocalDate;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.Coding;
+import org.hl7.fhir.r4.model.DateType;
 import org.hl7.fhir.r4.model.Goal;
 import org.hl7.fhir.r4.model.Quantity;
 import org.junit.jupiter.api.Test;
@@ -122,5 +123,14 @@ class GoalMapperTest {
 
     assertThat(mapper.toResponse(goal))
         .isEqualTo(new GoalResponse("g1", null, null, null, null, null, null, null, null));
+  }
+
+  @Test
+  void toResponseKeepsTheStoredTargetDate() {
+    Goal goal = new Goal();
+    goal.addTarget().setDue(new DateType("2026-09-30"));
+    goal.setId("g1");
+
+    assertThat(mapper.toResponse(goal).targetDate()).isEqualTo(DUE);
   }
 }

@@ -53,7 +53,7 @@ public class EncounterMapper {
     return new EncounterResponse(
         FhirValues.idOf(encounter),
         FhirValues.referenceId(encounter.getSubject()),
-        encounter.hasPeriod() ? FhirValues.localDate(encounter.getPeriod().getStart()) : null,
+        FhirValues.localDate(encounter.getPeriod().getStartElement()),
         encounter.hasReasonCode() ? encounter.getReasonCodeFirstRep().getText() : null,
         encounter.hasStatus() ? encounter.getStatus().toCode() : null,
         attendingPractitionerId(encounter),

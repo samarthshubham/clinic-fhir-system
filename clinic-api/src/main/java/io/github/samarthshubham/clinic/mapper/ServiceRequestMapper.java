@@ -42,6 +42,6 @@ public class ServiceRequestMapper {
         serviceRequest.hasCategory() ? serviceRequest.getCategoryFirstRep().getText() : null,
         serviceRequest.hasStatus() ? serviceRequest.getStatus().toCode() : null,
         serviceRequest.hasPriority() ? serviceRequest.getPriority().toCode() : null,
-        FhirValues.localDate(serviceRequest.getAuthoredOn()));
+        FhirValues.localDate(serviceRequest.getAuthoredOnElement()));
   }
 }

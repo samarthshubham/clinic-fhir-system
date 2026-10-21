@@ -9,6 +9,7 @@ import io.github.samarthshubham.clinic.dto.EncounterResponse;
 import java.time.LocalDate;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.Coding;
+import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.Encounter;
 import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.StringType;
@@ -101,5 +102,14 @@ class EncounterMapperTest {
         .setCode("ATND");
 
     assertThat(mapper.attendingPractitionerId(encounter)).isEqualTo("dr1");
+  }
+
+  @Test
+  void toResponseKeepsTheStoredVisitDateNearMidnight() {
+    Encounter encounter = new Encounter();
+    encounter.getPeriod().setStartElement(new DateTimeType("2026-05-01T23:30:00-05:00"));
+    encounter.setId("e1");
+
+    assertThat(mapper.toResponse(encounter).visitDate()).isEqualTo(LocalDate.of(2026, 5, 1));
   }
 }

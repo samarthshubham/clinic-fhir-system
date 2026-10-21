@@ -42,7 +42,7 @@ public class DiagnosticReportMapper {
         report.hasBasedOn() ? FhirValues.referenceId(report.getBasedOnFirstRep()) : null,
         report.getCode().getText(),
         report.hasStatus() ? report.getStatus().toCode() : null,
-        FhirValues.localDate(report.getIssued()),
+        FhirValues.localDate(report.getIssuedElement()),
         report.getConclusion(),
         report.getResult().stream().map(FhirValues::referenceId).toList());
   }

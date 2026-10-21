@@ -37,7 +37,7 @@ public class MedicationMapper {
         statement.hasStatus() ? statement.getStatus().toCode() : null,
         statement.hasDosage() ? statement.getDosageFirstRep().getText() : null,
         statement.hasEffectivePeriod()
-            ? FhirValues.localDate(statement.getEffectivePeriod().getStart())
+            ? FhirValues.localDate(statement.getEffectivePeriod().getStartElement())
             : null);
   }
 }

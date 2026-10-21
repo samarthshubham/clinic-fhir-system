@@ -36,7 +36,7 @@ public class CarePlanMapper {
         plan.getAddresses().stream().map(FhirValues::referenceId).toList(),
         plan.getTitle(),
         plan.hasStatus() ? plan.getStatus().toCode() : null,
-        FhirValues.localDate(plan.getPeriod().getStart()),
+        FhirValues.localDate(plan.getPeriod().getStartElement()),
         plan.getGoal().stream().map(FhirValues::referenceId).toList());
   }
 }

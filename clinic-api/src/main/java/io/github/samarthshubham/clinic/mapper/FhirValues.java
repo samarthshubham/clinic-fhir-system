@@ -1,10 +1,10 @@
 package io.github.samarthshubham.clinic.mapper;
 
+import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.util.Date;
 import java.util.List;
+import org.hl7.fhir.r4.model.BaseDateTimeType;
 import org.hl7.fhir.r4.model.ContactPoint;
 import org.hl7.fhir.r4.model.HumanName;
 import org.hl7.fhir.r4.model.Reference;
@@ -22,12 +22,20 @@ final class FhirValues {
     return reference.hasReference() ? reference.getReferenceElement().getIdPart() : null;
   }
 
-  static LocalDate localDate(Date date) {
-    return date == null ? null : date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+  static LocalDate localDate(BaseDateTimeType value) {
+    if (value == null
+        || value.isEmpty()
+        || value.getPrecision().compareTo(TemporalPrecisionEnum.DAY) < 0) {
+      return null;
+    }
+    return LocalDate.parse(value.getValueAsString().substring(0, 10));
   }
 
-  static OffsetDateTime offsetDateTime(Date date) {
-    return date == null ? null : date.toInstant().atZone(ZoneId.systemDefault()).toOffsetDateTime();
+  static OffsetDateTime offsetDateTime(BaseDateTimeType value) {
+    if (value == null || value.isEmpty()) {
+      return null;
+    }
+    return OffsetDateTime.ofInstant(value.getValue().toInstant(), value.getTimeZone().toZoneId());
   }
 
   static String given(List<HumanName> names) {

@@ -45,7 +45,7 @@ public class ConditionMapper {
         condition.getCode().getText(),
         firstCode(condition.getClinicalStatus()),
         condition.hasOnsetDateTimeType()
-            ? FhirValues.localDate(condition.getOnsetDateTimeType().getValue())
+            ? FhirValues.localDate(condition.getOnsetDateTimeType())
             : null);
   }
 

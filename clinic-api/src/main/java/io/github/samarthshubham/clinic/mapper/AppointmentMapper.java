@@ -43,8 +43,8 @@ public class AppointmentMapper {
         FhirValues.idOf(appointment),
         participantId(appointment, "Patient"),
         participantId(appointment, "Practitioner"),
-        FhirValues.offsetDateTime(appointment.getStart()),
-        FhirValues.offsetDateTime(appointment.getEnd()),
+        FhirValues.offsetDateTime(appointment.getStartElement()),
+        FhirValues.offsetDateTime(appointment.getEndElement()),
         appointment.getDescription(),
         appointment.hasStatus() ? appointment.getStatus().toCode() : null);
   }

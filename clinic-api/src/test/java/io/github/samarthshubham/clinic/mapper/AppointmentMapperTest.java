@@ -8,9 +8,11 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.github.samarthshubham.clinic.dto.AppointmentRequest;
 import io.github.samarthshubham.clinic.dto.AppointmentResponse;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.Appointment;
+import org.hl7.fhir.r4.model.InstantType;
 import org.hl7.fhir.r4.model.Reference;
 import org.junit.jupiter.api.Test;
 
@@ -83,5 +85,18 @@ class AppointmentMapperTest {
 
     assertThat(mapper.toResponse(appointment))
         .isEqualTo(new AppointmentResponse("a1", "p1", "dr1", null, null, null, null));
+  }
+
+  @Test
+  void toResponseKeepsTheStoredOffset() {
+    Appointment appointment = new Appointment();
+    appointment.setStartElement(new InstantType("2026-11-20T09:00:00-05:00"));
+    appointment.setEndElement(new InstantType("2026-11-20T09:30:00+05:30"));
+    appointment.setId("a1");
+
+    AppointmentResponse response = mapper.toResponse(appointment);
+
+    assertThat(response.start()).isEqualTo(OffsetDateTime.parse("2026-11-20T09:00:00-05:00"));
+    assertThat(response.end()).isEqualTo(OffsetDateTime.parse("2026-11-20T09:30:00+05:30"));
   }
 }
