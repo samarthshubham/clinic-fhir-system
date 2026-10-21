@@ -21,6 +21,7 @@ import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.Dosage;
 import org.hl7.fhir.r4.model.MedicationStatement;
 import org.hl7.fhir.r4.model.Observation;
+import org.hl7.fhir.r4.model.Quantity;
 import org.hl7.fhir.r4.model.StringType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -146,6 +147,18 @@ class SnapshotServiceTest {
     assertThat(vitals.systolicBp()).isNotNull();
     assertThat(vitals.weightKg()).isNull();
     assertThat(vitals.diastolicBp()).isNull();
+  }
+
+  @Test
+  void latestReadingWithoutAValueIsNull() {
+    givenLatest(SYSTOLIC, 150);
+    Observation noValue = vital(SPO2, 0, MEASURED).setValue(new Quantity());
+    fhir.givenSearchResultWhen(Observation.class, bundleOf(noValue), code(SPO2));
+
+    LatestVitals vitals = service.getSnapshot("p1").latestVitals();
+
+    assertThat(vitals.spo2Percent()).isNull();
+    assertThat(vitals.systolicBp()).isNotNull();
   }
 
   @Test

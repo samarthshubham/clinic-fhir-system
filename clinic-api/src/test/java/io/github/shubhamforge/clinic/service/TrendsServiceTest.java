@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import org.hl7.fhir.r4.model.Observation;
+import org.hl7.fhir.r4.model.Quantity;
 import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.StringType;
 import org.junit.jupiter.api.BeforeEach;
@@ -138,6 +139,17 @@ class TrendsServiceTest {
     noDate.getCode().addCoding().setSystem("http://loinc.org").setCode(WEIGHT);
     Observation text = vital(WEIGHT, 0, DAY.plusDays(1)).setValue(new StringType("n/a"));
     givenSeries(WEIGHT, vital(WEIGHT, 81, DAY), noDate, text);
+
+    SimpleSeries weight =
+        (SimpleSeries) service.getTrends("p1", "weight", "30d").series().get("weight");
+
+    assertThat(weight.values()).containsExactly(new DataPoint("2026-05-01", 81.0));
+  }
+
+  @Test
+  void readingsWithoutAValueAreSkipped() {
+    givenSeries(
+        WEIGHT, vital(WEIGHT, 81, DAY), vital(WEIGHT, 0, DAY.plusDays(1)).setValue(new Quantity()));
 
     SimpleSeries weight =
         (SimpleSeries) service.getTrends("p1", "weight", "30d").series().get("weight");

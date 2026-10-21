@@ -98,7 +98,7 @@ public class TrendsService {
     if (bundle.getEntry() == null) return points;
     for (var entry : bundle.getEntry()) {
       Observation obs = (Observation) entry.getResource();
-      if (!(obs.getValue() instanceof Quantity q)) continue;
+      if (!(obs.getValue() instanceof Quantity q) || !q.hasValue()) continue;
       double value = q.getValue().doubleValue();
       String date =
           obs.hasEffectiveDateTimeType()

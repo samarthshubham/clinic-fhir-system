@@ -35,6 +35,7 @@ import org.hl7.fhir.r4.model.DiagnosticReport;
 import org.hl7.fhir.r4.model.Encounter;
 import org.hl7.fhir.r4.model.Observation;
 import org.hl7.fhir.r4.model.Practitioner;
+import org.hl7.fhir.r4.model.Quantity;
 import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.ServiceRequest;
 import org.hl7.fhir.r4.model.StringType;
@@ -165,6 +166,7 @@ class TimelineServiceTest {
     List<Resource> grouped = new ArrayList<>(vitals);
     grouped.add(unknownCode);
     grouped.add(textValue);
+    grouped.add(vital("8310-5", 0, TODAY).setValue(new Quantity()));
     fhir.givenSearchResultWhen(
         Observation.class, bundleOf(grouped.toArray(Resource[]::new)), "encounter=Encounter/e1");
 

@@ -94,7 +94,7 @@ public class ConditionEvaluationService {
     if (bundle.getEntry() == null) return List.of();
     return bundle.getEntry().stream()
         .map(e -> (Observation) e.getResource())
-        .filter(obs -> obs.getValue() instanceof Quantity)
+        .filter(obs -> obs.getValue() instanceof Quantity q && q.hasValue())
         .map(obs -> ((Quantity) obs.getValue()).getValue().doubleValue())
         .toList();
   }

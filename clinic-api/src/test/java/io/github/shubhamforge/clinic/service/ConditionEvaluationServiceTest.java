@@ -15,6 +15,7 @@ import io.github.shubhamforge.clinic.support.FhirClientStub;
 import java.time.LocalDate;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Observation;
+import org.hl7.fhir.r4.model.Quantity;
 import org.hl7.fhir.r4.model.StringType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -131,6 +132,17 @@ class ConditionEvaluationServiceTest {
     fhir.givenSearchResult(
         Observation.class,
         bundleOf(quantityObservation(150), textReading, quantityObservation(160)));
+
+    service.evaluate(PATIENT_ID, "systolic", 150);
+
+    verifyNoInteractions(conditionService);
+  }
+
+  @Test
+  void readingsWithoutAValueAreIgnored() {
+    Observation noValue = new Observation().setValue(new Quantity());
+    fhir.givenSearchResult(
+        Observation.class, bundleOf(quantityObservation(150), noValue, quantityObservation(160)));
 
     service.evaluate(PATIENT_ID, "systolic", 150);
 
