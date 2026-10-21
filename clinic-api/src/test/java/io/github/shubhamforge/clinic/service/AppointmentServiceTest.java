@@ -4,12 +4,14 @@ import static io.github.shubhamforge.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.shubhamforge.clinic.dto.AppointmentRequest;
 import io.github.shubhamforge.clinic.exception.ResourceNotFoundException;
 import io.github.shubhamforge.clinic.mapper.AppointmentMapper;
 import io.github.shubhamforge.clinic.support.FhirClientStub;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.hl7.fhir.r4.model.Appointment;
 import org.hl7.fhir.r4.model.Bundle;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +35,7 @@ class AppointmentServiceTest {
         service.createAppointment(
             new AppointmentRequest("p1", null, start, start.plusMinutes(30), null, "booked"));
 
-    assertThat(fhir.created()).containsExactly(appointment);
+    assertThat(fhir.created()).singleElement().isNotSameAs(appointment);
     assertThat(appointment.getIdElement().getIdPart()).isEqualTo("1");
     assertThat(appointment.getParticipantFirstRep().getActor().getReference())
         .isEqualTo("Patient/p1");
@@ -44,7 +46,7 @@ class AppointmentServiceTest {
     Appointment stored = new Appointment();
     fhir.givenStored(stored, "a1");
 
-    assertThat(service.getAppointment("a1")).isSameAs(stored);
+    assertThat(service.getAppointment("a1").getIdElement().getIdPart()).isEqualTo("a1");
   }
 
   @Test
@@ -55,23 +57,39 @@ class AppointmentServiceTest {
   }
 
   @Test
+  void getPropagatesOtherServerErrors() {
+    fhir.givenReadFails(Appointment.class, "x", new InternalErrorException("FHIR server error"));
+
+    assertThatThrownBy(() -> service.getAppointment("x"))
+        .isInstanceOf(InternalErrorException.class);
+  }
+
+  @Test
   void listsAppointmentsWherePatientIsAnActor() {
     Bundle appointments = bundleOf(new Appointment());
     fhir.givenSearchResult(Appointment.class, appointments);
 
     assertThat(service.getAppointmentsForPatient("p1")).isSameAs(appointments);
-    assertThat(fhir.lastSearchCriteria(Appointment.class)).containsExactly("actor=Patient/p1");
+    assertThat(fhir.lastSearchCriteria(Appointment.class))
+        .containsExactlyInAnyOrder("actor=Patient/p1");
   }
 
   @Test
-  void upcomingAppointmentIsTheNextOneFromToday() {
+  void upcomingAppointmentIsTheSoonestOneFromToday() {
     LocalDate before = LocalDate.now();
 
     service.getUpcomingAppointmentsForPatient("p1");
 
-    assertThat(fhir.lastSearchCriteria(Appointment.class))
-        .containsAnyOf("date=ge" + before, "date=ge" + LocalDate.now())
-        .contains("actor=Patient/p1", "_count=1")
-        .hasSize(3);
+    List<String> criteria = fhir.lastSearchCriteria(Appointment.class);
+    assertThat(criteria)
+        .filteredOn(c -> !c.startsWith("date="))
+        .containsExactlyInAnyOrder("actor=Patient/p1", "_sort=date", "_count=1");
+    assertThat(criteria)
+        .filteredOn(c -> c.startsWith("date="))
+        .singleElement()
+        .satisfies(
+            c ->
+                assertThat(LocalDate.parse(c.substring("date=ge".length())))
+                    .isBetween(before, LocalDate.now()));
   }
 }

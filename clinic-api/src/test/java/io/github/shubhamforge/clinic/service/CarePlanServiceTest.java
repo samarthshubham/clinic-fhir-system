@@ -4,6 +4,7 @@ import static io.github.shubhamforge.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.shubhamforge.clinic.dto.CarePlanRequest;
 import io.github.shubhamforge.clinic.exception.ResourceNotFoundException;
 import io.github.shubhamforge.clinic.mapper.CarePlanMapper;
@@ -31,7 +32,7 @@ class CarePlanServiceTest {
         service.createCarePlan(
             new CarePlanRequest("p1", null, "BP control", "active", LocalDate.now(), null));
 
-    assertThat(fhir.created()).containsExactly(plan);
+    assertThat(fhir.created()).singleElement().isNotSameAs(plan);
     assertThat(plan.getIdElement().getIdPart()).isEqualTo("1");
     assertThat(plan.getTitle()).isEqualTo("BP control");
   }
@@ -41,7 +42,7 @@ class CarePlanServiceTest {
     CarePlan stored = new CarePlan();
     fhir.givenStored(stored, "cp1");
 
-    assertThat(service.getCarePlan("cp1")).isSameAs(stored);
+    assertThat(service.getCarePlan("cp1").getIdElement().getIdPart()).isEqualTo("cp1");
   }
 
   @Test
@@ -52,12 +53,20 @@ class CarePlanServiceTest {
   }
 
   @Test
+  void getPropagatesOtherServerErrors() {
+    fhir.givenReadFails(CarePlan.class, "x", new InternalErrorException("FHIR server error"));
+
+    assertThatThrownBy(() -> service.getCarePlan("x")).isInstanceOf(InternalErrorException.class);
+  }
+
+  @Test
   void listsPlansForPatient() {
     Bundle plans = bundleOf(new CarePlan());
     fhir.givenSearchResult(CarePlan.class, plans);
 
     assertThat(service.getCarePlansForPatient("p1")).isSameAs(plans);
-    assertThat(fhir.lastSearchCriteria(CarePlan.class)).containsExactly("subject=Patient/p1");
+    assertThat(fhir.lastSearchCriteria(CarePlan.class))
+        .containsExactlyInAnyOrder("subject=Patient/p1");
   }
 
   @Test
@@ -65,6 +74,6 @@ class CarePlanServiceTest {
     service.getActiveCarePlanForPatient("p1");
 
     assertThat(fhir.lastSearchCriteria(CarePlan.class))
-        .containsExactly("subject=Patient/p1", "status=active", "_count=1");
+        .containsExactlyInAnyOrder("subject=Patient/p1", "status=active", "_count=1");
   }
 }

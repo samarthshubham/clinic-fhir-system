@@ -4,6 +4,7 @@ import static io.github.shubhamforge.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.shubhamforge.clinic.dto.GoalRequest;
 import io.github.shubhamforge.clinic.exception.ResourceNotFoundException;
 import io.github.shubhamforge.clinic.mapper.GoalMapper;
@@ -31,7 +32,7 @@ class GoalServiceTest {
         service.createGoal(
             new GoalRequest("p1", "Walk daily", "active", null, null, null, null, null));
 
-    assertThat(fhir.created()).containsExactly(goal);
+    assertThat(fhir.created()).singleElement().isNotSameAs(goal);
     assertThat(goal.getIdElement().getIdPart()).isEqualTo("1");
     assertThat(goal.getDescription().getText()).isEqualTo("Walk daily");
   }
@@ -41,7 +42,7 @@ class GoalServiceTest {
     Goal stored = new Goal();
     fhir.givenStored(stored, "g1");
 
-    assertThat(service.getGoal("g1")).isSameAs(stored);
+    assertThat(service.getGoal("g1").getIdElement().getIdPart()).isEqualTo("g1");
   }
 
   @Test
@@ -52,12 +53,19 @@ class GoalServiceTest {
   }
 
   @Test
+  void getPropagatesOtherServerErrors() {
+    fhir.givenReadFails(Goal.class, "x", new InternalErrorException("FHIR server error"));
+
+    assertThatThrownBy(() -> service.getGoal("x")).isInstanceOf(InternalErrorException.class);
+  }
+
+  @Test
   void listsGoalsForPatient() {
     Bundle goals = bundleOf(new Goal());
     fhir.givenSearchResult(Goal.class, goals);
 
     assertThat(service.getGoalsForPatient("p1")).isSameAs(goals);
-    assertThat(fhir.lastSearchCriteria(Goal.class)).containsExactly("subject=Patient/p1");
+    assertThat(fhir.lastSearchCriteria(Goal.class)).containsExactlyInAnyOrder("subject=Patient/p1");
   }
 
   @Test
@@ -71,8 +79,8 @@ class GoalServiceTest {
 
     assertThat(result.getType()).isEqualTo(Bundle.BundleType.COLLECTION);
     assertThat(result.getEntry())
-        .extracting(Bundle.BundleEntryComponent::getResource)
-        .containsExactly(second, first);
+        .extracting(entry -> entry.getResource().getIdElement().getIdPart())
+        .containsExactly("g2", "g1");
   }
 
   @Test

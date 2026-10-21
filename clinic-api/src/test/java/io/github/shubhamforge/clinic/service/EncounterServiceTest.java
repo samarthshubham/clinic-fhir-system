@@ -4,6 +4,7 @@ import static io.github.shubhamforge.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.shubhamforge.clinic.dto.EncounterRequest;
 import io.github.shubhamforge.clinic.exception.ResourceNotFoundException;
 import io.github.shubhamforge.clinic.mapper.EncounterMapper;
@@ -32,7 +33,7 @@ class EncounterServiceTest {
             new EncounterRequest(
                 "p1", LocalDate.of(2026, 5, 1), "Headache", "finished", null, null));
 
-    assertThat(fhir.created()).containsExactly(encounter);
+    assertThat(fhir.created()).singleElement().isNotSameAs(encounter);
     assertThat(encounter.getIdElement().getIdPart()).isEqualTo("1");
     assertThat(encounter.getSubject().getReference()).isEqualTo("Patient/p1");
   }
@@ -42,7 +43,7 @@ class EncounterServiceTest {
     Encounter stored = new Encounter();
     fhir.givenStored(stored, "e1");
 
-    assertThat(service.getEncounter("e1")).isSameAs(stored);
+    assertThat(service.getEncounter("e1").getIdElement().getIdPart()).isEqualTo("e1");
   }
 
   @Test
@@ -53,11 +54,19 @@ class EncounterServiceTest {
   }
 
   @Test
+  void getPropagatesOtherServerErrors() {
+    fhir.givenReadFails(Encounter.class, "x", new InternalErrorException("FHIR server error"));
+
+    assertThatThrownBy(() -> service.getEncounter("x")).isInstanceOf(InternalErrorException.class);
+  }
+
+  @Test
   void listsEncountersForPatient() {
     Bundle encounters = bundleOf(new Encounter());
     fhir.givenSearchResult(Encounter.class, encounters);
 
     assertThat(service.getEncountersForPatient("p1")).isSameAs(encounters);
-    assertThat(fhir.lastSearchCriteria(Encounter.class)).containsExactly("subject=Patient/p1");
+    assertThat(fhir.lastSearchCriteria(Encounter.class))
+        .containsExactlyInAnyOrder("subject=Patient/p1");
   }
 }

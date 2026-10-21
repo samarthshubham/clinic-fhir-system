@@ -4,6 +4,7 @@ import static io.github.shubhamforge.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.shubhamforge.clinic.dto.PatientRequest;
 import io.github.shubhamforge.clinic.exception.ResourceNotFoundException;
 import io.github.shubhamforge.clinic.mapper.PatientMapper;
@@ -31,7 +32,7 @@ class PatientServiceTest {
         service.createPatient(
             new PatientRequest("Priya", "Nair", LocalDate.of(1985, 3, 14), "female", null, null));
 
-    assertThat(fhir.created()).containsExactly(patient);
+    assertThat(fhir.created()).singleElement().isNotSameAs(patient);
     assertThat(patient.getIdElement().getIdPart()).isEqualTo("1");
     assertThat(patient.getNameFirstRep().getFamily()).isEqualTo("Nair");
   }
@@ -41,7 +42,7 @@ class PatientServiceTest {
     Patient stored = new Patient();
     fhir.givenStored(stored, "p1");
 
-    assertThat(service.getPatient("p1")).isSameAs(stored);
+    assertThat(service.getPatient("p1").getIdElement().getIdPart()).isEqualTo("p1");
   }
 
   @Test
@@ -49,6 +50,13 @@ class PatientServiceTest {
     assertThatThrownBy(() -> service.getPatient("missing"))
         .isInstanceOf(ResourceNotFoundException.class)
         .hasMessage("Patient with id 'missing' not found");
+  }
+
+  @Test
+  void getPropagatesOtherServerErrors() {
+    fhir.givenReadFails(Patient.class, "x", new InternalErrorException("FHIR server error"));
+
+    assertThatThrownBy(() -> service.getPatient("x")).isInstanceOf(InternalErrorException.class);
   }
 
   @Test
@@ -65,7 +73,21 @@ class PatientServiceTest {
     service.searchPatients("Nair", LocalDate.of(1985, 3, 14));
 
     assertThat(fhir.lastSearchCriteria(Patient.class))
-        .containsExactly("name=Nair", "birthdate=1985-03-14");
+        .containsExactlyInAnyOrder("name=Nair", "birthdate=1985-03-14");
+  }
+
+  @Test
+  void searchFiltersByNameOnly() {
+    service.searchPatients("Nair", null);
+
+    assertThat(fhir.lastSearchCriteria(Patient.class)).containsExactly("name=Nair");
+  }
+
+  @Test
+  void searchFiltersByBirthDateOnly() {
+    service.searchPatients(null, LocalDate.of(1985, 3, 14));
+
+    assertThat(fhir.lastSearchCriteria(Patient.class)).containsExactly("birthdate=1985-03-14");
   }
 
   @Test

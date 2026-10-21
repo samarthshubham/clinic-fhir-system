@@ -4,6 +4,7 @@ import static io.github.shubhamforge.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.shubhamforge.clinic.dto.ServiceRequestRequest;
 import io.github.shubhamforge.clinic.exception.ResourceNotFoundException;
 import io.github.shubhamforge.clinic.mapper.ServiceRequestMapper;
@@ -42,7 +43,7 @@ class ServiceRequestServiceTest {
                 "routine",
                 LocalDate.now()));
 
-    assertThat(fhir.created()).containsExactly(order);
+    assertThat(fhir.created()).singleElement().isNotSameAs(order);
     assertThat(order.getIdElement().getIdPart()).isEqualTo("1");
     assertThat(order.getCode().getText()).isEqualTo("Lipid panel");
   }
@@ -52,7 +53,7 @@ class ServiceRequestServiceTest {
     ServiceRequest stored = new ServiceRequest();
     fhir.givenStored(stored, "sr1");
 
-    assertThat(service.getServiceRequest("sr1")).isSameAs(stored);
+    assertThat(service.getServiceRequest("sr1").getIdElement().getIdPart()).isEqualTo("sr1");
   }
 
   @Test
@@ -60,6 +61,14 @@ class ServiceRequestServiceTest {
     assertThatThrownBy(() -> service.getServiceRequest("missing"))
         .isInstanceOf(ResourceNotFoundException.class)
         .hasMessage("ServiceRequest with id 'missing' not found");
+  }
+
+  @Test
+  void getPropagatesOtherServerErrors() {
+    fhir.givenReadFails(ServiceRequest.class, "x", new InternalErrorException("FHIR server error"));
+
+    assertThatThrownBy(() -> service.getServiceRequest("x"))
+        .isInstanceOf(InternalErrorException.class);
   }
 
   @ParameterizedTest
@@ -70,7 +79,8 @@ class ServiceRequestServiceTest {
     fhir.givenSearchResult(ServiceRequest.class, orders);
 
     assertThat(service.getServiceRequestsForPatient("p1", status)).isSameAs(orders);
-    assertThat(fhir.lastSearchCriteria(ServiceRequest.class)).containsExactly("subject=Patient/p1");
+    assertThat(fhir.lastSearchCriteria(ServiceRequest.class))
+        .containsExactlyInAnyOrder("subject=Patient/p1");
   }
 
   @Test
@@ -78,7 +88,7 @@ class ServiceRequestServiceTest {
     service.getServiceRequestsForPatient("p1", "completed");
 
     assertThat(fhir.lastSearchCriteria(ServiceRequest.class))
-        .containsExactly("subject=Patient/p1", "status=completed");
+        .containsExactlyInAnyOrder("subject=Patient/p1", "status=completed");
   }
 
   @Test
@@ -86,7 +96,7 @@ class ServiceRequestServiceTest {
     service.getPendingServiceRequestsForPatient("p1");
 
     assertThat(fhir.lastSearchCriteria(ServiceRequest.class))
-        .containsExactly("subject=Patient/p1", "status=active", "_count=5");
+        .containsExactlyInAnyOrder("subject=Patient/p1", "status=active", "_count=5");
   }
 
   @Test
@@ -97,14 +107,16 @@ class ServiceRequestServiceTest {
 
     service.complete("sr1");
 
-    assertThat(fhir.updated()).containsExactly(order);
-    assertThat(order.getStatus()).isEqualTo(ServiceRequest.ServiceRequestStatus.COMPLETED);
+    assertThat(fhir.updated()).hasSize(1);
+    assertThat(fhir.stored(ServiceRequest.class, "sr1").getStatus())
+        .isEqualTo(ServiceRequest.ServiceRequestStatus.COMPLETED);
   }
 
   @Test
   void completingUnknownOrderThrowsNotFound() {
     assertThatThrownBy(() -> service.complete("missing"))
-        .isInstanceOf(ResourceNotFoundException.class);
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessage("ServiceRequest with id 'missing' not found");
     assertThat(fhir.updated()).isEmpty();
   }
 }

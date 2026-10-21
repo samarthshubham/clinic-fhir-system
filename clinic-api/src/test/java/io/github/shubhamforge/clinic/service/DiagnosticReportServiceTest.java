@@ -4,6 +4,7 @@ import static io.github.shubhamforge.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.shubhamforge.clinic.dto.DiagnosticReportRequest;
 import io.github.shubhamforge.clinic.exception.ResourceNotFoundException;
 import io.github.shubhamforge.clinic.mapper.DiagnosticReportMapper;
@@ -33,7 +34,7 @@ class DiagnosticReportServiceTest {
   void createStoresMappedReportAndReturnsTheStoredCopy() {
     DiagnosticReport report = service.createDiagnosticReport(request(null));
 
-    assertThat(fhir.created()).containsExactly(report);
+    assertThat(fhir.created()).singleElement().isNotSameAs(report);
     assertThat(report.getIdElement().getIdPart()).isEqualTo("1");
     assertThat(report.getCode().getText()).isEqualTo("Lipid panel");
     assertThat(fhir.updated()).isEmpty();
@@ -47,15 +48,26 @@ class DiagnosticReportServiceTest {
 
     service.createDiagnosticReport(request("sr1"));
 
-    assertThat(fhir.updated()).containsExactly(order);
-    assertThat(order.getStatus()).isEqualTo(ServiceRequest.ServiceRequestStatus.COMPLETED);
+    assertThat(fhir.updated()).hasSize(1);
+    assertThat(fhir.stored(ServiceRequest.class, "sr1").getStatus())
+        .isEqualTo(ServiceRequest.ServiceRequestStatus.COMPLETED);
+  }
+
+  @Test
+  void otherFailureCompletingTheOrderPropagatesAfterTheReportIsCreated() {
+    fhir.givenReadFails(ServiceRequest.class, "sr1", new InternalErrorException("down"));
+
+    assertThatThrownBy(() -> service.createDiagnosticReport(request("sr1")))
+        .isInstanceOf(InternalErrorException.class);
+    assertThat(fhir.created()).hasSize(1);
+    assertThat(fhir.updated()).isEmpty();
   }
 
   @Test
   void createStillSucceedsWhenLinkedOrderIsMissing() {
     DiagnosticReport report = service.createDiagnosticReport(request("missing"));
 
-    assertThat(fhir.created()).containsExactly(report);
+    assertThat(fhir.created()).singleElement().isNotSameAs(report);
     assertThat(fhir.updated()).isEmpty();
   }
 
@@ -64,7 +76,7 @@ class DiagnosticReportServiceTest {
     DiagnosticReport stored = new DiagnosticReport();
     fhir.givenStored(stored, "r1");
 
-    assertThat(service.getDiagnosticReport("r1")).isSameAs(stored);
+    assertThat(service.getDiagnosticReport("r1").getIdElement().getIdPart()).isEqualTo("r1");
   }
 
   @Test
@@ -75,13 +87,22 @@ class DiagnosticReportServiceTest {
   }
 
   @Test
+  void getPropagatesOtherServerErrors() {
+    fhir.givenReadFails(
+        DiagnosticReport.class, "x", new InternalErrorException("FHIR server error"));
+
+    assertThatThrownBy(() -> service.getDiagnosticReport("x"))
+        .isInstanceOf(InternalErrorException.class);
+  }
+
+  @Test
   void listsReportsForPatient() {
     Bundle reports = bundleOf(new DiagnosticReport());
     fhir.givenSearchResult(DiagnosticReport.class, reports);
 
     assertThat(service.getDiagnosticReportsForPatient("p1")).isSameAs(reports);
     assertThat(fhir.lastSearchCriteria(DiagnosticReport.class))
-        .containsExactly("subject=Patient/p1");
+        .containsExactlyInAnyOrder("subject=Patient/p1");
   }
 
   @Test
@@ -89,7 +110,7 @@ class DiagnosticReportServiceTest {
     service.getMostRecentDiagnosticReport("p1");
 
     assertThat(fhir.lastSearchCriteria(DiagnosticReport.class))
-        .containsExactly("subject=Patient/p1", "_sort=-issued", "_count=1");
+        .containsExactlyInAnyOrder("subject=Patient/p1", "_sort=-issued", "_count=1");
   }
 
   private static DiagnosticReportRequest request(String serviceRequestId) {

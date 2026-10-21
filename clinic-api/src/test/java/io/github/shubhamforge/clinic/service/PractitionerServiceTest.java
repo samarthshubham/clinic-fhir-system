@@ -3,6 +3,7 @@ package io.github.shubhamforge.clinic.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.shubhamforge.clinic.dto.PractitionerRequest;
 import io.github.shubhamforge.clinic.exception.ResourceNotFoundException;
 import io.github.shubhamforge.clinic.mapper.PractitionerMapper;
@@ -28,7 +29,7 @@ class PractitionerServiceTest {
         service.createPractitioner(
             new PractitionerRequest("Gregory", "House", "Diagnostics", null, null));
 
-    assertThat(fhir.created()).containsExactly(practitioner);
+    assertThat(fhir.created()).singleElement().isNotSameAs(practitioner);
     assertThat(practitioner.getIdElement().getIdPart()).isEqualTo("1");
     assertThat(practitioner.getNameFirstRep().getFamily()).isEqualTo("House");
   }
@@ -38,7 +39,7 @@ class PractitionerServiceTest {
     Practitioner stored = new Practitioner();
     fhir.givenStored(stored, "dr1");
 
-    assertThat(service.getPractitioner("dr1")).isSameAs(stored);
+    assertThat(service.getPractitioner("dr1").getIdElement().getIdPart()).isEqualTo("dr1");
   }
 
   @Test
@@ -46,5 +47,13 @@ class PractitionerServiceTest {
     assertThatThrownBy(() -> service.getPractitioner("missing"))
         .isInstanceOf(ResourceNotFoundException.class)
         .hasMessage("Practitioner with id 'missing' not found");
+  }
+
+  @Test
+  void getPropagatesOtherServerErrors() {
+    fhir.givenReadFails(Practitioner.class, "x", new InternalErrorException("FHIR server error"));
+
+    assertThatThrownBy(() -> service.getPractitioner("x"))
+        .isInstanceOf(InternalErrorException.class);
   }
 }

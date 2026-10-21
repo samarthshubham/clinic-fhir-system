@@ -4,6 +4,7 @@ import static io.github.shubhamforge.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.shubhamforge.clinic.dto.ConditionRequest;
 import io.github.shubhamforge.clinic.exception.ResourceNotFoundException;
 import io.github.shubhamforge.clinic.mapper.ConditionMapper;
@@ -35,7 +36,7 @@ class ConditionServiceTest {
             new ConditionRequest(
                 "p1", null, "59621000", "Essential hypertension", "active", LocalDate.now()));
 
-    assertThat(fhir.created()).containsExactly(condition);
+    assertThat(fhir.created()).singleElement().isNotSameAs(condition);
     assertThat(condition.getIdElement().getIdPart()).isEqualTo("1");
     assertThat(condition.getCode().getCodingFirstRep().getCode()).isEqualTo("59621000");
   }
@@ -45,7 +46,7 @@ class ConditionServiceTest {
     Condition stored = new Condition();
     fhir.givenStored(stored, "c1");
 
-    assertThat(service.getCondition("c1")).isSameAs(stored);
+    assertThat(service.getCondition("c1").getIdElement().getIdPart()).isEqualTo("c1");
   }
 
   @Test
@@ -56,12 +57,20 @@ class ConditionServiceTest {
   }
 
   @Test
+  void getPropagatesOtherServerErrors() {
+    fhir.givenReadFails(Condition.class, "x", new InternalErrorException("FHIR server error"));
+
+    assertThatThrownBy(() -> service.getCondition("x")).isInstanceOf(InternalErrorException.class);
+  }
+
+  @Test
   void listsConditionsForPatient() {
     Bundle conditions = bundleOf(new Condition());
     fhir.givenSearchResult(Condition.class, conditions);
 
     assertThat(service.getConditionsForPatient("p1")).isSameAs(conditions);
-    assertThat(fhir.lastSearchCriteria(Condition.class)).containsExactly("subject=Patient/p1");
+    assertThat(fhir.lastSearchCriteria(Condition.class))
+        .containsExactlyInAnyOrder("subject=Patient/p1");
   }
 
   @Test
@@ -69,7 +78,7 @@ class ConditionServiceTest {
     service.getActiveConditionsForPatient("p1");
 
     assertThat(fhir.lastSearchCriteria(Condition.class))
-        .containsExactly("subject=Patient/p1", ACTIVE);
+        .containsExactlyInAnyOrder("subject=Patient/p1", ACTIVE);
   }
 
   @Test
@@ -77,8 +86,9 @@ class ConditionServiceTest {
     fhir.givenSearchResult(Condition.class, bundleOf(new Condition()));
 
     assertThat(service.hasActiveConditionWithCode("p1", "59621000")).isTrue();
+    assertThat(fhir.searchCount(Condition.class)).isEqualTo(1);
     assertThat(fhir.lastSearchCriteria(Condition.class))
-        .containsExactly("subject=Patient/p1", "code=59621000", ACTIVE);
+        .containsExactlyInAnyOrder("subject=Patient/p1", "code=59621000", ACTIVE);
   }
 
   @Test

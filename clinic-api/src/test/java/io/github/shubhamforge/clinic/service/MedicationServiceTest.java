@@ -4,6 +4,7 @@ import static io.github.shubhamforge.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.shubhamforge.clinic.dto.MedicationRequest;
 import io.github.shubhamforge.clinic.exception.ResourceNotFoundException;
 import io.github.shubhamforge.clinic.mapper.MedicationMapper;
@@ -31,7 +32,7 @@ class MedicationServiceTest {
         service.createMedication(
             new MedicationRequest("p1", "Lisinopril", "active", null, LocalDate.of(2026, 1, 10)));
 
-    assertThat(fhir.created()).containsExactly(medication);
+    assertThat(fhir.created()).singleElement().isNotSameAs(medication);
     assertThat(medication.getIdElement().getIdPart()).isEqualTo("1");
     assertThat(medication.getMedicationCodeableConcept().getText()).isEqualTo("Lisinopril");
   }
@@ -41,7 +42,7 @@ class MedicationServiceTest {
     MedicationStatement stored = new MedicationStatement();
     fhir.givenStored(stored, "m1");
 
-    assertThat(service.getMedication("m1")).isSameAs(stored);
+    assertThat(service.getMedication("m1").getIdElement().getIdPart()).isEqualTo("m1");
   }
 
   @Test
@@ -52,13 +53,21 @@ class MedicationServiceTest {
   }
 
   @Test
+  void getPropagatesOtherServerErrors() {
+    fhir.givenReadFails(
+        MedicationStatement.class, "x", new InternalErrorException("FHIR server error"));
+
+    assertThatThrownBy(() -> service.getMedication("x")).isInstanceOf(InternalErrorException.class);
+  }
+
+  @Test
   void listsMedicationsForPatient() {
     Bundle medications = bundleOf(new MedicationStatement());
     fhir.givenSearchResult(MedicationStatement.class, medications);
 
     assertThat(service.getMedicationsForPatient("p1")).isSameAs(medications);
     assertThat(fhir.lastSearchCriteria(MedicationStatement.class))
-        .containsExactly("subject=Patient/p1");
+        .containsExactlyInAnyOrder("subject=Patient/p1");
   }
 
   @Test
@@ -66,6 +75,6 @@ class MedicationServiceTest {
     service.getActiveMedicationsForPatient("p1");
 
     assertThat(fhir.lastSearchCriteria(MedicationStatement.class))
-        .containsExactly("subject=Patient/p1", "status=active");
+        .containsExactlyInAnyOrder("subject=Patient/p1", "status=active");
   }
 }
