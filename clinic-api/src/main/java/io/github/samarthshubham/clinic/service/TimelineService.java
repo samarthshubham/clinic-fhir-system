@@ -332,7 +332,7 @@ public class TimelineService {
     Map<String, String> names = new HashMap<>();
     for (String id : ids) {
       try {
-        Practitioner p = practitionerService.getPractitioner(id);
+        Practitioner p = practitionerService.findPractitioner(id);
         String name =
             p.hasName()
                 ? "Dr. "

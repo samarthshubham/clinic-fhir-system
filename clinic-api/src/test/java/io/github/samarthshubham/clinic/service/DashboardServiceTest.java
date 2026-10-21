@@ -107,7 +107,7 @@ class DashboardServiceTest {
         .when(diagnosticReportService.getMostRecentDiagnosticReport("p1"))
         .thenReturn(new Bundle());
     lenient().when(carePlanService.getActiveCarePlanForPatient("p1")).thenReturn(new Bundle());
-    lenient().when(practitionerService.getPractitioner("dr1")).thenReturn(house());
+    lenient().when(practitionerService.findPractitioner("dr1")).thenReturn(house());
     fhir.givenStored(new Organization().setName("Praxis Clinic"), ORG_ID);
   }
 
@@ -188,13 +188,13 @@ class DashboardServiceTest {
     DashboardResponse dashboard = service.getDashboard("p1");
 
     assertThat(dashboard.careTeam()).doesNotContainKey("primaryDoctor");
-    verify(practitionerService, never()).getPractitioner(anyString());
+    verify(practitionerService, never()).findPractitioner(anyString());
   }
 
   @Test
   void unresolvablePractitionerIsAWarningAndLeavesOutProviders() {
     givenRecentEncounters(encounter("e1", DAY, "dr1"));
-    when(practitionerService.getPractitioner("dr1"))
+    when(practitionerService.findPractitioner("dr1"))
         .thenThrow(new ResourceNotFoundException("Practitioner", "dr1"));
     when(appointmentService.getUpcomingAppointmentsForPatient("p1"))
         .thenReturn(bundleOf(appointment()));

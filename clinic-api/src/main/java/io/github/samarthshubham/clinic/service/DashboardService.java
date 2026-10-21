@@ -189,7 +189,7 @@ public class DashboardService {
     Map<String, Object> m = new LinkedHashMap<>();
     if (practitionerId != null) {
       try {
-        Practitioner p = practitionerService.getPractitioner(practitionerId);
+        Practitioner p = practitionerService.findPractitioner(practitionerId);
         Map<String, Object> doc = new LinkedHashMap<>();
         doc.put("id", p.getIdElement().getIdPart());
         if (p.hasName()) {

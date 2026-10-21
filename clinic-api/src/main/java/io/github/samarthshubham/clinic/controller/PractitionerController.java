@@ -1,10 +1,10 @@
 package io.github.samarthshubham.clinic.controller;
 
 import io.github.samarthshubham.clinic.dto.PractitionerRequest;
+import io.github.samarthshubham.clinic.dto.PractitionerResponse;
 import io.github.samarthshubham.clinic.service.PractitionerService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import org.hl7.fhir.r4.model.Practitioner;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,14 +25,14 @@ public class PractitionerController {
   }
 
   @PostMapping
-  public ResponseEntity<Practitioner> createPractitioner(
+  public ResponseEntity<PractitionerResponse> createPractitioner(
       @Valid @RequestBody PractitionerRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(practitionerService.createPractitioner(request));
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<Practitioner> getPractitioner(@PathVariable @NotBlank String id) {
+  public ResponseEntity<PractitionerResponse> getPractitioner(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(practitionerService.getPractitioner(id));
   }
 }

@@ -3,6 +3,7 @@ package io.github.samarthshubham.clinic.mapper;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.samarthshubham.clinic.dto.PractitionerRequest;
+import io.github.samarthshubham.clinic.dto.PractitionerResponse;
 import org.hl7.fhir.r4.model.ContactPoint;
 import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.Practitioner;
@@ -38,5 +39,30 @@ class PractitionerMapperTest {
 
     assertThat(practitioner.getIdentifier()).isEmpty();
     assertThat(practitioner.getTelecom()).isEmpty();
+  }
+
+  @Test
+  void toResponseFlattensTheStoredPractitioner() {
+    Practitioner practitioner =
+        mapper.toFhir(
+            new PractitionerRequest("Gregory", "House", "Diagnostics", "1234567890", "g@x.org"));
+    practitioner.addIdentifier().setSystem("urn:other").setValue("other");
+    practitioner.addTelecom().setSystem(ContactPoint.ContactPointSystem.PHONE).setValue("555");
+    practitioner.setId("dr1");
+
+    assertThat(mapper.toResponse(practitioner))
+        .isEqualTo(
+            new PractitionerResponse(
+                "dr1", "Gregory", "House", "Diagnostics", "1234567890", "g@x.org"));
+  }
+
+  @Test
+  void toResponseLeavesMissingFieldsNull() {
+    Practitioner practitioner = new Practitioner();
+    practitioner.addIdentifier().setSystem("urn:other").setValue("other");
+    practitioner.setId("dr1");
+
+    assertThat(mapper.toResponse(practitioner))
+        .isEqualTo(new PractitionerResponse("dr1", null, null, null, null, null));
   }
 }

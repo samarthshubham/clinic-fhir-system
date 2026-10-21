@@ -1,6 +1,7 @@
 package io.github.samarthshubham.clinic.mapper;
 
 import io.github.samarthshubham.clinic.dto.PractitionerRequest;
+import io.github.samarthshubham.clinic.dto.PractitionerResponse;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.ContactPoint;
 import org.hl7.fhir.r4.model.Identifier;
@@ -30,5 +31,25 @@ public class PractitionerMapper {
           .setValue(request.email());
     }
     return practitioner;
+  }
+
+  public PractitionerResponse toResponse(Practitioner practitioner) {
+    String specialty =
+        practitioner.hasQualification()
+            ? practitioner.getQualificationFirstRep().getCode().getText()
+            : null;
+    String npi =
+        practitioner.getIdentifier().stream()
+            .filter(identifier -> NPI_SYSTEM.equals(identifier.getSystem()))
+            .map(Identifier::getValue)
+            .findFirst()
+            .orElse(null);
+    return new PractitionerResponse(
+        FhirValues.idOf(practitioner),
+        FhirValues.given(practitioner.getName()),
+        FhirValues.family(practitioner.getName()),
+        specialty,
+        npi,
+        FhirValues.telecom(practitioner.getTelecom(), ContactPoint.ContactPointSystem.EMAIL));
   }
 }

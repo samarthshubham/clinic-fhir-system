@@ -47,11 +47,14 @@
               "pm.test('Status 201', () => pm.response.to.have.status(201));",
               "",
               "const body = pm.response.json();",
-              "pm.test('resourceType is Practitioner', () => pm.expect(body.resourceType).to.eql('Practitioner'));",
+              "pm.test('Content-Type is application/json', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
               "pm.test('Has id', () => pm.expect(body.id).to.be.a('string').and.not.empty);",
-              "pm.test('Name matches', () => {",
-              "  pm.expect(body.name[0].family).to.eql('Practitioner');",
-              "  pm.expect(body.name[0].given[0]).to.eql('Test');",
+              "pm.test('Fields match', () => {",
+              "  pm.expect(body.firstName).to.eql('Test');",
+              "  pm.expect(body.lastName).to.eql('Practitioner');",
+              "  pm.expect(body.specialty).to.eql('Internal Medicine');",
+              "  pm.expect(body.npi).to.eql('1234567890');",
+              "  pm.expect(body.email).to.eql('test.practitioner@clinic.test');",
               "});",
               "pm.collectionVariables.set('practitionerId', body.id);"
             ]
@@ -78,8 +81,9 @@
               "pm.test('Status 200', () => pm.response.to.have.status(200));",
               "",
               "const body = pm.response.json();",
-              "pm.test('resourceType is Practitioner', () => pm.expect(body.resourceType).to.eql('Practitioner'));",
-              "pm.test('ID matches', () => pm.expect(body.id).to.eql(pm.collectionVariables.get('practitionerId')));"
+              "pm.test('ID matches', () => pm.expect(body.id).to.eql(pm.collectionVariables.get('practitionerId')));",
+              "pm.test('Has no FHIR resourceType', () => pm.expect(body).to.not.have.property('resourceType'));",
+              "pm.test('Specialty matches', () => pm.expect(body.specialty).to.eql('Internal Medicine'));"
             ]
           }
         }
