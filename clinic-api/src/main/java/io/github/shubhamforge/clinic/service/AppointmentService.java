@@ -51,6 +51,8 @@ public class AppointmentService {
         .forResource(Appointment.class)
         .where(new ReferenceClientParam("actor").hasId("Patient/" + patientId))
         .and(new DateClientParam("date").afterOrEquals().day(LocalDate.now().toString()))
+        .sort()
+        .ascending("date")
         .count(1)
         .returnBundle(Bundle.class)
         .execute();

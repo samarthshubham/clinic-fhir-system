@@ -1,6 +1,7 @@
 package io.github.shubhamforge.clinic.support;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -19,6 +20,8 @@ import ca.uhn.fhir.rest.gclient.IReadExecutable;
 import ca.uhn.fhir.rest.gclient.IReadTyped;
 import ca.uhn.fhir.rest.gclient.ISort;
 import ca.uhn.fhir.rest.gclient.IUntypedQuery;
+import ca.uhn.fhir.rest.gclient.IUpdate;
+import ca.uhn.fhir.rest.gclient.IUpdateTyped;
 import ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -40,19 +43,20 @@ public final class FhirClientStub {
 
   private final IGenericClient client = lenientMock(IGenericClient.class, Answers.RETURNS_DEFAULTS);
   private final Map<Class<?>, IQuery<?>> queries = new HashMap<>();
-  private final Map<Class<?>, ISort<?>> sorts = new HashMap<>();
   private final Map<Class<?>, Deque<Bundle>> searchResults = new HashMap<>();
-  private final Map<Class<?>, Map<String, IBaseResource>> stored = new HashMap<>();
+  private final Map<Class<?>, Map<String, Resource>> stored = new HashMap<>();
+  private final Map<String, RuntimeException> readFailures = new HashMap<>();
   private final Map<Class<?>, List<String>> pendingCriteria = new HashMap<>();
   private final Map<Class<?>, List<List<String>>> executedSearches = new HashMap<>();
   private final List<IBaseResource> created = new ArrayList<>();
+  private final List<IBaseResource> updated = new ArrayList<>();
   private int nextId = 1;
 
   public FhirClientStub() {
     IUntypedQuery<?> untypedQuery = lenientMock(IUntypedQuery.class, Answers.RETURNS_DEFAULTS);
     lenient().doReturn(untypedQuery).when(client).search();
     lenient()
-        .doAnswer(inv -> query(inv.getArgument(0)))
+        .doAnswer(inv -> startQuery(inv.getArgument(0)))
         .when(untypedQuery)
         .forResource(any(Class.class));
 
@@ -66,19 +70,21 @@ public final class FhirClientStub {
     IRead read = lenientMock(IRead.class, Answers.RETURNS_DEFAULTS);
     lenient().doReturn(read).when(client).read();
     lenient().doAnswer(inv -> readTyped(inv.getArgument(0))).when(read).resource(any(Class.class));
+
+    IUpdate update = lenientMock(IUpdate.class, Answers.RETURNS_DEFAULTS);
+    lenient().doReturn(update).when(client).update();
+    lenient()
+        .doAnswer(inv -> updateTyped(inv.getArgument(0)))
+        .when(update)
+        .resource(any(IBaseResource.class));
   }
 
   public IGenericClient client() {
     return client;
   }
 
-  public IQuery<?> query(Class<? extends IBaseResource> type) {
-    return queries.computeIfAbsent(type, this::newQuery);
-  }
-
-  public ISort<?> sort(Class<? extends IBaseResource> type) {
-    query(type);
-    return sorts.get(type);
+  public int searchCount(Class<? extends IBaseResource> type) {
+    return executedSearches.getOrDefault(type, List.of()).size();
   }
 
   public List<String> lastSearchCriteria(Class<? extends IBaseResource> type) {
@@ -95,11 +101,23 @@ public final class FhirClientStub {
 
   public void givenStored(IBaseResource resource, String id) {
     resource.setId(id);
-    stored.computeIfAbsent(resource.getClass(), k -> new HashMap<>()).put(id, resource);
+    store((Resource) resource, id);
+  }
+
+  public void givenReadFails(Class<? extends IBaseResource> type, String id, RuntimeException e) {
+    readFailures.put(type.getSimpleName() + "/" + id, e);
+  }
+
+  public <T extends IBaseResource> T stored(Class<T> type, String id) {
+    return type.cast(stored.getOrDefault(type, Map.of()).get(id));
   }
 
   public List<IBaseResource> created() {
     return created;
+  }
+
+  public List<IBaseResource> updated() {
+    return updated;
   }
 
   public static Observation quantityObservation(double value) {
@@ -114,12 +132,33 @@ public final class FhirClientStub {
     return bundle;
   }
 
+  private IQuery<?> startQuery(Class<?> type) {
+    pendingCriteria.remove(type);
+    return queries.computeIfAbsent(type, this::newQuery);
+  }
+
+  private void store(Resource resource, String id) {
+    Resource copy = resource.copy();
+    copy.setId(id);
+    stored.computeIfAbsent(resource.getClass(), k -> new HashMap<>()).put(id, copy);
+  }
+
   private IQuery<?> newQuery(Class<?> type) {
     IQuery<?> query = lenientMock(IQuery.class, Answers.RETURNS_SELF);
     ISort<?> sort = lenientMock(ISort.class, Answers.RETURNS_DEFAULTS);
     lenient().doReturn(sort).when(query).sort();
-    lenient().doReturn(query).when(sort).descending(anyString());
-    lenient().doReturn(query).when(sort).ascending(anyString());
+    lenient()
+        .doAnswer(inv -> record(type, "_sort=-" + inv.getArgument(0), query))
+        .when(sort)
+        .descending(anyString());
+    lenient()
+        .doAnswer(inv -> record(type, "_sort=" + inv.getArgument(0), query))
+        .when(sort)
+        .ascending(anyString());
+    lenient()
+        .doAnswer(inv -> record(type, "_count=" + inv.getArgument(0), query))
+        .when(query)
+        .count(anyInt());
     lenient()
         .doAnswer(inv -> recordCriterion(type, inv.getArgument(0), query))
         .when(query)
@@ -129,18 +168,19 @@ public final class FhirClientStub {
         .when(query)
         .and(any(ICriterion.class));
     lenient().doAnswer(inv -> executeSearch(type)).when(query).execute();
-    sorts.put(type, sort);
     return query;
   }
 
   private IQuery<?> recordCriterion(Class<?> type, ICriterion<?> criterion, IQuery<?> query) {
     ICriterionInternal internal = (ICriterionInternal) criterion;
-    pendingCriteria
-        .computeIfAbsent(type, k -> new ArrayList<>())
-        .add(
-            internal.getParameterName()
-                + "="
-                + internal.getParameterValue(FhirContext.forR4Cached()));
+    return record(
+        type,
+        internal.getParameterName() + "=" + internal.getParameterValue(FhirContext.forR4Cached()),
+        query);
+  }
+
+  private IQuery<?> record(Class<?> type, String criterion, IQuery<?> query) {
+    pendingCriteria.computeIfAbsent(type, k -> new ArrayList<>()).add(criterion);
     return query;
   }
 
@@ -166,13 +206,31 @@ public final class FhirClientStub {
         .doAnswer(
             inv -> {
               String id = String.valueOf(nextId++);
-              givenStored(resource, id);
+              store((Resource) resource, id);
               created.add(resource);
               return new MethodOutcome(new IdType(resource.fhirType(), id));
             })
         .when(createTyped)
         .execute();
     return createTyped;
+  }
+
+  private IUpdateTyped updateTyped(IBaseResource resource) {
+    IUpdateTyped updateTyped = lenientMock(IUpdateTyped.class, Answers.RETURNS_DEFAULTS);
+    lenient()
+        .doAnswer(
+            inv -> {
+              String id = resource.getIdElement().getIdPart();
+              if (id == null) {
+                throw new IllegalArgumentException("Cannot update a resource without an id");
+              }
+              store((Resource) resource, id);
+              updated.add(resource);
+              return new MethodOutcome(new IdType(resource.fhirType(), id));
+            })
+        .when(updateTyped)
+        .execute();
+    return updateTyped;
   }
 
   private IReadTyped<?> readTyped(Class<?> type) {
@@ -190,11 +248,15 @@ public final class FhirClientStub {
     lenient()
         .doAnswer(
             inv -> {
-              IBaseResource resource = stored.getOrDefault(type, Map.of()).get(id);
-              if (resource == null) {
-                throw new ResourceNotFoundException(type.getSimpleName() + "/" + id);
+              RuntimeException failure = readFailures.get(type.getSimpleName() + "/" + id);
+              if (failure != null) {
+                throw failure;
               }
-              return resource;
+              Resource resource = stored.getOrDefault(type, Map.of()).get(id);
+              if (resource == null) {
+                throw new ResourceNotFoundException(new IdType(type.getSimpleName(), id));
+              }
+              return resource.copy();
             })
         .when(readExecutable)
         .execute();
