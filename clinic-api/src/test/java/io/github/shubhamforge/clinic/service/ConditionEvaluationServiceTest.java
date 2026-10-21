@@ -65,9 +65,11 @@ class ConditionEvaluationServiceTest {
     service.evaluate(PATIENT_ID, "systolic", 150);
 
     assertThat(fhir.lastSearchCriteria(Observation.class))
-        .containsExactly("subject=Patient/" + PATIENT_ID, "code=http://loinc.org|8480-6");
-    verify(fhir.query(Observation.class)).count(3);
-    verify(fhir.sort(Observation.class)).descending("date");
+        .containsExactly(
+            "subject=Patient/" + PATIENT_ID,
+            "code=http://loinc.org|8480-6",
+            "_sort=-date",
+            "_count=3");
   }
 
   @Test
@@ -155,8 +157,11 @@ class ConditionEvaluationServiceTest {
     assertThat(request.display()).isEqualTo("Hypoxemia");
     assertThat(request.clinicalStatus()).isEqualTo("active");
     assertThat(fhir.lastSearchCriteria(Observation.class))
-        .containsExactly("subject=Patient/" + PATIENT_ID, "code=http://loinc.org|59408-5");
-    verify(fhir.query(Observation.class)).count(2);
+        .containsExactly(
+            "subject=Patient/" + PATIENT_ID,
+            "code=http://loinc.org|59408-5",
+            "_sort=-date",
+            "_count=2");
   }
 
   @Test

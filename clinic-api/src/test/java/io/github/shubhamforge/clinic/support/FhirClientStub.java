@@ -1,6 +1,7 @@
 package io.github.shubhamforge.clinic.support;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -19,6 +20,8 @@ import ca.uhn.fhir.rest.gclient.IReadExecutable;
 import ca.uhn.fhir.rest.gclient.IReadTyped;
 import ca.uhn.fhir.rest.gclient.ISort;
 import ca.uhn.fhir.rest.gclient.IUntypedQuery;
+import ca.uhn.fhir.rest.gclient.IUpdate;
+import ca.uhn.fhir.rest.gclient.IUpdateTyped;
 import ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -40,12 +43,12 @@ public final class FhirClientStub {
 
   private final IGenericClient client = lenientMock(IGenericClient.class, Answers.RETURNS_DEFAULTS);
   private final Map<Class<?>, IQuery<?>> queries = new HashMap<>();
-  private final Map<Class<?>, ISort<?>> sorts = new HashMap<>();
   private final Map<Class<?>, Deque<Bundle>> searchResults = new HashMap<>();
   private final Map<Class<?>, Map<String, IBaseResource>> stored = new HashMap<>();
   private final Map<Class<?>, List<String>> pendingCriteria = new HashMap<>();
   private final Map<Class<?>, List<List<String>>> executedSearches = new HashMap<>();
   private final List<IBaseResource> created = new ArrayList<>();
+  private final List<IBaseResource> updated = new ArrayList<>();
   private int nextId = 1;
 
   public FhirClientStub() {
@@ -66,6 +69,13 @@ public final class FhirClientStub {
     IRead read = lenientMock(IRead.class, Answers.RETURNS_DEFAULTS);
     lenient().doReturn(read).when(client).read();
     lenient().doAnswer(inv -> readTyped(inv.getArgument(0))).when(read).resource(any(Class.class));
+
+    IUpdate update = lenientMock(IUpdate.class, Answers.RETURNS_DEFAULTS);
+    lenient().doReturn(update).when(client).update();
+    lenient()
+        .doAnswer(inv -> updateTyped(inv.getArgument(0)))
+        .when(update)
+        .resource(any(IBaseResource.class));
   }
 
   public IGenericClient client() {
@@ -74,11 +84,6 @@ public final class FhirClientStub {
 
   public IQuery<?> query(Class<? extends IBaseResource> type) {
     return queries.computeIfAbsent(type, this::newQuery);
-  }
-
-  public ISort<?> sort(Class<? extends IBaseResource> type) {
-    query(type);
-    return sorts.get(type);
   }
 
   public List<String> lastSearchCriteria(Class<? extends IBaseResource> type) {
@@ -102,6 +107,10 @@ public final class FhirClientStub {
     return created;
   }
 
+  public List<IBaseResource> updated() {
+    return updated;
+  }
+
   public static Observation quantityObservation(double value) {
     return new Observation().setValue(new Quantity().setValue(value));
   }
@@ -118,8 +127,18 @@ public final class FhirClientStub {
     IQuery<?> query = lenientMock(IQuery.class, Answers.RETURNS_SELF);
     ISort<?> sort = lenientMock(ISort.class, Answers.RETURNS_DEFAULTS);
     lenient().doReturn(sort).when(query).sort();
-    lenient().doReturn(query).when(sort).descending(anyString());
-    lenient().doReturn(query).when(sort).ascending(anyString());
+    lenient()
+        .doAnswer(inv -> record(type, "_sort=-" + inv.getArgument(0), query))
+        .when(sort)
+        .descending(anyString());
+    lenient()
+        .doAnswer(inv -> record(type, "_sort=" + inv.getArgument(0), query))
+        .when(sort)
+        .ascending(anyString());
+    lenient()
+        .doAnswer(inv -> record(type, "_count=" + inv.getArgument(0), query))
+        .when(query)
+        .count(anyInt());
     lenient()
         .doAnswer(inv -> recordCriterion(type, inv.getArgument(0), query))
         .when(query)
@@ -129,18 +148,19 @@ public final class FhirClientStub {
         .when(query)
         .and(any(ICriterion.class));
     lenient().doAnswer(inv -> executeSearch(type)).when(query).execute();
-    sorts.put(type, sort);
     return query;
   }
 
   private IQuery<?> recordCriterion(Class<?> type, ICriterion<?> criterion, IQuery<?> query) {
     ICriterionInternal internal = (ICriterionInternal) criterion;
-    pendingCriteria
-        .computeIfAbsent(type, k -> new ArrayList<>())
-        .add(
-            internal.getParameterName()
-                + "="
-                + internal.getParameterValue(FhirContext.forR4Cached()));
+    return record(
+        type,
+        internal.getParameterName() + "=" + internal.getParameterValue(FhirContext.forR4Cached()),
+        query);
+  }
+
+  private IQuery<?> record(Class<?> type, String criterion, IQuery<?> query) {
+    pendingCriteria.computeIfAbsent(type, k -> new ArrayList<>()).add(criterion);
     return query;
   }
 
@@ -173,6 +193,21 @@ public final class FhirClientStub {
         .when(createTyped)
         .execute();
     return createTyped;
+  }
+
+  private IUpdateTyped updateTyped(IBaseResource resource) {
+    IUpdateTyped updateTyped = lenientMock(IUpdateTyped.class, Answers.RETURNS_DEFAULTS);
+    lenient()
+        .doAnswer(
+            inv -> {
+              String id = resource.getIdElement().getIdPart();
+              givenStored(resource, id);
+              updated.add(resource);
+              return new MethodOutcome(new IdType(resource.fhirType(), id));
+            })
+        .when(updateTyped)
+        .execute();
+    return updateTyped;
   }
 
   private IReadTyped<?> readTyped(Class<?> type) {
