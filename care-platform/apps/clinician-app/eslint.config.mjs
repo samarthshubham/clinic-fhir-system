@@ -20,7 +20,7 @@ export default [
         'error',
         {
           type: 'element',
-          prefix: 'app',
+          prefix: ['app', 'cp'],
           style: 'kebab-case',
         },
       ],
