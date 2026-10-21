@@ -79,6 +79,9 @@ jobs:
       - name: Test with coverage
         run: npx nx test clinician-app --coverage --watch=false
 
+      - name: Test seed-demo-data with coverage
+        run: npx nx test seed-demo-data --coverage
+
       - name: Build
         run: npx nx build clinician-app
 
@@ -87,6 +90,12 @@ jobs:
         with:
           name: frontend-coverage
           path: care-platform/coverage/clinician-app/
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: seed-demo-data-coverage
+          path: care-platform/coverage/seed-demo-data/lcov.info
 
   coverage-gate:
     if: github.event_name == 'pull_request'
@@ -107,16 +116,22 @@ jobs:
           name: frontend-coverage
           path: reports/frontend
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: seed-demo-data-coverage
+          path: reports/seed-demo-data
+
       - run: pip install diff-cover
 
       - name: Changed lines must be at least 70% covered
         run: |
           sed 's|^SF:apps/|SF:care-platform/apps/|' reports/frontend/lcov.info > reports/frontend/lcov-repo.info
+          sed 's|^SF:apps/|SF:care-platform/apps/|' reports/seed-demo-data/lcov.info > reports/seed-demo-data/lcov-repo.info
           status=0
           diff-cover reports/backend/jacoco.xml --src-roots clinic-api/src/main/java \
             --compare-branch="origin/${{ github.base_ref }}" --fail-under=70 \
             --format markdown:backend.md || status=1
-          diff-cover reports/frontend/lcov-repo.info \
+          diff-cover reports/frontend/lcov-repo.info reports/seed-demo-data/lcov-repo.info \
             --compare-branch="origin/${{ github.base_ref }}" --fail-under=70 \
             --format markdown:frontend.md || status=1
           { echo "## Backend changed-line coverage"; cat backend.md; echo; echo "## Frontend changed-line coverage"; cat frontend.md; } >> "$GITHUB_STEP_SUMMARY"
