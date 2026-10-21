@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.samarthshubham.clinic.dto.GoalRequest;
+import io.github.samarthshubham.clinic.dto.GoalResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.GoalMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
@@ -28,13 +29,14 @@ class GoalServiceTest {
 
   @Test
   void createStoresMappedGoalAndReturnsTheStoredCopy() {
-    Goal goal =
+    GoalResponse goal =
         service.createGoal(
             new GoalRequest("p1", "Walk daily", "active", null, null, null, null, null));
 
-    assertThat(fhir.created()).singleElement().isNotSameAs(goal);
-    assertThat(goal.getIdElement().getIdPart()).isEqualTo("1");
-    assertThat(goal.getDescription().getText()).isEqualTo("Walk daily");
+    assertThat(fhir.created()).singleElement().isInstanceOf(Goal.class);
+    assertThat(goal)
+        .isEqualTo(
+            new GoalResponse("1", "p1", "Walk daily", "active", null, null, null, null, null));
   }
 
   @Test
@@ -61,10 +63,13 @@ class GoalServiceTest {
 
   @Test
   void listsGoalsForPatient() {
-    Bundle goals = bundleOf(new Goal());
-    fhir.givenSearchResult(Goal.class, goals);
+    Goal stored = new Goal();
+    stored.setId("g1");
+    fhir.givenSearchResult(Goal.class, bundleOf(stored));
 
-    assertThat(service.getGoalsForPatient("p1")).isSameAs(goals);
+    assertThat(service.getGoalsForPatient("p1").items())
+        .extracting(GoalResponse::id)
+        .containsExactly("g1");
     assertThat(fhir.lastSearchCriteria(Goal.class)).containsExactlyInAnyOrder("subject=Patient/p1");
   }
 

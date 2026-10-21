@@ -3,8 +3,11 @@ package io.github.samarthshubham.clinic.service;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.ReferenceClientParam;
 import io.github.samarthshubham.clinic.dto.GoalRequest;
+import io.github.samarthshubham.clinic.dto.GoalResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.GoalMapper;
+import io.github.samarthshubham.clinic.mapper.PageMapper;
 import java.util.List;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Goal;
@@ -21,10 +24,10 @@ public class GoalService {
     this.goalMapper = goalMapper;
   }
 
-  public Goal createGoal(GoalRequest request) {
+  public GoalResponse createGoal(GoalRequest request) {
     var outcome = fhirClient.create().resource(goalMapper.toFhir(request)).execute();
     String id = outcome.getId().getIdPart();
-    return fhirClient.read().resource(Goal.class).withId(id).execute();
+    return goalMapper.toResponse(fhirClient.read().resource(Goal.class).withId(id).execute());
   }
 
   public Goal getGoal(String id) {
@@ -35,13 +38,15 @@ public class GoalService {
     }
   }
 
-  public Bundle getGoalsForPatient(String patientId) {
-    return fhirClient
-        .search()
-        .forResource(Goal.class)
-        .where(new ReferenceClientParam("subject").hasId("Patient/" + patientId))
-        .returnBundle(Bundle.class)
-        .execute();
+  public PageResponse<GoalResponse> getGoalsForPatient(String patientId) {
+    Bundle bundle =
+        fhirClient
+            .search()
+            .forResource(Goal.class)
+            .where(new ReferenceClientParam("subject").hasId("Patient/" + patientId))
+            .returnBundle(Bundle.class)
+            .execute();
+    return PageMapper.toPage(bundle, Goal.class, goalMapper::toResponse);
   }
 
   public Bundle getGoalsByIds(List<String> ids) {

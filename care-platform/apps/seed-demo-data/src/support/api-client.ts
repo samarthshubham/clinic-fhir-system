@@ -5,11 +5,6 @@ export interface CreatedResource {
   id: string;
 }
 
-export interface FhirResourceResponse {
-  resourceType: string;
-  id: string;
-}
-
 export interface CreateEncounterBody {
   patientId: string;
   visitDate: string;
@@ -343,8 +338,8 @@ class ApiClient {
     return this.post<CreatedResource>(`${SPRING_API}/api/care-plans`, body);
   }
 
-  createGoal(body: CreateGoalBody): Promise<FhirResourceResponse> {
-    return this.post<FhirResourceResponse>(`${SPRING_API}/api/goals`, body);
+  createGoal(body: CreateGoalBody): Promise<CreatedResource> {
+    return this.post<CreatedResource>(`${SPRING_API}/api/goals`, body);
   }
 }
 

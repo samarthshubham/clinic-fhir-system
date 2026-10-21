@@ -1,6 +1,5 @@
 package io.github.samarthshubham.clinic.controller;
 
-import static io.github.samarthshubham.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -8,10 +7,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.github.samarthshubham.clinic.dto.GoalRequest;
+import io.github.samarthshubham.clinic.dto.GoalResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.service.GoalService;
 import java.time.LocalDate;
-import org.hl7.fhir.r4.model.CodeableConcept;
-import org.hl7.fhir.r4.model.Goal;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -23,14 +23,32 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 @WebMvcTest(GoalController.class)
 class GoalControllerTest {
 
+  private static final GoalResponse BP_GOAL =
+      new GoalResponse(
+          "g1",
+          "p1",
+          "Lower BP",
+          "active",
+          "8480-6",
+          "Systolic BP",
+          130.0,
+          "mm[Hg]",
+          LocalDate.of(2024, 12, 31));
+
+  private static final String BP_GOAL_JSON =
+      """
+      {"id":"g1","patientId":"p1","description":"Lower BP","status":"active",
+       "targetMeasureCode":"8480-6","targetMeasureDisplay":"Systolic BP","targetValue":130.0,
+       "targetUnit":"mm[Hg]","targetDate":"2024-12-31"}
+      """;
+
   @Autowired private MockMvcTester mvc;
 
   @MockitoBean private GoalService goalService;
 
   @Test
-  void createReturnsCreatedWithFhirGoal() {
-    when(goalService.createGoal(any()))
-        .thenReturn(new Goal().setDescription(new CodeableConcept().setText("Lower BP")));
+  void createReturnsCreatedWithGoalResponse() {
+    when(goalService.createGoal(any())).thenReturn(BP_GOAL);
 
     assertThat(
             mvc.post()
@@ -43,10 +61,9 @@ class GoalControllerTest {
                      "targetValue":130.0,"targetUnit":"mm[Hg]","targetDate":"2024-12-31"}
                     """))
         .hasStatus(HttpStatus.CREATED)
-        .hasContentType("application/fhir+json")
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.description.text")
-        .isEqualTo("Lower BP");
+        .isStrictlyEqualTo(BP_GOAL_JSON);
     verify(goalService)
         .createGoal(
             new GoalRequest(
@@ -79,14 +96,13 @@ class GoalControllerTest {
 
   @Test
   void listReturnsGoalsForPatient() {
-    when(goalService.getGoalsForPatient("p1"))
-        .thenReturn(bundleOf(new Goal().setDescription(new CodeableConcept().setText("Lower BP"))));
+    when(goalService.getGoalsForPatient("p1")).thenReturn(new PageResponse<>(List.of(BP_GOAL), 1));
 
     assertThat(mvc.get().uri("/api/goals").param("patientId", "p1"))
         .hasStatusOk()
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.entry[0].resource.description.text")
-        .isEqualTo("Lower BP");
+        .isStrictlyEqualTo("{\"items\":[" + BP_GOAL_JSON + "],\"total\":1}");
   }
 
   @Test

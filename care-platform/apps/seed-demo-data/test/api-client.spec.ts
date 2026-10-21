@@ -44,7 +44,7 @@ describe('retry on stale pooled connections', () => {
   it('retries a TypeError and returns the next successful response', async () => {
     fetchMock
       .mockRejectedValueOnce(new TypeError('fetch failed'))
-      .mockResolvedValueOnce(jsonResponse({ resourceType: 'Goal', id: 'g1' }));
+      .mockResolvedValueOnce(jsonResponse({ id: 'g1' }));
 
     const goal = await apiClient.createGoal({
       patientId: 'p1',
@@ -52,7 +52,7 @@ describe('retry on stale pooled connections', () => {
       status: 'active',
     });
 
-    expect(goal).toEqual({ resourceType: 'Goal', id: 'g1' });
+    expect(goal).toEqual({ id: 'g1' });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
