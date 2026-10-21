@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.samarthshubham.clinic.dto.ConditionRequest;
+import io.github.samarthshubham.clinic.dto.ConditionResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.ConditionMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
@@ -31,14 +32,16 @@ class ConditionServiceTest {
 
   @Test
   void createStoresMappedConditionAndReturnsTheStoredCopy() {
-    Condition condition =
+    ConditionResponse condition =
         service.createCondition(
             new ConditionRequest(
                 "p1", null, "59621000", "Essential hypertension", "active", LocalDate.now()));
 
-    assertThat(fhir.created()).singleElement().isNotSameAs(condition);
-    assertThat(condition.getIdElement().getIdPart()).isEqualTo("1");
-    assertThat(condition.getCode().getCodingFirstRep().getCode()).isEqualTo("59621000");
+    assertThat(fhir.created()).singleElement().isInstanceOf(Condition.class);
+    assertThat(condition)
+        .isEqualTo(
+            new ConditionResponse(
+                "1", "p1", null, "59621000", "Essential hypertension", "active", LocalDate.now()));
   }
 
   @Test
@@ -46,7 +49,7 @@ class ConditionServiceTest {
     Condition stored = new Condition();
     fhir.givenStored(stored, "c1");
 
-    assertThat(service.getCondition("c1").getIdElement().getIdPart()).isEqualTo("c1");
+    assertThat(service.getCondition("c1").id()).isEqualTo("c1");
   }
 
   @Test
@@ -65,10 +68,13 @@ class ConditionServiceTest {
 
   @Test
   void listsConditionsForPatient() {
-    Bundle conditions = bundleOf(new Condition());
-    fhir.givenSearchResult(Condition.class, conditions);
+    Condition stored = new Condition();
+    stored.setId("c1");
+    fhir.givenSearchResult(Condition.class, bundleOf(stored));
 
-    assertThat(service.getConditionsForPatient("p1")).isSameAs(conditions);
+    assertThat(service.getConditionsForPatient("p1").items())
+        .extracting(ConditionResponse::id)
+        .containsExactly("c1");
     assertThat(fhir.lastSearchCriteria(Condition.class))
         .containsExactlyInAnyOrder("subject=Patient/p1");
   }

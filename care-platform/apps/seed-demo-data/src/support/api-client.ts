@@ -309,11 +309,8 @@ class ApiClient {
     return this.post<CreatedResource[]>(`${SPRING_API}/api/vitals`, body);
   }
 
-  createCondition(body: CreateConditionBody): Promise<FhirResourceResponse> {
-    return this.post<FhirResourceResponse>(
-      `${SPRING_API}/api/conditions`,
-      body,
-    );
+  createCondition(body: CreateConditionBody): Promise<CreatedResource> {
+    return this.post<CreatedResource>(`${SPRING_API}/api/conditions`, body);
   }
 
   createMedication(body: CreateMedicationBody): Promise<FhirResourceResponse> {

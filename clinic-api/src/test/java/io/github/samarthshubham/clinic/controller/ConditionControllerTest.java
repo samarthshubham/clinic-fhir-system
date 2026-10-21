@@ -1,6 +1,5 @@
 package io.github.samarthshubham.clinic.controller;
 
-import static io.github.samarthshubham.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -8,11 +7,12 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.github.samarthshubham.clinic.dto.ConditionRequest;
+import io.github.samarthshubham.clinic.dto.ConditionResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.service.ConditionService;
 import java.time.LocalDate;
-import org.hl7.fhir.r4.model.CodeableConcept;
-import org.hl7.fhir.r4.model.Condition;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -24,15 +24,23 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 @WebMvcTest(ConditionController.class)
 class ConditionControllerTest {
 
+  private static final ConditionResponse HYPERTENSION =
+      new ConditionResponse(
+          "c1", "p1", "e1", "I10", "Hypertension", "active", LocalDate.of(2024, 1, 15));
+
+  private static final String HYPERTENSION_JSON =
+      """
+      {"id":"c1","patientId":"p1","encounterId":"e1","code":"I10","display":"Hypertension",
+       "clinicalStatus":"active","onsetDate":"2024-01-15"}
+      """;
+
   @Autowired private MockMvcTester mvc;
 
   @MockitoBean private ConditionService conditionService;
 
   @Test
-  void createReturnsCreatedWithFhirCondition() {
-    Condition created = new Condition();
-    created.setId("c1");
-    when(conditionService.createCondition(any())).thenReturn(created);
+  void createReturnsCreatedWithConditionResponse() {
+    when(conditionService.createCondition(any())).thenReturn(HYPERTENSION);
 
     assertThat(
             mvc.post()
@@ -44,10 +52,9 @@ class ConditionControllerTest {
                      "clinicalStatus":"active","onsetDate":"2024-01-15"}
                     """))
         .hasStatus(HttpStatus.CREATED)
-        .hasContentType("application/fhir+json")
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.id")
-        .isEqualTo("c1");
+        .isStrictlyEqualTo(HYPERTENSION_JSON);
     verify(conditionService)
         .createCondition(
             new ConditionRequest(
@@ -73,15 +80,13 @@ class ConditionControllerTest {
 
   @Test
   void getReturnsConditionById() {
-    Condition condition = new Condition();
-    condition.setId("c1");
-    when(conditionService.getCondition("c1")).thenReturn(condition);
+    when(conditionService.getCondition("c1")).thenReturn(HYPERTENSION);
 
     assertThat(mvc.get().uri("/api/conditions/c1"))
         .hasStatusOk()
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.id")
-        .isEqualTo("c1");
+        .isStrictlyEqualTo(HYPERTENSION_JSON);
   }
 
   @Test
@@ -95,14 +100,13 @@ class ConditionControllerTest {
   @Test
   void listReturnsConditionsForPatient() {
     when(conditionService.getConditionsForPatient("p1"))
-        .thenReturn(
-            bundleOf(new Condition().setCode(new CodeableConcept().setText("Hypertension"))));
+        .thenReturn(new PageResponse<>(List.of(HYPERTENSION), 1));
 
     assertThat(mvc.get().uri("/api/conditions").param("patientId", "p1"))
         .hasStatusOk()
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.entry[0].resource.code.text")
-        .isEqualTo("Hypertension");
+        .isStrictlyEqualTo("{\"items\":[" + HYPERTENSION_JSON + "],\"total\":1}");
   }
 
   @Test

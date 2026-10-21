@@ -1,11 +1,11 @@
 package io.github.samarthshubham.clinic.controller;
 
 import io.github.samarthshubham.clinic.dto.ConditionRequest;
+import io.github.samarthshubham.clinic.dto.ConditionResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.service.ConditionService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import org.hl7.fhir.r4.model.Bundle;
-import org.hl7.fhir.r4.model.Condition;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,18 +27,20 @@ public class ConditionController {
   }
 
   @PostMapping
-  public ResponseEntity<Condition> createCondition(@Valid @RequestBody ConditionRequest request) {
+  public ResponseEntity<ConditionResponse> createCondition(
+      @Valid @RequestBody ConditionRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(conditionService.createCondition(request));
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<Condition> getCondition(@PathVariable @NotBlank String id) {
+  public ResponseEntity<ConditionResponse> getCondition(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(conditionService.getCondition(id));
   }
 
   @GetMapping
-  public ResponseEntity<Bundle> getConditionsForPatient(@RequestParam @NotBlank String patientId) {
+  public ResponseEntity<PageResponse<ConditionResponse>> getConditionsForPatient(
+      @RequestParam @NotBlank String patientId) {
     return ResponseEntity.ok(conditionService.getConditionsForPatient(patientId));
   }
 }
