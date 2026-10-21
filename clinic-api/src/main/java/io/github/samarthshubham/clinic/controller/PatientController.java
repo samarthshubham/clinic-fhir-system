@@ -10,6 +10,7 @@ import io.github.samarthshubham.clinic.service.SummaryService;
 import io.github.samarthshubham.clinic.service.TimelineService;
 import io.github.samarthshubham.clinic.service.TrendsService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDate;
 import java.util.List;
 import org.hl7.fhir.r4.model.Bundle;
@@ -53,7 +54,7 @@ public class PatientController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<Patient> getPatient(@PathVariable String id) {
+  public ResponseEntity<Patient> getPatient(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(patientService.getPatient(id));
   }
 
@@ -64,18 +65,18 @@ public class PatientController {
   }
 
   @GetMapping("/{id}/summary")
-  public ResponseEntity<Bundle> getSummary(@PathVariable String id) {
+  public ResponseEntity<Bundle> getSummary(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(summaryService.getSummary(id));
   }
 
   @GetMapping("/{id}/snapshot")
-  public ResponseEntity<SnapshotResponse> getSnapshot(@PathVariable String id) {
+  public ResponseEntity<SnapshotResponse> getSnapshot(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(snapshotService.getSnapshot(id));
   }
 
   @GetMapping("/{id}/trends")
   public ResponseEntity<TrendsResponse> getTrends(
-      @PathVariable String id,
+      @PathVariable @NotBlank String id,
       @RequestParam(required = false) String type,
       @RequestParam(required = false) String period) {
     return ResponseEntity.ok(trendsService.getTrends(id, type, period));
@@ -83,9 +84,9 @@ public class PatientController {
 
   @GetMapping("/{id}/timeline")
   public ResponseEntity<List<TimelineEvent>> getTimeline(
-      @PathVariable String id,
+      @PathVariable @NotBlank String id,
       @RequestParam(required = false) Integer limit,
-      @RequestParam(required = false) String before,
+      @RequestParam(required = false) LocalDate before,
       @RequestParam(required = false) String types) {
     return ResponseEntity.ok(timelineService.getTimeline(id, limit, before, types));
   }

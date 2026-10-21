@@ -3,6 +3,7 @@ package io.github.samarthshubham.clinic.controller;
 import io.github.samarthshubham.clinic.dto.VitalsRequest;
 import io.github.samarthshubham.clinic.service.VitalsService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.hl7.fhir.r4.model.Bundle;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +31,7 @@ public class VitalsController {
 
   @GetMapping
   public ResponseEntity<Bundle> getVitals(
-      @RequestParam String patientId, @RequestParam(required = false) String type) {
+      @RequestParam @NotBlank String patientId, @RequestParam(required = false) String type) {
     return ResponseEntity.ok(vitalsService.getVitals(patientId, type));
   }
 }

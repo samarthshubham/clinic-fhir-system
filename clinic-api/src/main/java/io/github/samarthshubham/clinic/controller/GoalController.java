@@ -3,6 +3,7 @@ package io.github.samarthshubham.clinic.controller;
 import io.github.samarthshubham.clinic.dto.GoalRequest;
 import io.github.samarthshubham.clinic.service.GoalService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Goal;
 import org.springframework.http.HttpStatus;
@@ -30,7 +31,7 @@ public class GoalController {
   }
 
   @GetMapping
-  public ResponseEntity<Bundle> getGoalsForPatient(@RequestParam String patientId) {
+  public ResponseEntity<Bundle> getGoalsForPatient(@RequestParam @NotBlank String patientId) {
     return ResponseEntity.ok(goalService.getGoalsForPatient(patientId));
   }
 }

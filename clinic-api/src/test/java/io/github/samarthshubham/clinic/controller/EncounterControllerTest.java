@@ -99,4 +99,29 @@ class EncounterControllerTest {
     assertThat(mvc.get().uri("/api/encounters")).hasStatus(HttpStatus.BAD_REQUEST);
     verifyNoInteractions(encounterService);
   }
+
+  @Test
+  void listWithBlankPatientIdReturnsBadRequest() {
+    assertThat(mvc.get().uri("/api/encounters").param("patientId", " "))
+        .hasStatus(HttpStatus.BAD_REQUEST)
+        .bodyJson()
+        .extractingPath("$.message")
+        .isEqualTo("patientId must not be blank");
+    verifyNoInteractions(encounterService);
+  }
+
+  @Test
+  void listWithoutPatientIdReportsTheMissingParameter() {
+    assertThat(mvc.get().uri("/api/encounters"))
+        .hasStatus(HttpStatus.BAD_REQUEST)
+        .bodyJson()
+        .extractingPath("$.message")
+        .isEqualTo("Missing required parameter 'patientId'");
+  }
+
+  @Test
+  void getWithBlankIdReturnsBadRequest() {
+    assertThat(mvc.get().uri("/api/encounters/{id}", " ")).hasStatus(HttpStatus.BAD_REQUEST);
+    verifyNoInteractions(encounterService);
+  }
 }

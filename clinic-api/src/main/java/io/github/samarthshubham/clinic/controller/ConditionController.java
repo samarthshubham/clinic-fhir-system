@@ -3,6 +3,7 @@ package io.github.samarthshubham.clinic.controller;
 import io.github.samarthshubham.clinic.dto.ConditionRequest;
 import io.github.samarthshubham.clinic.service.ConditionService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Condition;
 import org.springframework.http.HttpStatus;
@@ -32,12 +33,12 @@ public class ConditionController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<Condition> getCondition(@PathVariable String id) {
+  public ResponseEntity<Condition> getCondition(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(conditionService.getCondition(id));
   }
 
   @GetMapping
-  public ResponseEntity<Bundle> getConditionsForPatient(@RequestParam String patientId) {
+  public ResponseEntity<Bundle> getConditionsForPatient(@RequestParam @NotBlank String patientId) {
     return ResponseEntity.ok(conditionService.getConditionsForPatient(patientId));
   }
 }

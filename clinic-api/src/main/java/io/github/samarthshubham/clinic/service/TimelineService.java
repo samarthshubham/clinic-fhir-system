@@ -69,7 +69,7 @@ public class TimelineService {
   }
 
   public List<TimelineEvent> getTimeline(
-      String patientId, Integer limit, String before, String typesParam) {
+      String patientId, Integer limit, LocalDate before, String typesParam) {
     int resolvedLimit = (limit != null && limit > 0) ? Math.min(limit, MAX_LIMIT) : DEFAULT_LIMIT;
     Set<String> allowedTypes =
         typesParam != null
@@ -107,17 +107,16 @@ public class TimelineService {
 
     // Apply before cursor
     if (before != null) {
-      LocalDate cursor = LocalDate.parse(before);
       events =
           events.stream()
-              .filter(e -> LocalDate.parse(e.date()).isBefore(cursor))
+              .filter(e -> LocalDate.parse(e.date()).isBefore(before))
               .collect(Collectors.toList());
     }
 
     return events.stream().limit(resolvedLimit).collect(Collectors.toList());
   }
 
-  private List<TimelineEvent> fetchEncounterEvents(String patientId, String before, int limit) {
+  private List<TimelineEvent> fetchEncounterEvents(String patientId, LocalDate before, int limit) {
     var query =
         fhirClient
             .search()
@@ -128,7 +127,7 @@ public class TimelineService {
             .count(limit)
             .returnBundle(Bundle.class);
     if (before != null) {
-      query = query.and(new DateClientParam("date").before().day(before));
+      query = query.and(new DateClientParam("date").before().day(before.toString()));
     }
     Bundle bundle = query.execute();
     List<TimelineEvent> events = new ArrayList<>();
@@ -167,7 +166,7 @@ public class TimelineService {
     return events;
   }
 
-  private List<TimelineEvent> fetchReportEvents(String patientId, String before, int limit) {
+  private List<TimelineEvent> fetchReportEvents(String patientId, LocalDate before, int limit) {
     var query =
         fhirClient
             .search()
@@ -178,7 +177,7 @@ public class TimelineService {
             .count(limit)
             .returnBundle(Bundle.class);
     if (before != null) {
-      query = query.and(new DateClientParam("issued").before().day(before));
+      query = query.and(new DateClientParam("issued").before().day(before.toString()));
     }
     Bundle bundle = query.execute();
     List<TimelineEvent> events = new ArrayList<>();
@@ -221,7 +220,7 @@ public class TimelineService {
   }
 
   private List<TimelineEvent> fetchServiceRequestEvents(
-      String patientId, String before, int limit) {
+      String patientId, LocalDate before, int limit) {
     var query =
         fhirClient
             .search()
@@ -232,7 +231,7 @@ public class TimelineService {
             .count(limit)
             .returnBundle(Bundle.class);
     if (before != null) {
-      query = query.and(new DateClientParam("authored").before().day(before));
+      query = query.and(new DateClientParam("authored").before().day(before.toString()));
     }
     Bundle bundle = query.execute();
     List<TimelineEvent> events = new ArrayList<>();

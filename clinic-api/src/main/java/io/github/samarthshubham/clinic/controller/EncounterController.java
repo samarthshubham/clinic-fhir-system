@@ -3,6 +3,7 @@ package io.github.samarthshubham.clinic.controller;
 import io.github.samarthshubham.clinic.dto.EncounterRequest;
 import io.github.samarthshubham.clinic.service.EncounterService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Encounter;
 import org.springframework.http.HttpStatus;
@@ -32,12 +33,12 @@ public class EncounterController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<Encounter> getEncounter(@PathVariable String id) {
+  public ResponseEntity<Encounter> getEncounter(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(encounterService.getEncounter(id));
   }
 
   @GetMapping
-  public ResponseEntity<Bundle> getEncountersForPatient(@RequestParam String patientId) {
+  public ResponseEntity<Bundle> getEncountersForPatient(@RequestParam @NotBlank String patientId) {
     return ResponseEntity.ok(encounterService.getEncountersForPatient(patientId));
   }
 }

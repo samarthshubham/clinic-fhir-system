@@ -3,6 +3,7 @@ package io.github.samarthshubham.clinic.controller;
 import io.github.samarthshubham.clinic.dto.PractitionerRequest;
 import io.github.samarthshubham.clinic.service.PractitionerService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.hl7.fhir.r4.model.Practitioner;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +32,7 @@ public class PractitionerController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<Practitioner> getPractitioner(@PathVariable String id) {
+  public ResponseEntity<Practitioner> getPractitioner(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(practitionerService.getPractitioner(id));
   }
 }

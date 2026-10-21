@@ -3,6 +3,7 @@ package io.github.samarthshubham.clinic.controller;
 import io.github.samarthshubham.clinic.dto.DiagnosticReportRequest;
 import io.github.samarthshubham.clinic.service.DiagnosticReportService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.DiagnosticReport;
 import org.springframework.http.HttpStatus;
@@ -32,7 +33,8 @@ public class DiagnosticReportController {
   }
 
   @GetMapping
-  public ResponseEntity<Bundle> getDiagnosticReportsForPatient(@RequestParam String patientId) {
+  public ResponseEntity<Bundle> getDiagnosticReportsForPatient(
+      @RequestParam @NotBlank String patientId) {
     return ResponseEntity.ok(diagnosticReportService.getDiagnosticReportsForPatient(patientId));
   }
 }
