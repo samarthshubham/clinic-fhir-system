@@ -24,6 +24,18 @@ export default [
           style: 'kebab-case',
         },
       ],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../*', '../**'],
+              message:
+                'Use a path alias (@core/*, @shared/*, @features/*) instead of a parent-relative import.',
+            },
+          ],
+        },
+      ],
     },
   },
   {
