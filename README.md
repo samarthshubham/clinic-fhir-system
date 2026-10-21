@@ -144,6 +144,15 @@ npx nx run clinician-app:lint --fix
 
 ---
 
+## Pull Request Reviews
+
+Claude Code reviews each pull request once when it is opened or marked ready for review. Draft PRs and PRs with `WIP` in the title are skipped.
+
+- Mention `@claude` in a PR or issue comment to ask a question or request a change.
+- Comment `@claude review` to request another review after new commits.
+
+---
+
 ## Features
 
 - Register and manage patients (FHIR `Patient`)
