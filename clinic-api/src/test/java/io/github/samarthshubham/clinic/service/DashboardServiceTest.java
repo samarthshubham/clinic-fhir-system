@@ -93,9 +93,10 @@ class DashboardServiceTest {
             carePlanService,
             goalService,
             practitionerService,
+            new PatientMapper(),
             fhir.client(),
             ORG_ID);
-    lenient().when(patientService.getPatient("p1")).thenReturn(patient());
+    lenient().when(patientService.findPatient("p1")).thenReturn(patient());
     lenient().when(snapshotService.getSnapshot("p1")).thenReturn(snapshot);
     lenient()
         .when(appointmentService.getUpcomingAppointmentsForPatient("p1"))
@@ -123,7 +124,7 @@ class DashboardServiceTest {
 
   @Test
   void unknownPatientFailsTheWholeDashboard() {
-    when(patientService.getPatient("missing"))
+    when(patientService.findPatient("missing"))
         .thenThrow(new ResourceNotFoundException("Patient", "missing"));
 
     assertThatThrownBy(() -> service.getDashboard("missing"))

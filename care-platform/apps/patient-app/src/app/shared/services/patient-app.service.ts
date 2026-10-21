@@ -8,6 +8,8 @@ import {
   TrendsApiResponse,
   AppointmentItem,
   PostVitalsRequest,
+  PageResponse,
+  PatientResponse,
 } from '../models/patient-app.models';
 
 function hashHue(str: string): number {
@@ -18,41 +20,25 @@ function hashHue(str: string): number {
   return ((h % 360) + 360) % 360;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractName(nameArray: any[]): {
-  firstName: string;
-  lastName: string;
-} {
-  const official =
-    nameArray?.find((n: any) => n.use === 'official') ?? nameArray?.[0];
-  const firstName = official?.given?.[0] ?? '';
-  const lastName = official?.family ?? '';
-  return { firstName, lastName };
-}
-
 @Injectable({ providedIn: 'root' })
 export class PatientAppService {
   private readonly http = inject(HttpClient);
 
   getPatients(): Observable<PatientListItem[]> {
-    return this.http.get<any>('/api/patients').pipe(
-      map((bundle) => {
-        const entries: any[] = bundle?.entry ?? [];
-        return entries
-          .map((e: any) => e.resource)
-          .filter((r: any) => r?.resourceType === 'Patient')
-          .map((p: any) => {
-            const { firstName, lastName } = extractName(p.name ?? []);
-            return {
+    return this.http.get<PageResponse<PatientResponse>>('/api/patients').pipe(
+      map((page) =>
+        page.items.map(
+          (p) =>
+            ({
               id: p.id,
-              firstName,
-              lastName,
-              dob: p.birthDate ?? '',
+              firstName: p.firstName ?? '',
+              lastName: p.lastName ?? '',
+              dob: p.dateOfBirth ?? '',
               gender: p.gender ?? '',
-              avatarHue: hashHue(p.id ?? ''),
-            } satisfies PatientListItem;
-          });
-      }),
+              avatarHue: hashHue(p.id),
+            }) satisfies PatientListItem,
+        ),
+      ),
     );
   }
 

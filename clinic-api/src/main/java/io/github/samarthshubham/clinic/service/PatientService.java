@@ -3,8 +3,11 @@ package io.github.samarthshubham.clinic.service;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.DateClientParam;
 import ca.uhn.fhir.rest.gclient.StringClientParam;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.dto.PatientRequest;
+import io.github.samarthshubham.clinic.dto.PatientResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
+import io.github.samarthshubham.clinic.mapper.PageMapper;
 import io.github.samarthshubham.clinic.mapper.PatientMapper;
 import java.time.LocalDate;
 import org.hl7.fhir.r4.model.Bundle;
@@ -22,13 +25,17 @@ public class PatientService {
     this.patientMapper = patientMapper;
   }
 
-  public Patient createPatient(PatientRequest request) {
+  public PatientResponse createPatient(PatientRequest request) {
     var outcome = fhirClient.create().resource(patientMapper.toFhir(request)).execute();
     String id = outcome.getId().getIdPart();
-    return fhirClient.read().resource(Patient.class).withId(id).execute();
+    return patientMapper.toResponse(fhirClient.read().resource(Patient.class).withId(id).execute());
   }
 
-  public Patient getPatient(String id) {
+  public PatientResponse getPatient(String id) {
+    return patientMapper.toResponse(findPatient(id));
+  }
+
+  public Patient findPatient(String id) {
     try {
       return fhirClient.read().resource(Patient.class).withId(id).execute();
     } catch (ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException e) {
@@ -36,7 +43,7 @@ public class PatientService {
     }
   }
 
-  public Bundle searchPatients(String name, LocalDate dob) {
+  public PageResponse<PatientResponse> searchPatients(String name, LocalDate dob) {
     var query = fhirClient.search().forResource(Patient.class).returnBundle(Bundle.class);
     if (name != null && !name.isBlank()) {
       query = query.where(new StringClientParam("name").matches().value(name));
@@ -44,6 +51,6 @@ public class PatientService {
     if (dob != null) {
       query = query.where(new DateClientParam("birthdate").exactly().day(dob.toString()));
     }
-    return query.execute();
+    return PageMapper.toPage(query.execute(), Patient.class, patientMapper::toResponse);
   }
 }

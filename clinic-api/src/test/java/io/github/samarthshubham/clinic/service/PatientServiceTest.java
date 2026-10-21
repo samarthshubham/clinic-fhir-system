@@ -5,12 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.dto.PatientRequest;
+import io.github.samarthshubham.clinic.dto.PatientResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.PatientMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
 import java.time.LocalDate;
-import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Patient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,21 +29,29 @@ class PatientServiceTest {
 
   @Test
   void createStoresMappedPatientAndReturnsTheStoredCopy() {
-    Patient patient =
+    PatientResponse patient =
         service.createPatient(
             new PatientRequest("Priya", "Nair", LocalDate.of(1985, 3, 14), "female", null, null));
 
-    assertThat(fhir.created()).singleElement().isNotSameAs(patient);
-    assertThat(patient.getIdElement().getIdPart()).isEqualTo("1");
-    assertThat(patient.getNameFirstRep().getFamily()).isEqualTo("Nair");
+    assertThat(fhir.created()).singleElement().isInstanceOf(Patient.class);
+    assertThat(patient)
+        .isEqualTo(
+            new PatientResponse("1", "Priya", "Nair", "1985-03-14", "female", null, null, null));
   }
 
   @Test
-  void getReturnsStoredPatient() {
-    Patient stored = new Patient();
-    fhir.givenStored(stored, "p1");
+  void getReturnsStoredPatientAsResponse() {
+    fhir.givenStored(new Patient().setActive(true), "p1");
 
-    assertThat(service.getPatient("p1").getIdElement().getIdPart()).isEqualTo("p1");
+    assertThat(service.getPatient("p1"))
+        .isEqualTo(new PatientResponse("p1", null, null, null, null, null, null, true));
+  }
+
+  @Test
+  void findReturnsStoredFhirPatient() {
+    fhir.givenStored(new Patient(), "p1");
+
+    assertThat(service.findPatient("p1").getIdElement().getIdPart()).isEqualTo("p1");
   }
 
   @Test
@@ -61,10 +70,16 @@ class PatientServiceTest {
 
   @Test
   void searchWithoutFiltersListsAllPatients() {
-    Bundle patients = bundleOf(new Patient(), new Patient());
-    fhir.givenSearchResult(Patient.class, patients);
+    Patient first = new Patient().setActive(true);
+    first.setId("p1");
+    Patient second = new Patient().setActive(false);
+    second.setId("p2");
+    fhir.givenSearchResult(Patient.class, bundleOf(first, second));
 
-    assertThat(service.searchPatients(null, null)).isSameAs(patients);
+    PageResponse<PatientResponse> page = service.searchPatients(null, null);
+
+    assertThat(page.items()).extracting(PatientResponse::id).containsExactly("p1", "p2");
+    assertThat(page.total()).isEqualTo(2);
     assertThat(fhir.lastSearchCriteria(Patient.class)).isEmpty();
   }
 

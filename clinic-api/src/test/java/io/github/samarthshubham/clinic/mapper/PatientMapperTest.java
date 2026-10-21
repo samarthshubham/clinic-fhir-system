@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.github.samarthshubham.clinic.dto.PatientRequest;
+import io.github.samarthshubham.clinic.dto.PatientResponse;
+import io.github.samarthshubham.clinic.dto.PatientSummary;
 import java.time.LocalDate;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.ContactPoint;
@@ -81,5 +83,41 @@ class PatientMapperTest {
         new PatientRequest("Tony", "Stark", LocalDate.of(1970, 5, 29), "robot", null, null);
 
     assertThatThrownBy(() -> mapper.toFhir(request)).isInstanceOf(FHIRException.class);
+  }
+
+  @Test
+  void toResponseFlattensTheStoredPatient() {
+    Patient patient =
+        mapper.toFhir(
+            new PatientRequest(
+                "Priya", "Nair", LocalDate.of(1985, 3, 14), "female", "+1-555-0100", "p@x.org"));
+    patient.setActive(false);
+    patient.setId("p1");
+
+    assertThat(mapper.toResponse(patient))
+        .isEqualTo(
+            new PatientResponse(
+                "p1", "Priya", "Nair", "1985-03-14", "female", "+1-555-0100", "p@x.org", false));
+  }
+
+  @Test
+  void toResponseLeavesMissingFieldsNull() {
+    Patient patient = new Patient();
+    patient.setId("p1");
+
+    assertThat(mapper.toResponse(patient))
+        .isEqualTo(new PatientResponse("p1", null, null, null, null, null, null, null));
+  }
+
+  @Test
+  void toSummaryUsesTheIdAsMrn() {
+    Patient patient =
+        mapper.toFhir(
+            new PatientRequest("Priya", "Nair", LocalDate.of(1985, 3, 14), "female", null, "p@x"));
+    patient.setId("p1");
+
+    assertThat(mapper.toSummary(patient))
+        .isEqualTo(
+            new PatientSummary("p1", "Priya", "Nair", "1985-03-14", "female", "p1", null, "p@x"));
   }
 }

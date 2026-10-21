@@ -1,26 +1,24 @@
 package io.github.samarthshubham.clinic.controller;
 
-import static io.github.samarthshubham.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.dto.PatientRequest;
+import io.github.samarthshubham.clinic.dto.PatientResponse;
 import io.github.samarthshubham.clinic.dto.SnapshotResponse;
 import io.github.samarthshubham.clinic.dto.TimelineEvent;
 import io.github.samarthshubham.clinic.dto.TrendsResponse;
 import io.github.samarthshubham.clinic.service.PatientService;
 import io.github.samarthshubham.clinic.service.SnapshotService;
-import io.github.samarthshubham.clinic.service.SummaryService;
 import io.github.samarthshubham.clinic.service.TimelineService;
 import io.github.samarthshubham.clinic.service.TrendsService;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import org.hl7.fhir.r4.model.Bundle;
-import org.hl7.fhir.r4.model.Patient;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -38,19 +36,26 @@ class PatientControllerTest {
        "phone":"555-0100","email":"priya@example.com"}
       """;
 
+  private static final PatientResponse PRIYA =
+      new PatientResponse(
+          "p1", "Priya", "Nair", "1985-03-14", "female", "555-0100", "priya@example.com", true);
+
+  private static final String PRIYA_JSON =
+      """
+      {"id":"p1","firstName":"Priya","lastName":"Nair","dateOfBirth":"1985-03-14",
+       "gender":"female","phone":"555-0100","email":"priya@example.com","active":true}
+      """;
+
   @Autowired private MockMvcTester mvc;
 
   @MockitoBean private PatientService patientService;
-  @MockitoBean private SummaryService summaryService;
   @MockitoBean private SnapshotService snapshotService;
   @MockitoBean private TrendsService trendsService;
   @MockitoBean private TimelineService timelineService;
 
   @Test
-  void createReturnsCreatedWithFhirPatient() {
-    Patient created = new Patient();
-    created.setId("p1");
-    when(patientService.createPatient(any())).thenReturn(created);
+  void createReturnsCreatedWithPatientResponse() {
+    when(patientService.createPatient(any())).thenReturn(PRIYA);
 
     assertThat(
             mvc.post()
@@ -58,10 +63,9 @@ class PatientControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(VALID_PATIENT))
         .hasStatus(HttpStatus.CREATED)
-        .hasContentType("application/fhir+json")
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.id")
-        .isEqualTo("p1");
+        .isLenientlyEqualTo(PRIYA_JSON);
     verify(patientService)
         .createPatient(
             new PatientRequest(
@@ -89,46 +93,38 @@ class PatientControllerTest {
 
   @Test
   void getReturnsPatientById() {
-    Patient patient = new Patient();
-    patient.setId("p1");
-    when(patientService.getPatient("p1")).thenReturn(patient);
+    when(patientService.getPatient("p1")).thenReturn(PRIYA);
 
     assertThat(mvc.get().uri("/api/patients/p1"))
         .hasStatusOk()
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.resourceType")
-        .isEqualTo("Patient");
+        .isStrictlyEqualTo(PRIYA_JSON);
   }
 
   @Test
   void searchPassesNameAndIsoBirthDate() {
     when(patientService.searchPatients("Nair", LocalDate.of(1985, 3, 14)))
-        .thenReturn(bundleOf(new Patient()));
+        .thenReturn(new PageResponse<>(List.of(PRIYA), 1));
 
     assertThat(mvc.get().uri("/api/patients").param("name", "Nair").param("dob", "1985-03-14"))
         .hasStatusOk()
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.resourceType")
-        .isEqualTo("Bundle");
+        .isStrictlyEqualTo("{\"items\":[" + PRIYA_JSON + "],\"total\":1}");
   }
 
   @Test
   void searchWithoutFiltersPassesNulls() {
-    when(patientService.searchPatients(null, null)).thenReturn(new Bundle());
+    when(patientService.searchPatients(null, null)).thenReturn(new PageResponse<>(List.of(), 0));
 
     assertThat(mvc.get().uri("/api/patients")).hasStatusOk();
     verify(patientService).searchPatients(null, null);
   }
 
   @Test
-  void summaryReturnsBundleFromSummaryService() {
-    when(summaryService.getSummary("p1")).thenReturn(bundleOf(new Patient().setActive(true)));
-
-    assertThat(mvc.get().uri("/api/patients/p1/summary"))
-        .hasStatusOk()
-        .bodyJson()
-        .extractingPath("$.entry[0].resource.resourceType")
-        .isEqualTo("Patient");
+  void summaryRouteNoLongerExists() {
+    assertThat(mvc.get().uri("/api/patients/p1/summary")).hasStatus(HttpStatus.NOT_FOUND);
   }
 
   @Test
