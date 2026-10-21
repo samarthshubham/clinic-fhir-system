@@ -159,7 +159,8 @@ A pull request can be merged into `main` only when:
 
 - **CI passes**: formatting, backend tests, frontend tests and build, and lint on changed frontend files.
 - **Changed lines are at least 70% covered by tests** (`coverage-gate`, using [diff-cover](https://github.com/Bachmann1234/diff_cover)). The job summary lists any uncovered new lines.
-- **Claude approves it.** Claude Code reviews each pull request once when it is opened or marked ready for review, then approves it or requests changes. Draft PRs and PRs with `WIP` in the title are skipped.
+
+Claude Code also reviews each pull request once when it is opened or marked ready for review, and leaves inline comments on any issues it finds. The review is advisory: address the comments, then merge. Draft PRs and PRs with `WIP` in the title are skipped.
 
 - Mention `@claude` in a PR or issue comment to ask a question or request a change.
 - Comment `@claude review` to request another review after new commits.
