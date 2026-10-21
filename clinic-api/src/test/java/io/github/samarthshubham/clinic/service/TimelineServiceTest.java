@@ -64,7 +64,8 @@ class TimelineServiceTest {
         new TimelineService(
             fhir.client(),
             practitionerService,
-            new ClinicalThresholds(140, 180, 90, 120, 95.0, 90.0));
+            new ClinicalThresholds(140, 180, 90, 120, 95.0, 90.0),
+            new EncounterMapper());
     Practitioner house =
         new PractitionerMapper()
             .toFhir(new PractitionerRequest("Gregory", "House", "Diagnostics", null, null));

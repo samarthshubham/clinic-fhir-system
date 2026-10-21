@@ -94,6 +94,7 @@ class DashboardServiceTest {
             goalService,
             practitionerService,
             new PatientMapper(),
+            new EncounterMapper(),
             fhir.client(),
             ORG_ID);
     lenient().when(patientService.findPatient("p1")).thenReturn(patient());

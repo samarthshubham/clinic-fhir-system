@@ -1,11 +1,11 @@
 package io.github.samarthshubham.clinic.controller;
 
 import io.github.samarthshubham.clinic.dto.EncounterRequest;
+import io.github.samarthshubham.clinic.dto.EncounterResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.service.EncounterService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import org.hl7.fhir.r4.model.Bundle;
-import org.hl7.fhir.r4.model.Encounter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,18 +27,20 @@ public class EncounterController {
   }
 
   @PostMapping
-  public ResponseEntity<Encounter> createEncounter(@Valid @RequestBody EncounterRequest request) {
+  public ResponseEntity<EncounterResponse> createEncounter(
+      @Valid @RequestBody EncounterRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(encounterService.createEncounter(request));
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<Encounter> getEncounter(@PathVariable @NotBlank String id) {
+  public ResponseEntity<EncounterResponse> getEncounter(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(encounterService.getEncounter(id));
   }
 
   @GetMapping
-  public ResponseEntity<Bundle> getEncountersForPatient(@RequestParam @NotBlank String patientId) {
+  public ResponseEntity<PageResponse<EncounterResponse>> getEncountersForPatient(
+      @RequestParam @NotBlank String patientId) {
     return ResponseEntity.ok(encounterService.getEncountersForPatient(patientId));
   }
 }

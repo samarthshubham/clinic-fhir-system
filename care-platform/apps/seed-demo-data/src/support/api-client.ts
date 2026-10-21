@@ -1,8 +1,7 @@
 const SPRING_API = 'http://localhost:9090';
 const HAPI_FHIR = 'http://localhost:8080';
 
-export interface FhirEncounterResponse {
-  resourceType: 'Encounter';
+export interface CreatedResource {
   id: string;
 }
 
@@ -306,11 +305,8 @@ class ApiClient {
     });
   }
 
-  createEncounter(body: CreateEncounterBody): Promise<FhirEncounterResponse> {
-    return this.post<FhirEncounterResponse>(
-      `${SPRING_API}/api/encounters`,
-      body,
-    );
+  createEncounter(body: CreateEncounterBody): Promise<CreatedResource> {
+    return this.post<CreatedResource>(`${SPRING_API}/api/encounters`, body);
   }
 
   recordVitals(body: CreateVitalsBody): Promise<FhirBundleResponse> {

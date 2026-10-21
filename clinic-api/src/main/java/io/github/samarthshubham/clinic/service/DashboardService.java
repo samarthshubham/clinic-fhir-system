@@ -7,6 +7,7 @@ import io.github.samarthshubham.clinic.dto.DashboardResponse;
 import io.github.samarthshubham.clinic.dto.GoalProgress;
 import io.github.samarthshubham.clinic.dto.PatientSummary;
 import io.github.samarthshubham.clinic.dto.SnapshotResponse;
+import io.github.samarthshubham.clinic.mapper.EncounterMapper;
 import io.github.samarthshubham.clinic.mapper.PatientMapper;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -45,6 +46,7 @@ public class DashboardService {
   private final GoalService goalService;
   private final PractitionerService practitionerService;
   private final PatientMapper patientMapper;
+  private final EncounterMapper encounterMapper;
   private final IGenericClient fhirClient;
   private final String defaultOrgId;
 
@@ -59,6 +61,7 @@ public class DashboardService {
       GoalService goalService,
       PractitionerService practitionerService,
       PatientMapper patientMapper,
+      EncounterMapper encounterMapper,
       IGenericClient fhirClient,
       @Value("${clinic.default-org-id}") String defaultOrgId) {
     this.patientService = patientService;
@@ -71,6 +74,7 @@ public class DashboardService {
     this.goalService = goalService;
     this.practitionerService = practitionerService;
     this.patientMapper = patientMapper;
+    this.encounterMapper = encounterMapper;
     this.fhirClient = fhirClient;
     this.defaultOrgId = defaultOrgId;
   }
@@ -232,23 +236,8 @@ public class DashboardService {
 
   private String extractFirstAttendingId(Bundle bundle) {
     if (bundle.getEntry() == null || bundle.getEntry().isEmpty()) return null;
-    Encounter enc = (Encounter) bundle.getEntryFirstRep().getResource();
-    if (!enc.hasParticipant()) return null;
-    return enc.getParticipant().stream()
-        .filter(
-            p ->
-                p.hasType()
-                    && p.getType().stream()
-                        .anyMatch(
-                            t ->
-                                t.hasCoding()
-                                    && t.getCoding().stream()
-                                        .anyMatch(c -> "ATND".equals(c.getCode()))))
-        .map(p -> p.getIndividual().getReference())
-        .filter(ref -> ref != null && ref.startsWith("Practitioner/"))
-        .map(ref -> ref.replace("Practitioner/", ""))
-        .findFirst()
-        .orElse(null);
+    return encounterMapper.attendingPractitionerId(
+        (Encounter) bundle.getEntryFirstRep().getResource());
   }
 
   private Map<String, Object> buildUpcomingAppointment(
