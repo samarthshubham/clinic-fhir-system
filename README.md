@@ -26,7 +26,7 @@ PostgreSQL 15  (managed entirely by HAPI)
 |---|---|---|
 | `clinic-api/` | Java 21, Spring Boot 3.5 | Backend REST API + FHIR integration |
 | `care-platform/` | Angular 21, Nx monorepo | `clinician-app` (active) · `patient-app` (scaffolded) |
-| `infra/` | Docker Compose | HAPI FHIR JPA Server + PostgreSQL 15 |
+| `infra/` | Docker Compose | HAPI FHIR JPA Server + PostgreSQL 15 + Prometheus + Grafana |
 | `docs/` | Markdown | Architecture, API reference, design docs |
 
 ---
@@ -66,6 +66,10 @@ Services start in the correct order, each waiting for the previous to be healthy
 | clinic-api (Spring Boot) | `http://localhost:9090` |
 | clinician-app (Angular) | `http://localhost:4200` |
 | Swagger UI | `http://localhost:8081` |
+| Prometheus | `http://localhost:9091` |
+| Grafana | `http://localhost:3000` (login `admin` / `admin`) |
+
+Grafana loads the **Clinic → clinic-api** dashboard (request rate, p50/p95/p99 latency, 4xx and 5xx rates per endpoint) and a 5xx error rate alert from `infra/grafana/`. Prometheus scrapes `http://localhost:9090/actuator/prometheus` every 5s. The `admin` / `admin` login is for local development only; skip the password change prompt on first login.
 
 > **First boot:** HAPI FHIR takes up to ~5 minutes to initialize on a fresh volume. Subsequent starts are much faster.
 
