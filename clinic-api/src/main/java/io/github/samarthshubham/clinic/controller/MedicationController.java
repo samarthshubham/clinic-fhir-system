@@ -1,11 +1,11 @@
 package io.github.samarthshubham.clinic.controller;
 
 import io.github.samarthshubham.clinic.dto.MedicationRequest;
+import io.github.samarthshubham.clinic.dto.MedicationResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.service.MedicationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import org.hl7.fhir.r4.model.Bundle;
-import org.hl7.fhir.r4.model.MedicationStatement;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,14 +26,15 @@ public class MedicationController {
   }
 
   @PostMapping
-  public ResponseEntity<MedicationStatement> createMedication(
+  public ResponseEntity<MedicationResponse> createMedication(
       @Valid @RequestBody MedicationRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(medicationService.createMedication(request));
   }
 
   @GetMapping
-  public ResponseEntity<Bundle> getMedicationsForPatient(@RequestParam @NotBlank String patientId) {
+  public ResponseEntity<PageResponse<MedicationResponse>> getMedicationsForPatient(
+      @RequestParam @NotBlank String patientId) {
     return ResponseEntity.ok(medicationService.getMedicationsForPatient(patientId));
   }
 }

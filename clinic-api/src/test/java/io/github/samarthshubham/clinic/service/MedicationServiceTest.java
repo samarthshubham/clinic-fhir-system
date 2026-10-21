@@ -6,11 +6,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.samarthshubham.clinic.dto.MedicationRequest;
+import io.github.samarthshubham.clinic.dto.MedicationResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.MedicationMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
 import java.time.LocalDate;
-import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.MedicationStatement;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,13 +28,15 @@ class MedicationServiceTest {
 
   @Test
   void createStoresMappedMedicationAndReturnsTheStoredCopy() {
-    MedicationStatement medication =
+    MedicationResponse medication =
         service.createMedication(
             new MedicationRequest("p1", "Lisinopril", "active", null, LocalDate.of(2026, 1, 10)));
 
-    assertThat(fhir.created()).singleElement().isNotSameAs(medication);
-    assertThat(medication.getIdElement().getIdPart()).isEqualTo("1");
-    assertThat(medication.getMedicationCodeableConcept().getText()).isEqualTo("Lisinopril");
+    assertThat(fhir.created()).singleElement().isInstanceOf(MedicationStatement.class);
+    assertThat(medication)
+        .isEqualTo(
+            new MedicationResponse(
+                "1", "p1", "Lisinopril", "active", null, LocalDate.of(2026, 1, 10)));
   }
 
   @Test
@@ -62,10 +64,13 @@ class MedicationServiceTest {
 
   @Test
   void listsMedicationsForPatient() {
-    Bundle medications = bundleOf(new MedicationStatement());
-    fhir.givenSearchResult(MedicationStatement.class, medications);
+    MedicationStatement stored = new MedicationStatement();
+    stored.setId("m1");
+    fhir.givenSearchResult(MedicationStatement.class, bundleOf(stored));
 
-    assertThat(service.getMedicationsForPatient("p1")).isSameAs(medications);
+    assertThat(service.getMedicationsForPatient("p1").items())
+        .extracting(MedicationResponse::id)
+        .containsExactly("m1");
     assertThat(fhir.lastSearchCriteria(MedicationStatement.class))
         .containsExactlyInAnyOrder("subject=Patient/p1");
   }

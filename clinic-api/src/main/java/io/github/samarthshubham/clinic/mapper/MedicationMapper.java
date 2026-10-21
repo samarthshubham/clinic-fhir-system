@@ -1,6 +1,7 @@
 package io.github.samarthshubham.clinic.mapper;
 
 import io.github.samarthshubham.clinic.dto.MedicationRequest;
+import io.github.samarthshubham.clinic.dto.MedicationResponse;
 import java.time.ZoneId;
 import java.util.Date;
 import org.hl7.fhir.r4.model.CodeableConcept;
@@ -24,5 +25,19 @@ public class MedicationMapper {
     Date start = Date.from(request.startDate().atStartOfDay(ZoneId.systemDefault()).toInstant());
     ms.setEffective(new Period().setStart(start));
     return ms;
+  }
+
+  public MedicationResponse toResponse(MedicationStatement statement) {
+    return new MedicationResponse(
+        FhirValues.idOf(statement),
+        FhirValues.referenceId(statement.getSubject()),
+        statement.hasMedicationCodeableConcept()
+            ? statement.getMedicationCodeableConcept().getText()
+            : null,
+        statement.hasStatus() ? statement.getStatus().toCode() : null,
+        statement.hasDosage() ? statement.getDosageFirstRep().getText() : null,
+        statement.hasEffectivePeriod()
+            ? FhirValues.localDate(statement.getEffectivePeriod().getStart())
+            : null);
   }
 }

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.samarthshubham.clinic.dto.MedicationRequest;
+import io.github.samarthshubham.clinic.dto.MedicationResponse;
 import java.time.LocalDate;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.MedicationStatement;
@@ -43,5 +44,24 @@ class MedicationMapperTest {
     MedicationRequest request = new MedicationRequest("p1", "Aspirin", "taking", null, START);
 
     assertThatThrownBy(() -> mapper.toFhir(request)).isInstanceOf(FHIRException.class);
+  }
+
+  @Test
+  void toResponseIsTheReverseOfToFhir() {
+    MedicationStatement statement =
+        mapper.toFhir(new MedicationRequest("p1", "Lisinopril", "active", "Once daily", START));
+    statement.setId("m1");
+
+    assertThat(mapper.toResponse(statement))
+        .isEqualTo(new MedicationResponse("m1", "p1", "Lisinopril", "active", "Once daily", START));
+  }
+
+  @Test
+  void toResponseLeavesMissingFieldsNull() {
+    MedicationStatement statement = new MedicationStatement();
+    statement.setId("m1");
+
+    assertThat(mapper.toResponse(statement))
+        .isEqualTo(new MedicationResponse("m1", null, null, null, null, null));
   }
 }

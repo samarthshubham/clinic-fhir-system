@@ -313,11 +313,8 @@ class ApiClient {
     return this.post<CreatedResource>(`${SPRING_API}/api/conditions`, body);
   }
 
-  createMedication(body: CreateMedicationBody): Promise<FhirResourceResponse> {
-    return this.post<FhirResourceResponse>(
-      `${SPRING_API}/api/medications`,
-      body,
-    );
+  createMedication(body: CreateMedicationBody): Promise<CreatedResource> {
+    return this.post<CreatedResource>(`${SPRING_API}/api/medications`, body);
   }
 
   createAppointment(
