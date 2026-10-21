@@ -19,7 +19,9 @@
         <span class="cp-patient-header__sep">·</span>
         <span>
           <span class="cp-patient-header__lab">DOB</span>
-          <span class="cp-font-mono">{{ data.dob | date: 'MM/dd/yyyy' }}</span>
+          <span class="cp-font-mono">{{
+            data.dob ? (data.dob | date: 'MM/dd/yyyy') : '—'
+          }}</span>
         </span>
         <span class="cp-patient-header__sep">·</span>
         <span>
