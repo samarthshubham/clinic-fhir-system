@@ -46,9 +46,7 @@ public final class FhirClientStub {
   private final IGenericClient client = lenientMock(IGenericClient.class, Answers.RETURNS_DEFAULTS);
   private final Map<Class<?>, IQuery<?>> queries = new HashMap<>();
   private final Map<Class<?>, Deque<Bundle>> searchResults = new HashMap<>();
-  private final Map<Class<?>, List<Map.Entry<List<String>, Bundle>>> matchingResults =
-      new HashMap<>();
-  private final Map<Class<?>, RuntimeException> searchFailures = new HashMap<>();
+  private final Map<Class<?>, List<SearchRule>> searchRules = new HashMap<>();
   private final Map<Class<?>, Map<String, Resource>> stored = new HashMap<>();
   private final Map<String, RuntimeException> readFailures = new HashMap<>();
   private final Map<Class<?>, List<String>> pendingCriteria = new HashMap<>();
@@ -93,7 +91,7 @@ public final class FhirClientStub {
   }
 
   public List<List<String>> searches(Class<? extends IBaseResource> type) {
-    return executedSearches.getOrDefault(type, List.of());
+    return List.copyOf(executedSearches.getOrDefault(type, List.of()));
   }
 
   public List<String> lastSearchCriteria(Class<? extends IBaseResource> type) {
@@ -110,13 +108,16 @@ public final class FhirClientStub {
 
   public void givenSearchResultWhen(
       Class<? extends IBaseResource> type, Bundle bundle, String... criteria) {
-    matchingResults
+    searchRules
         .computeIfAbsent(type, k -> new ArrayList<>())
-        .add(Map.entry(List.of(criteria), bundle));
+        .add(new SearchRule(List.of(criteria), bundle, null));
   }
 
-  public void givenSearchFails(Class<? extends IBaseResource> type, RuntimeException e) {
-    searchFailures.put(type, e);
+  public void givenSearchFails(
+      Class<? extends IBaseResource> type, RuntimeException e, String... criteria) {
+    searchRules
+        .computeIfAbsent(type, k -> new ArrayList<>())
+        .add(new SearchRule(List.of(criteria), null, e));
   }
 
   public void givenStored(IBaseResource resource, String id) {
@@ -215,16 +216,31 @@ public final class FhirClientStub {
     List<String> pending = pendingCriteria.remove(type);
     List<String> criteria = pending == null ? List.of() : List.copyOf(pending);
     executedSearches.computeIfAbsent(type, k -> new ArrayList<>()).add(criteria);
-    RuntimeException failure = searchFailures.get(type);
-    if (failure != null) {
-      throw failure;
+    SearchRule rule = mostSpecificRule(type, criteria);
+    if (rule == null) {
+      return nextSearchResult(type);
     }
-    for (Map.Entry<List<String>, Bundle> match : matchingResults.getOrDefault(type, List.of())) {
-      if (criteria.containsAll(match.getKey())) {
-        return match.getValue();
-      }
+    if (rule.failure() != null) {
+      throw rule.failure();
     }
-    return nextSearchResult(type);
+    return rule.result().copy();
+  }
+
+  private SearchRule mostSpecificRule(Class<?> type, List<String> criteria) {
+    List<SearchRule> matching =
+        searchRules.getOrDefault(type, List.of()).stream()
+            .filter(rule -> criteria.containsAll(rule.criteria()))
+            .sorted((a, b) -> b.criteria().size() - a.criteria().size())
+            .toList();
+    if (matching.isEmpty()) {
+      return null;
+    }
+    if (matching.size() > 1
+        && matching.get(0).criteria().size() == matching.get(1).criteria().size()) {
+      throw new AssertionError(
+          "Ambiguous search rules for " + type.getSimpleName() + " " + criteria);
+    }
+    return matching.get(0);
   }
 
   private Bundle nextSearchResult(Class<?> type) {
@@ -301,4 +317,6 @@ public final class FhirClientStub {
   private static <T> T lenientMock(Class<T> type, Answers defaultAnswer) {
     return mock(type, withSettings().strictness(Strictness.LENIENT).defaultAnswer(defaultAnswer));
   }
+
+  private record SearchRule(List<String> criteria, Bundle result, RuntimeException failure) {}
 }
