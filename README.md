@@ -214,7 +214,7 @@ See [`docs/`](./docs) for full system design:
 
 ## License
 
-**Proprietary Evaluation License** — Copyright (c) 2026 shubhamforge (Shubham Samarth). All rights reserved.
+**Proprietary Evaluation License** — Copyright (c) 2026 samarthshubham (Shubham Samarth). All rights reserved.
 
 This repository is provided for viewing and evaluation purposes only. No permission is granted to copy, modify, distribute, sublicense, or use this code in any form without explicit written permission from the author.
 

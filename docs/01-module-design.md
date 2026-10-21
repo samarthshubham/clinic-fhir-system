@@ -3,7 +3,7 @@
 ## Package Structure
 
 ```
-io.github.shubhamforge.clinic
+io.github.samarthshubham.clinic
 ├── config/
 │   ├── FhirConfig.java              ← IGenericClient bean, FhirContext bean, WebMvcConfigurer
 │   └── FhirHttpMessageConverter.java← Serializes FHIR resources as application/fhir+json

@@ -28,7 +28,7 @@ PostgreSQL 15  (owned entirely by HAPI — Spring Boot never queries it directly
 
 ```
 clinic-api/         Spring Boot backend (Maven)
-  src/main/java/io/github/shubhamforge/clinic/
+  src/main/java/io/github/samarthshubham/clinic/
     config/         FhirConfig, FhirHttpMessageConverter, ClinicalThresholds
     controller/     PatientController, EncounterController, VitalsController,
                     PractitionerController, ConditionController, MedicationController,
