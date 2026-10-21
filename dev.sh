@@ -103,6 +103,7 @@ teardown() {
     kill_port "$port"
   done
 
+  docker rm -f clinic-swagger-ui > /dev/null 2>&1 || true
   docker compose -f "$SCRIPT_DIR/infra/docker-compose.yml" down > /dev/null 2>&1 || true
   ok "All services stopped"
 }
@@ -192,7 +193,8 @@ startup() {
   # 4. Swagger UI
   info "Swagger UI (:8081)"
 
-  docker run --rm -p 8081:8080 \
+  docker rm -f clinic-swagger-ui > /dev/null 2>&1 || true
+  docker run --rm --name clinic-swagger-ui -p 8081:8080 \
     -e SWAGGER_JSON=/spec/openapi.yaml \
     -v "$SCRIPT_DIR/docs/openapi.yaml:/spec/openapi.yaml:ro" \
     swaggerapi/swagger-ui 2>&1 | log_with_ts "$LOG_DIR/swagger.log" &
