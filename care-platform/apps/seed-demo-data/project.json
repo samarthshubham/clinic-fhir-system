@@ -11,6 +11,13 @@
         "command": "cucumber-js",
         "cwd": "apps/seed-demo-data"
       }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run",
+        "cwd": "apps/seed-demo-data"
+      }
     }
   }
 }
