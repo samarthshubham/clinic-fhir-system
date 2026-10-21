@@ -8,6 +8,7 @@ import io.github.shubhamforge.clinic.exception.ResourceNotFoundException;
 import io.github.shubhamforge.clinic.mapper.PatientMapper;
 import java.time.LocalDate;
 import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.ContactPoint;
 import org.hl7.fhir.r4.model.Patient;
 import org.springframework.stereotype.Service;
 
@@ -45,5 +46,11 @@ public class PatientService {
       query = query.where(new DateClientParam("birthdate").exactly().day(dob.toString()));
     }
     return query.execute();
+  }
+
+  public boolean hasPhoneNumber(String id) {
+    Patient patient = getPatient(id);
+    return patient.getTelecom().stream()
+        .anyMatch(t -> t.getSystem() == ContactPoint.ContactPointSystem.EMAIL);
   }
 }
