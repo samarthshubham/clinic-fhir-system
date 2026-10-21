@@ -25,6 +25,7 @@ class ConditionMapperTest {
     assertThat(condition.getSubject().getReference()).isEqualTo("Patient/p1");
     assertThat(condition.getEncounter().getReference()).isEqualTo("Encounter/e1");
     assertThat(condition.getCode().getCodingFirstRep().getCode()).isEqualTo("59621000");
+    assertThat(condition.getCode().getCodingFirstRep().hasSystem()).isFalse();
     assertThat(condition.getCode().getText()).isEqualTo("Essential hypertension");
     Coding status = condition.getClinicalStatus().getCodingFirstRep();
     assertThat(status.getSystem())

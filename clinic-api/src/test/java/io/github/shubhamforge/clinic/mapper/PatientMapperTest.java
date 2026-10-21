@@ -65,6 +65,17 @@ class PatientMapperTest {
   }
 
   @Test
+  void onlyPhoneIsMappedAsPhone() {
+    Patient patient =
+        mapper.toFhir(
+            new PatientRequest("Tony", "Stark", LocalDate.of(1970, 5, 29), "male", "555", null));
+
+    assertThat(patient.getTelecom())
+        .extracting(ContactPoint::getSystem)
+        .containsExactly(ContactPoint.ContactPointSystem.PHONE);
+  }
+
+  @Test
   void unknownGenderIsRejected() {
     PatientRequest request =
         new PatientRequest("Tony", "Stark", LocalDate.of(1970, 5, 29), "robot", null, null);

@@ -2,9 +2,11 @@ package io.github.shubhamforge.clinic.mapper;
 
 import static io.github.shubhamforge.clinic.support.FhirDates.localDate;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.shubhamforge.clinic.dto.GoalRequest;
 import java.time.LocalDate;
+import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Goal;
 import org.hl7.fhir.r4.model.Quantity;
@@ -53,6 +55,25 @@ class GoalMapperTest {
             new GoalRequest("p1", "Reach 75 kg", "active", "29463-7", "Weight", 75.0, "kg", null));
 
     assertThat(goal.getTargetFirstRep().hasDue()).isFalse();
+  }
+
+  @Test
+  void targetKeepsNullDisplayAndUnit() {
+    Goal goal =
+        mapper.toFhir(
+            new GoalRequest("p1", "Steps", "active", "41950-7", null, 8000.0, null, null));
+
+    Goal.GoalTargetComponent target = goal.getTargetFirstRep();
+    assertThat(target.getMeasure().getCodingFirstRep().hasDisplay()).isFalse();
+    assertThat(target.getDetailQuantity().hasUnit()).isFalse();
+    assertThat(target.getDetailQuantity().getValue().doubleValue()).isEqualTo(8000.0);
+  }
+
+  @Test
+  void unknownStatusIsRejected() {
+    GoalRequest request = new GoalRequest("p1", "Steps", "ongoing", null, null, null, null, null);
+
+    assertThatThrownBy(() -> mapper.toFhir(request)).isInstanceOf(FHIRException.class);
   }
 
   @Test

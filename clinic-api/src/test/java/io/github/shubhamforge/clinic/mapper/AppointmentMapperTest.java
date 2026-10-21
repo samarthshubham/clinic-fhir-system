@@ -2,10 +2,12 @@ package io.github.shubhamforge.clinic.mapper;
 
 import static io.github.shubhamforge.clinic.support.FhirDates.localDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.github.shubhamforge.clinic.dto.AppointmentRequest;
 import java.time.LocalDateTime;
+import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.Appointment;
 import org.junit.jupiter.api.Test;
 
@@ -30,6 +32,13 @@ class AppointmentMapperTest {
         .containsExactly(
             tuple("Patient/p1", Appointment.ParticipationStatus.ACCEPTED),
             tuple("Practitioner/dr1", Appointment.ParticipationStatus.ACCEPTED));
+  }
+
+  @Test
+  void unknownStatusIsRejected() {
+    AppointmentRequest request = new AppointmentRequest("p1", null, START, END, null, "confirmed");
+
+    assertThatThrownBy(() -> mapper.toFhir(request)).isInstanceOf(FHIRException.class);
   }
 
   @Test

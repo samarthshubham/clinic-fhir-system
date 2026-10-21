@@ -2,10 +2,12 @@ package io.github.shubhamforge.clinic.mapper;
 
 import static io.github.shubhamforge.clinic.support.FhirDates.localDate;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.shubhamforge.clinic.dto.DiagnosticReportRequest;
 import java.time.LocalDate;
 import java.util.List;
+import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.DiagnosticReport;
 import org.hl7.fhir.r4.model.Reference;
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,14 @@ class DiagnosticReportMapperTest {
     assertThat(report.getResult())
         .extracting(Reference::getReference)
         .containsExactly("Observation/o1", "Observation/o2");
+  }
+
+  @Test
+  void unknownStatusIsRejected() {
+    DiagnosticReportRequest request =
+        new DiagnosticReportRequest("p1", null, null, "X-ray", "done", ISSUED, null, null);
+
+    assertThatThrownBy(() -> mapper.toFhir(request)).isInstanceOf(FHIRException.class);
   }
 
   @Test

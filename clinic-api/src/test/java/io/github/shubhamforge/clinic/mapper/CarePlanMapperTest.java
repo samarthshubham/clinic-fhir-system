@@ -2,10 +2,12 @@ package io.github.shubhamforge.clinic.mapper;
 
 import static io.github.shubhamforge.clinic.support.FhirDates.localDate;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.shubhamforge.clinic.dto.CarePlanRequest;
 import java.time.LocalDate;
 import java.util.List;
+import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.CarePlan;
 import org.hl7.fhir.r4.model.Reference;
 import org.junit.jupiter.api.Test;
@@ -32,6 +34,13 @@ class CarePlanMapperTest {
         .extracting(Reference::getReference)
         .containsExactly("Condition/c1", "Condition/c2");
     assertThat(plan.getGoal()).extracting(Reference::getReference).containsExactly("Goal/g1");
+  }
+
+  @Test
+  void unknownStatusIsRejected() {
+    CarePlanRequest request = new CarePlanRequest("p1", null, "Diet", "open", START, null);
+
+    assertThatThrownBy(() -> mapper.toFhir(request)).isInstanceOf(FHIRException.class);
   }
 
   @Test

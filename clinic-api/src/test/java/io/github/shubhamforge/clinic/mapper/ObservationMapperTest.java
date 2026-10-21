@@ -27,24 +27,25 @@ class ObservationMapperTest {
             obs -> obs.getCode().getCodingFirstRep().getCode(),
             obs -> obs.getCode().getCodingFirstRep().getDisplay(),
             obs -> obs.getValueQuantity().getValue().doubleValue(),
+            obs -> obs.getValueQuantity().getUnit(),
             obs -> obs.getValueQuantity().getCode())
         .containsExactly(
-            tuple("8480-6", "Systolic blood pressure", 150.0, "mm[Hg]"),
-            tuple("8462-4", "Diastolic blood pressure", 95.0, "mm[Hg]"),
-            tuple("29463-7", "Body weight", 80.5, "kg"),
-            tuple("59408-5", "Oxygen saturation", 93.0, "%"),
-            tuple("8867-4", "Heart rate", 72.0, "/min"),
-            tuple("8310-5", "Body temperature", 37.1, "Cel"));
+            tuple("8480-6", "Systolic blood pressure", 150.0, "mm[Hg]", "mm[Hg]"),
+            tuple("8462-4", "Diastolic blood pressure", 95.0, "mm[Hg]", "mm[Hg]"),
+            tuple("29463-7", "Body weight", 80.5, "kg", "kg"),
+            tuple("59408-5", "Oxygen saturation", 93.0, "%", "%"),
+            tuple("8867-4", "Heart rate", 72.0, "/min", "/min"),
+            tuple("8310-5", "Body temperature", 37.1, "Cel", "Cel"));
   }
 
   @Test
   void everyObservationIsFinalWithLoincUcumSubjectEncounterAndDate() {
     List<Observation> observations =
         mapper.toFhirObservations(
-            new VitalsRequest("p1", "e1", MEASURED, 150, null, null, 93.0, null, null));
+            new VitalsRequest("p1", "e1", MEASURED, 150, 95, 80.5, 93.0, 72, 37.1));
 
     assertThat(observations)
-        .hasSize(2)
+        .hasSize(6)
         .allSatisfy(
             obs -> {
               assertThat(obs.getStatus()).isEqualTo(Observation.ObservationStatus.FINAL);
