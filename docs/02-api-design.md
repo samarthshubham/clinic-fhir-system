@@ -137,6 +137,8 @@ Send only the vitals you have — null fields are skipped. Each non-null vital i
 
 `type` is one of `systolic`, `diastolic`, `weight`, `spo2`, `heartRate`, `temperature`, or `null` for observations with another LOINC code (e.g. imported Synthea data).
 
+`effectiveDateTime` is the ISO-8601 string exactly as stored, taken from `effectiveDateTime`, `effectivePeriod.start` or `effectiveInstant` (in that order). Its precision follows the source: a date (`2025-04-25`), a date-time with offset, or an instant with milliseconds. It is `null` when the observation has none of these.
+
 ### GET /api/vitals?patientId=123
 
 **Response `200 OK` — `PageResponse<ObservationResponse>`.**

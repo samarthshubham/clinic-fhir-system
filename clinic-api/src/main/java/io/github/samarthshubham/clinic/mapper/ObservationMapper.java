@@ -93,9 +93,20 @@ public class ObservationMapper {
         loincCode,
         quantity != null && quantity.hasValue() ? quantity.getValue().doubleValue() : null,
         quantity != null ? quantity.getUnit() : null,
-        observation.hasEffectiveDateTimeType()
-            ? observation.getEffectiveDateTimeType().getValueAsString()
-            : null);
+        effective(observation));
+  }
+
+  private static String effective(Observation observation) {
+    if (observation.hasEffectiveDateTimeType()) {
+      return observation.getEffectiveDateTimeType().getValueAsString();
+    }
+    if (observation.hasEffectivePeriod()) {
+      return observation.getEffectivePeriod().getStartElement().getValueAsString();
+    }
+    if (observation.hasEffectiveInstantType()) {
+      return observation.getEffectiveInstantType().getValueAsString();
+    }
+    return null;
   }
 
   private static String vitalType(String loincCode) {

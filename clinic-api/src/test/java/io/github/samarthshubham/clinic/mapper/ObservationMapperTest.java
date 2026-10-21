@@ -9,7 +9,10 @@ import io.github.samarthshubham.clinic.dto.VitalsRequest;
 import java.time.LocalDate;
 import java.util.List;
 import org.hl7.fhir.r4.model.DateTimeType;
+import org.hl7.fhir.r4.model.InstantType;
 import org.hl7.fhir.r4.model.Observation;
+import org.hl7.fhir.r4.model.Period;
+import org.hl7.fhir.r4.model.Timing;
 import org.junit.jupiter.api.Test;
 
 class ObservationMapperTest {
@@ -104,5 +107,37 @@ class ObservationMapperTest {
 
     assertThat(mapper.toResponse(observation))
         .isEqualTo(new ObservationResponse("o1", null, null, null, "2345-7", null, null, null));
+  }
+
+  @Test
+  void toResponseReadsTheStartOfAnEffectivePeriod() {
+    Observation observation = new Observation();
+    observation.setEffective(
+        new Period()
+            .setStartElement(new DateTimeType("2026-05-01T22:00:00-05:00"))
+            .setEndElement(new DateTimeType("2026-05-01T22:15:00-05:00")));
+    observation.setId("o1");
+
+    assertThat(mapper.toResponse(observation).effectiveDateTime())
+        .isEqualTo("2026-05-01T22:00:00-05:00");
+  }
+
+  @Test
+  void toResponseReadsAnEffectiveInstant() {
+    Observation observation = new Observation();
+    observation.setEffective(new InstantType("2026-05-01T22:00:00.000-05:00"));
+    observation.setId("o1");
+
+    assertThat(mapper.toResponse(observation).effectiveDateTime())
+        .isEqualTo("2026-05-01T22:00:00.000-05:00");
+  }
+
+  @Test
+  void toResponseLeavesEffectiveNullForOtherTypes() {
+    Observation observation = new Observation();
+    observation.setEffective(new Timing());
+    observation.setId("o1");
+
+    assertThat(mapper.toResponse(observation).effectiveDateTime()).isNull();
   }
 }

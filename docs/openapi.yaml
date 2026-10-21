@@ -925,8 +925,12 @@ components:
           example: "mm[Hg]"
         effectiveDateTime:
           type: string
-          format: date-time
           nullable: true
+          description: >-
+            ISO-8601 string exactly as stored, taken from effectiveDateTime, effectivePeriod.start
+            or effectiveInstant (in that order). Precision varies with the source: a date
+            (2026-05-15), a date-time with offset, or an instant with milliseconds.
+            null when the observation has no such value.
           example: "2026-05-15T00:00:00-04:00"
 
     PractitionerResponse:
