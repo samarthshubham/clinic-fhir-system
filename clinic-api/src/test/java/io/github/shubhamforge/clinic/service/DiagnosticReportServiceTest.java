@@ -1,0 +1,99 @@
+package io.github.shubhamforge.clinic.service;
+
+import static io.github.shubhamforge.clinic.support.FhirClientStub.bundleOf;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import io.github.shubhamforge.clinic.dto.DiagnosticReportRequest;
+import io.github.shubhamforge.clinic.exception.ResourceNotFoundException;
+import io.github.shubhamforge.clinic.mapper.DiagnosticReportMapper;
+import io.github.shubhamforge.clinic.mapper.ServiceRequestMapper;
+import io.github.shubhamforge.clinic.support.FhirClientStub;
+import java.time.LocalDate;
+import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.DiagnosticReport;
+import org.hl7.fhir.r4.model.ServiceRequest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+class DiagnosticReportServiceTest {
+
+  private FhirClientStub fhir;
+  private DiagnosticReportService service;
+
+  @BeforeEach
+  void setUp() {
+    fhir = new FhirClientStub();
+    ServiceRequestService orders =
+        new ServiceRequestService(fhir.client(), new ServiceRequestMapper());
+    service = new DiagnosticReportService(fhir.client(), new DiagnosticReportMapper(), orders);
+  }
+
+  @Test
+  void createStoresMappedReportAndReturnsTheStoredCopy() {
+    DiagnosticReport report = service.createDiagnosticReport(request(null));
+
+    assertThat(fhir.created()).containsExactly(report);
+    assertThat(report.getIdElement().getIdPart()).isEqualTo("1");
+    assertThat(report.getCode().getText()).isEqualTo("Lipid panel");
+    assertThat(fhir.updated()).isEmpty();
+  }
+
+  @Test
+  void createCompletesTheLinkedOrder() {
+    ServiceRequest order =
+        new ServiceRequest().setStatus(ServiceRequest.ServiceRequestStatus.ACTIVE);
+    fhir.givenStored(order, "sr1");
+
+    service.createDiagnosticReport(request("sr1"));
+
+    assertThat(fhir.updated()).containsExactly(order);
+    assertThat(order.getStatus()).isEqualTo(ServiceRequest.ServiceRequestStatus.COMPLETED);
+  }
+
+  @Test
+  void createStillSucceedsWhenLinkedOrderIsMissing() {
+    DiagnosticReport report = service.createDiagnosticReport(request("missing"));
+
+    assertThat(fhir.created()).containsExactly(report);
+    assertThat(fhir.updated()).isEmpty();
+  }
+
+  @Test
+  void getReturnsStoredReport() {
+    DiagnosticReport stored = new DiagnosticReport();
+    fhir.givenStored(stored, "r1");
+
+    assertThat(service.getDiagnosticReport("r1")).isSameAs(stored);
+  }
+
+  @Test
+  void getUnknownReportThrowsNotFound() {
+    assertThatThrownBy(() -> service.getDiagnosticReport("missing"))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessage("DiagnosticReport with id 'missing' not found");
+  }
+
+  @Test
+  void listsReportsForPatient() {
+    Bundle reports = bundleOf(new DiagnosticReport());
+    fhir.givenSearchResult(DiagnosticReport.class, reports);
+
+    assertThat(service.getDiagnosticReportsForPatient("p1")).isSameAs(reports);
+    assertThat(fhir.lastSearchCriteria(DiagnosticReport.class))
+        .containsExactly("subject=Patient/p1");
+  }
+
+  @Test
+  void mostRecentReportIsLatestByIssuedDate() {
+    service.getMostRecentDiagnosticReport("p1");
+
+    assertThat(fhir.lastSearchCriteria(DiagnosticReport.class))
+        .containsExactly("subject=Patient/p1", "_sort=-issued", "_count=1");
+  }
+
+  private static DiagnosticReportRequest request(String serviceRequestId) {
+    return new DiagnosticReportRequest(
+        "p1", null, serviceRequestId, "Lipid panel", "final", LocalDate.now(), null, null);
+  }
+}
