@@ -23,6 +23,7 @@ import ca.uhn.fhir.rest.gclient.IUntypedQuery;
 import ca.uhn.fhir.rest.gclient.IUpdate;
 import ca.uhn.fhir.rest.gclient.IUpdateTyped;
 import ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException;
+import java.time.LocalDate;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.Observation;
 import org.hl7.fhir.r4.model.Quantity;
@@ -44,6 +46,9 @@ public final class FhirClientStub {
   private final IGenericClient client = lenientMock(IGenericClient.class, Answers.RETURNS_DEFAULTS);
   private final Map<Class<?>, IQuery<?>> queries = new HashMap<>();
   private final Map<Class<?>, Deque<Bundle>> searchResults = new HashMap<>();
+  private final Map<Class<?>, List<Map.Entry<List<String>, Bundle>>> matchingResults =
+      new HashMap<>();
+  private final Map<Class<?>, RuntimeException> searchFailures = new HashMap<>();
   private final Map<Class<?>, Map<String, Resource>> stored = new HashMap<>();
   private final Map<String, RuntimeException> readFailures = new HashMap<>();
   private final Map<Class<?>, List<String>> pendingCriteria = new HashMap<>();
@@ -87,6 +92,10 @@ public final class FhirClientStub {
     return executedSearches.getOrDefault(type, List.of()).size();
   }
 
+  public List<List<String>> searches(Class<? extends IBaseResource> type) {
+    return executedSearches.getOrDefault(type, List.of());
+  }
+
   public List<String> lastSearchCriteria(Class<? extends IBaseResource> type) {
     List<List<String>> searches = executedSearches.getOrDefault(type, List.of());
     if (searches.isEmpty()) {
@@ -97,6 +106,17 @@ public final class FhirClientStub {
 
   public void givenSearchResult(Class<? extends IBaseResource> type, Bundle... bundles) {
     searchResults.put(type, new ArrayDeque<>(Arrays.asList(bundles)));
+  }
+
+  public void givenSearchResultWhen(
+      Class<? extends IBaseResource> type, Bundle bundle, String... criteria) {
+    matchingResults
+        .computeIfAbsent(type, k -> new ArrayList<>())
+        .add(Map.entry(List.of(criteria), bundle));
+  }
+
+  public void givenSearchFails(Class<? extends IBaseResource> type, RuntimeException e) {
+    searchFailures.put(type, e);
   }
 
   public void givenStored(IBaseResource resource, String id) {
@@ -122,6 +142,13 @@ public final class FhirClientStub {
 
   public static Observation quantityObservation(double value) {
     return new Observation().setValue(new Quantity().setValue(value));
+  }
+
+  public static Observation vital(String loincCode, double value, LocalDate effective) {
+    Observation observation = quantityObservation(value);
+    observation.getCode().addCoding().setSystem("http://loinc.org").setCode(loincCode);
+    observation.setEffective(new DateTimeType(FhirDates.date(effective)));
+    return observation;
   }
 
   public static Bundle bundleOf(Resource... resources) {
@@ -185,10 +212,18 @@ public final class FhirClientStub {
   }
 
   private Bundle executeSearch(Class<?> type) {
-    List<String> criteria = pendingCriteria.remove(type);
-    executedSearches
-        .computeIfAbsent(type, k -> new ArrayList<>())
-        .add(criteria == null ? List.of() : List.copyOf(criteria));
+    List<String> pending = pendingCriteria.remove(type);
+    List<String> criteria = pending == null ? List.of() : List.copyOf(pending);
+    executedSearches.computeIfAbsent(type, k -> new ArrayList<>()).add(criteria);
+    RuntimeException failure = searchFailures.get(type);
+    if (failure != null) {
+      throw failure;
+    }
+    for (Map.Entry<List<String>, Bundle> match : matchingResults.getOrDefault(type, List.of())) {
+      if (criteria.containsAll(match.getKey())) {
+        return match.getValue();
+      }
+    }
     return nextSearchResult(type);
   }
 

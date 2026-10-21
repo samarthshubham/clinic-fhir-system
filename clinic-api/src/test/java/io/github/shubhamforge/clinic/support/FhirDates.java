@@ -9,6 +9,10 @@ public final class FhirDates {
 
   private FhirDates() {}
 
+  public static Date date(LocalDate date) {
+    return Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
+  }
+
   public static LocalDate localDate(Date date) {
     return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
   }
