@@ -153,7 +153,7 @@ export interface PatientHeaderData {
   displayName: string;
   age: number | null;
   gender: string;
-  dob: string;
+  dob: string | null;
   mrn: string;
   pcp: string;
   org: string;
@@ -182,7 +182,7 @@ export function extractPatientHeader(
     displayName,
     age,
     gender: p.gender ?? '—',
-    dob: p.dob ?? '—',
+    dob: p.dob,
     mrn: p.mrn,
     pcp,
     org,
