@@ -300,6 +300,19 @@ class DashboardServiceTest {
   }
 
   @Test
+  void goalReadingExactlyAtTargetIsOnTrack() {
+    givenCarePlanWithGoals("g1");
+    when(goalService.getGoal("g1")).thenReturn(bpGoal("g1"));
+    givenSystolicReadings(130, 160);
+
+    GoalProgress progress =
+        (GoalProgress) goals(service.getDashboard("p1").activeCarePlan()).get(0).get("progress");
+
+    assertThat(progress.onTrack()).isTrue();
+    assertThat(progress.percentToGoal()).isEqualTo(100);
+  }
+
+  @Test
   void goalWithoutReadingsSaysSo() {
     givenCarePlanWithGoals("g1");
     when(goalService.getGoal("g1")).thenReturn(bpGoal("g1"));
