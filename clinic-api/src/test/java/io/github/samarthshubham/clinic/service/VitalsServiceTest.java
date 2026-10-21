@@ -12,11 +12,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import io.github.samarthshubham.clinic.dto.ObservationResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.dto.VitalsRequest;
 import io.github.samarthshubham.clinic.mapper.ObservationMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
 import java.time.LocalDate;
-import org.hl7.fhir.r4.model.Bundle;
+import java.util.List;
 import org.hl7.fhir.r4.model.Observation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,12 +47,17 @@ class VitalsServiceTest {
 
   @Test
   void recordingFullPanelCreatesOneObservationPerVital() {
-    Bundle result = service.recordVitals(fullPanel());
+    List<ObservationResponse> result = service.recordVitals(fullPanel());
 
-    assertThat(result.getType()).isEqualTo(Bundle.BundleType.COLLECTION);
-    assertThat(result.getEntry())
-        .extracting(entry -> entry.getResource().getIdElement().getIdPart())
-        .containsExactly("1", "2", "3", "4", "5", "6");
+    assertThat(result)
+        .extracting(ObservationResponse::id, ObservationResponse::type)
+        .containsExactly(
+            tuple("1", "systolic"),
+            tuple("2", "diastolic"),
+            tuple("3", "weight"),
+            tuple("4", "spo2"),
+            tuple("5", "heartRate"),
+            tuple("6", "temperature"));
     assertThat(fhir.created())
         .map(Observation.class::cast)
         .extracting(
@@ -82,9 +89,12 @@ class VitalsServiceTest {
     VitalsRequest request =
         new VitalsRequest(PATIENT_ID, "e1", TODAY, 150, null, null, null, null, null);
 
-    Bundle result = service.recordVitals(request);
+    List<ObservationResponse> result = service.recordVitals(request);
 
-    assertThat(result.getEntry()).hasSize(1);
+    assertThat(result)
+        .singleElement()
+        .extracting(ObservationResponse::patientId, ObservationResponse::encounterId)
+        .containsExactly(PATIENT_ID, "e1");
     Observation created = (Observation) fhir.created().get(0);
     assertThat(created.getSubject().getReference()).isEqualTo("Patient/" + PATIENT_ID);
     assertThat(created.getEncounter().getReference()).isEqualTo("Encounter/e1");
@@ -96,9 +106,7 @@ class VitalsServiceTest {
     VitalsRequest request =
         new VitalsRequest(PATIENT_ID, null, TODAY, null, null, null, null, null, null);
 
-    Bundle result = service.recordVitals(request);
-
-    assertThat(result.getEntry()).isEmpty();
+    assertThat(service.recordVitals(request)).isEmpty();
     assertThat(fhir.created()).isEmpty();
     verifyNoInteractions(conditionEvaluationService);
   }
@@ -110,20 +118,19 @@ class VitalsServiceTest {
         .when(conditionEvaluationService)
         .evaluate(anyString(), anyString(), anyDouble());
 
-    Bundle result = service.recordVitals(fullPanel());
-
-    assertThat(result.getEntry()).hasSize(6);
+    assertThat(service.recordVitals(fullPanel())).hasSize(6);
     verify(conditionEvaluationService, times(4)).evaluate(anyString(), anyString(), anyDouble());
   }
 
   @Test
   void searchWithoutTypeReturnsAllVitalsForThePatient() {
-    Bundle vitals = bundleOf(quantityObservation(150), quantityObservation(80));
-    fhir.givenSearchResult(Observation.class, vitals);
+    fhir.givenSearchResult(
+        Observation.class, bundleOf(quantityObservation(150), quantityObservation(80)));
 
-    Bundle result = service.getVitals(PATIENT_ID, null);
+    PageResponse<ObservationResponse> result = service.getVitals(PATIENT_ID, null);
 
-    assertThat(result).isSameAs(vitals);
+    assertThat(result.items()).extracting(ObservationResponse::value).containsExactly(150.0, 80.0);
+    assertThat(result.total()).isEqualTo(2);
     assertThat(fhir.lastSearchCriteria(Observation.class))
         .containsExactly("subject=Patient/" + PATIENT_ID);
   }
@@ -131,12 +138,9 @@ class VitalsServiceTest {
   @ParameterizedTest
   @CsvSource({"systolic,8480-6", "diastolic,8462-4", "weight,29463-7", "spo2,59408-5"})
   void searchWithKnownTypeFiltersByItsLoincCode(String type, String loincCode) {
-    Bundle vitals = bundleOf(quantityObservation(80));
-    fhir.givenSearchResult(Observation.class, vitals);
+    fhir.givenSearchResult(Observation.class, bundleOf(quantityObservation(80)));
 
-    Bundle result = service.getVitals(PATIENT_ID, type);
-
-    assertThat(result).isSameAs(vitals);
+    assertThat(service.getVitals(PATIENT_ID, type).items()).hasSize(1);
     assertThat(fhir.lastSearchCriteria(Observation.class))
         .containsExactly("subject=Patient/" + PATIENT_ID, "code=http://loinc.org|" + loincCode);
   }

@@ -4,9 +4,11 @@ import static io.github.samarthshubham.clinic.support.FhirDates.localDate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.github.samarthshubham.clinic.dto.ObservationResponse;
 import io.github.samarthshubham.clinic.dto.VitalsRequest;
 import java.time.LocalDate;
 import java.util.List;
+import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.Observation;
 import org.junit.jupiter.api.Test;
 
@@ -75,5 +77,32 @@ class ObservationMapperTest {
             mapper.toFhirObservations(
                 new VitalsRequest("p1", null, MEASURED, null, null, null, null, null, null)))
         .isEmpty();
+  }
+
+  @Test
+  void toResponseResolvesTheVitalTypeFromTheLoincCode() {
+    Observation observation =
+        mapper
+            .toFhirObservations(
+                new VitalsRequest("p1", "e1", MEASURED, null, null, 80.5, null, null, null))
+            .get(0);
+    observation.setEffective(new DateTimeType("2026-05-20T09:30:00-04:00"));
+    observation.setId("o1");
+
+    assertThat(mapper.toResponse(observation))
+        .isEqualTo(
+            new ObservationResponse(
+                "o1", "p1", "e1", "weight", "29463-7", 80.5, "kg", "2026-05-20T09:30:00-04:00"));
+  }
+
+  @Test
+  void toResponseKeepsUnknownCodesWithoutAType() {
+    Observation observation = new Observation();
+    observation.getCode().addCoding().setSystem("http://snomed.info/sct").setCode("x");
+    observation.getCode().addCoding().setSystem("http://loinc.org").setCode("2345-7");
+    observation.setId("o1");
+
+    assertThat(mapper.toResponse(observation))
+        .isEqualTo(new ObservationResponse("o1", null, null, null, "2345-7", null, null, null));
   }
 }

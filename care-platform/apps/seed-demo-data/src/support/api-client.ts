@@ -10,10 +10,6 @@ export interface FhirResourceResponse {
   id: string;
 }
 
-export interface FhirBundleResponse {
-  resourceType: 'Bundle';
-}
-
 export interface CreateEncounterBody {
   patientId: string;
   visitDate: string;
@@ -309,8 +305,8 @@ class ApiClient {
     return this.post<CreatedResource>(`${SPRING_API}/api/encounters`, body);
   }
 
-  recordVitals(body: CreateVitalsBody): Promise<FhirBundleResponse> {
-    return this.post<FhirBundleResponse>(`${SPRING_API}/api/vitals`, body);
+  recordVitals(body: CreateVitalsBody): Promise<CreatedResource[]> {
+    return this.post<CreatedResource[]>(`${SPRING_API}/api/vitals`, body);
   }
 
   createCondition(body: CreateConditionBody): Promise<FhirResourceResponse> {

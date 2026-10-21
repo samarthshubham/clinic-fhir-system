@@ -145,7 +145,7 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('Status 201', () => pm.response.to.have.status(201));",
-              "pm.test('Five observations created', () => pm.expect(pm.response.json().entry.length).to.eql(5));"
+              "pm.test('Five observations created', () => pm.expect(pm.response.json().length).to.eql(5));"
             ]
           }
         }

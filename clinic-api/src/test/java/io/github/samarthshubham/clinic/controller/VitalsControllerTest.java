@@ -1,16 +1,17 @@
 package io.github.samarthshubham.clinic.controller;
 
-import static io.github.samarthshubham.clinic.support.FhirClientStub.bundleOf;
-import static io.github.samarthshubham.clinic.support.FhirClientStub.quantityObservation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.github.samarthshubham.clinic.dto.ObservationResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.dto.VitalsRequest;
 import io.github.samarthshubham.clinic.service.VitalsService;
 import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -22,13 +23,23 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 @WebMvcTest(VitalsController.class)
 class VitalsControllerTest {
 
+  private static final ObservationResponse SYSTOLIC =
+      new ObservationResponse(
+          "o1", "p1", "e1", "systolic", "8480-6", 142.0, "mm[Hg]", "2024-05-01T00:00:00-04:00");
+
+  private static final String SYSTOLIC_JSON =
+      """
+      {"id":"o1","patientId":"p1","encounterId":"e1","type":"systolic","loincCode":"8480-6",
+       "value":142.0,"unit":"mm[Hg]","effectiveDateTime":"2024-05-01T00:00:00-04:00"}
+      """;
+
   @Autowired private MockMvcTester mvc;
 
   @MockitoBean private VitalsService vitalsService;
 
   @Test
-  void recordReturnsCreatedWithObservationBundle() {
-    when(vitalsService.recordVitals(any())).thenReturn(bundleOf(quantityObservation(142)));
+  void recordReturnsCreatedWithObservationList() {
+    when(vitalsService.recordVitals(any())).thenReturn(List.of(SYSTOLIC));
 
     assertThat(
             mvc.post()
@@ -41,10 +52,9 @@ class VitalsControllerTest {
                      "heartRateBpm":72,"temperatureCelsius":36.8}
                     """))
         .hasStatus(HttpStatus.CREATED)
-        .hasContentType("application/fhir+json")
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.entry[0].resource.valueQuantity.value")
-        .isEqualTo(142.0);
+        .isStrictlyEqualTo("[" + SYSTOLIC_JSON + "]");
     verify(vitalsService)
         .recordVitals(
             new VitalsRequest("p1", "e1", LocalDate.of(2024, 5, 1), 142, 91, 78.5, 97.0, 72, 36.8));
@@ -69,18 +79,19 @@ class VitalsControllerTest {
 
   @Test
   void getForwardsPatientIdAndType() {
-    when(vitalsService.getVitals("p1", "weight")).thenReturn(bundleOf(quantityObservation(78.5)));
+    when(vitalsService.getVitals("p1", "systolic"))
+        .thenReturn(new PageResponse<>(List.of(SYSTOLIC), 1));
 
-    assertThat(mvc.get().uri("/api/vitals").param("patientId", "p1").param("type", "weight"))
+    assertThat(mvc.get().uri("/api/vitals").param("patientId", "p1").param("type", "systolic"))
         .hasStatusOk()
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.entry[0].resource.valueQuantity.value")
-        .isEqualTo(78.5);
+        .isStrictlyEqualTo("{\"items\":[" + SYSTOLIC_JSON + "],\"total\":1}");
   }
 
   @Test
   void getWithoutTypeReturnsAllVitals() {
-    when(vitalsService.getVitals("p1", null)).thenReturn(bundleOf(quantityObservation(97)));
+    when(vitalsService.getVitals("p1", null)).thenReturn(new PageResponse<>(List.of(), 0));
 
     assertThat(mvc.get().uri("/api/vitals").param("patientId", "p1")).hasStatusOk();
     verify(vitalsService).getVitals("p1", null);

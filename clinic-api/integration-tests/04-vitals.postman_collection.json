@@ -136,19 +136,23 @@
               "pm.test('Status 201', () => pm.response.to.have.status(201));",
               "",
               "const body = pm.response.json();",
-              "pm.test('resourceType is Bundle', () => pm.expect(body.resourceType).to.eql('Bundle'));",
-              "pm.test('Six observations created', () => pm.expect(body.entry.length).to.eql(6));",
+              "pm.test('Body is a list', () => pm.expect(body).to.be.an('array'));",
+              "pm.test('Six observations created', () => pm.expect(body.length).to.eql(6));",
               "",
-              "const codes = body.entry.map(e => e.resource.code.coding[0].code);",
+              "const codes = body.map(o => o.loincCode);",
               "pm.test('All LOINC codes present', () => {",
               "  ['8480-6', '8462-4', '29463-7', '59408-5', '8867-4', '8310-5'].forEach(code => {",
               "    pm.expect(codes).to.include(code);",
               "  });",
               "});",
               "",
+              "pm.test('Types resolved from LOINC', () => {",
+              "  pm.expect(body.map(o => o.type)).to.have.members(['systolic', 'diastolic', 'weight', 'spo2', 'heartRate', 'temperature']);",
+              "});",
+              "",
               "pm.test('All linked to encounter', () => {",
-              "  body.entry.forEach(e => {",
-              "    pm.expect(e.resource.encounter.reference).to.include(pm.collectionVariables.get('encounterId'));",
+              "  body.forEach(o => {",
+              "    pm.expect(o.encounterId).to.eql(pm.collectionVariables.get('encounterId'));",
               "  });",
               "});"
             ]
@@ -181,9 +185,9 @@
               "pm.test('Status 201', () => pm.response.to.have.status(201));",
               "",
               "const body = pm.response.json();",
-              "pm.test('Two observations created (BP pair)', () => pm.expect(body.entry.length).to.eql(2));",
+              "pm.test('Two observations created (BP pair)', () => pm.expect(body.length).to.eql(2));",
               "",
-              "const codes = body.entry.map(e => e.resource.code.coding[0].code);",
+              "const codes = body.map(o => o.loincCode);",
               "pm.test('Only BP LOINC codes', () => {",
               "  pm.expect(codes).to.include('8480-6');",
               "  pm.expect(codes).to.include('8462-4');",
@@ -213,8 +217,10 @@
               "pm.test('Status 200', () => pm.response.to.have.status(200));",
               "",
               "const body = pm.response.json();",
-              "pm.test('resourceType is Bundle', () => pm.expect(body.resourceType).to.eql('Bundle'));",
-              "pm.test('Eight observations total (6 full + 2 partial)', () => pm.expect(body.entry.length).to.eql(8));"
+              "pm.test('Eight observations total (6 full + 2 partial)', () => {",
+              "  pm.expect(body.items.length).to.eql(8);",
+              "  pm.expect(body.total).to.eql(8);",
+              "});"
             ]
           }
         }
@@ -244,8 +250,10 @@
               "",
               "const body = pm.response.json();",
               "pm.test('Only systolic observations (LOINC 8480-6)', () => {",
-              "  body.entry.forEach(e => {",
-              "    pm.expect(e.resource.code.coding[0].code).to.eql('8480-6');",
+              "  pm.expect(body.items).to.not.be.empty;",
+              "  body.items.forEach(o => {",
+              "    pm.expect(o.loincCode).to.eql('8480-6');",
+              "    pm.expect(o.type).to.eql('systolic');",
               "  });",
               "});"
             ]
@@ -276,8 +284,10 @@
               "pm.test('Status 200', () => pm.response.to.have.status(200));",
               "",
               "pm.test('Only diastolic observations (LOINC 8462-4)', () => {",
-              "  pm.response.json().entry.forEach(e => {",
-              "    pm.expect(e.resource.code.coding[0].code).to.eql('8462-4');",
+              "  const items = pm.response.json().items;",
+              "  pm.expect(items).to.not.be.empty;",
+              "  items.forEach(o => {",
+              "    pm.expect(o.loincCode).to.eql('8462-4');",
               "  });",
               "});"
             ]
@@ -308,8 +318,10 @@
               "pm.test('Status 200', () => pm.response.to.have.status(200));",
               "",
               "pm.test('Only weight observations (LOINC 29463-7)', () => {",
-              "  pm.response.json().entry.forEach(e => {",
-              "    pm.expect(e.resource.code.coding[0].code).to.eql('29463-7');",
+              "  const items = pm.response.json().items;",
+              "  pm.expect(items).to.not.be.empty;",
+              "  items.forEach(o => {",
+              "    pm.expect(o.loincCode).to.eql('29463-7');",
               "  });",
               "});"
             ]
@@ -340,8 +352,10 @@
               "pm.test('Status 200', () => pm.response.to.have.status(200));",
               "",
               "pm.test('Only SpO2 observations (LOINC 59408-5)', () => {",
-              "  pm.response.json().entry.forEach(e => {",
-              "    pm.expect(e.resource.code.coding[0].code).to.eql('59408-5');",
+              "  const items = pm.response.json().items;",
+              "  pm.expect(items).to.not.be.empty;",
+              "  items.forEach(o => {",
+              "    pm.expect(o.loincCode).to.eql('59408-5');",
               "  });",
               "});"
             ]
