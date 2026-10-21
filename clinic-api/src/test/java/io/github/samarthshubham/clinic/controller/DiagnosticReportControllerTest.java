@@ -1,6 +1,5 @@
 package io.github.samarthshubham.clinic.controller;
 
-import static io.github.samarthshubham.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -8,11 +7,12 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.github.samarthshubham.clinic.dto.DiagnosticReportRequest;
+import io.github.samarthshubham.clinic.dto.DiagnosticReportResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.exception.ReferenceValidationException;
 import io.github.samarthshubham.clinic.service.DiagnosticReportService;
 import java.time.LocalDate;
 import java.util.List;
-import org.hl7.fhir.r4.model.DiagnosticReport;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -30,14 +30,32 @@ class DiagnosticReportControllerTest {
        "status":"final","issued":"2024-06-01","conclusion":"Normal","resultIds":["o1"]}
       """;
 
+  private static final DiagnosticReportResponse LIPID_REPORT =
+      new DiagnosticReportResponse(
+          "r1",
+          "p1",
+          "e1",
+          "sr1",
+          "Lipid panel",
+          "final",
+          LocalDate.of(2024, 6, 1),
+          "Normal",
+          List.of("o1"));
+
+  private static final String LIPID_REPORT_JSON =
+      """
+      {"id":"r1","patientId":"p1","encounterId":"e1","serviceRequestId":"sr1",
+       "title":"Lipid panel","status":"final","issued":"2024-06-01","conclusion":"Normal",
+       "resultIds":["o1"]}
+      """;
+
   @Autowired private MockMvcTester mvc;
 
   @MockitoBean private DiagnosticReportService diagnosticReportService;
 
   @Test
-  void createReturnsCreatedWithFhirReport() {
-    when(diagnosticReportService.createDiagnosticReport(any()))
-        .thenReturn(new DiagnosticReport().setConclusion("Normal"));
+  void createReturnsCreatedWithReportResponse() {
+    when(diagnosticReportService.createDiagnosticReport(any())).thenReturn(LIPID_REPORT);
 
     assertThat(
             mvc.post()
@@ -45,10 +63,9 @@ class DiagnosticReportControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(VALID_REPORT))
         .hasStatus(HttpStatus.CREATED)
-        .hasContentType("application/fhir+json")
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.conclusion")
-        .isEqualTo("Normal");
+        .isStrictlyEqualTo(LIPID_REPORT_JSON);
     verify(diagnosticReportService)
         .createDiagnosticReport(
             new DiagnosticReportRequest(
@@ -95,13 +112,13 @@ class DiagnosticReportControllerTest {
   @Test
   void listReturnsReportsForPatient() {
     when(diagnosticReportService.getDiagnosticReportsForPatient("p1"))
-        .thenReturn(bundleOf(new DiagnosticReport().setConclusion("Normal")));
+        .thenReturn(new PageResponse<>(List.of(LIPID_REPORT), 1));
 
     assertThat(mvc.get().uri("/api/diagnostic-reports").param("patientId", "p1"))
         .hasStatusOk()
+        .hasContentType(MediaType.APPLICATION_JSON)
         .bodyJson()
-        .extractingPath("$.entry[0].resource.conclusion")
-        .isEqualTo("Normal");
+        .isStrictlyEqualTo("{\"items\":[" + LIPID_REPORT_JSON + "],\"total\":1}");
   }
 
   @Test

@@ -1,6 +1,7 @@
 package io.github.samarthshubham.clinic.mapper;
 
 import io.github.samarthshubham.clinic.dto.DiagnosticReportRequest;
+import io.github.samarthshubham.clinic.dto.DiagnosticReportResponse;
 import java.time.ZoneId;
 import java.util.Date;
 import org.hl7.fhir.r4.model.CodeableConcept;
@@ -31,5 +32,18 @@ public class DiagnosticReportMapper {
       request.resultIds().forEach(rid -> report.addResult(new Reference("Observation/" + rid)));
     }
     return report;
+  }
+
+  public DiagnosticReportResponse toResponse(DiagnosticReport report) {
+    return new DiagnosticReportResponse(
+        FhirValues.idOf(report),
+        FhirValues.referenceId(report.getSubject()),
+        FhirValues.referenceId(report.getEncounter()),
+        report.hasBasedOn() ? FhirValues.referenceId(report.getBasedOnFirstRep()) : null,
+        report.getCode().getText(),
+        report.hasStatus() ? report.getStatus().toCode() : null,
+        FhirValues.localDate(report.getIssued()),
+        report.getConclusion(),
+        report.getResult().stream().map(FhirValues::referenceId).toList());
   }
 }

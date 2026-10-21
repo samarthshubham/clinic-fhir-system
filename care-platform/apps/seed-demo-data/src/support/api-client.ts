@@ -332,8 +332,8 @@ class ApiClient {
 
   createDiagnosticReport(
     body: CreateDiagnosticReportBody,
-  ): Promise<FhirResourceResponse> {
-    return this.post<FhirResourceResponse>(
+  ): Promise<CreatedResource> {
+    return this.post<CreatedResource>(
       `${SPRING_API}/api/diagnostic-reports`,
       body,
     );

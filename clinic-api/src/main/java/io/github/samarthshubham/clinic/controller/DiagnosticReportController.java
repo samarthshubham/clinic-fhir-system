@@ -1,11 +1,11 @@
 package io.github.samarthshubham.clinic.controller;
 
 import io.github.samarthshubham.clinic.dto.DiagnosticReportRequest;
+import io.github.samarthshubham.clinic.dto.DiagnosticReportResponse;
+import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.service.DiagnosticReportService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import org.hl7.fhir.r4.model.Bundle;
-import org.hl7.fhir.r4.model.DiagnosticReport;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,14 +26,14 @@ public class DiagnosticReportController {
   }
 
   @PostMapping
-  public ResponseEntity<DiagnosticReport> createDiagnosticReport(
+  public ResponseEntity<DiagnosticReportResponse> createDiagnosticReport(
       @Valid @RequestBody DiagnosticReportRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(diagnosticReportService.createDiagnosticReport(request));
   }
 
   @GetMapping
-  public ResponseEntity<Bundle> getDiagnosticReportsForPatient(
+  public ResponseEntity<PageResponse<DiagnosticReportResponse>> getDiagnosticReportsForPatient(
       @RequestParam @NotBlank String patientId) {
     return ResponseEntity.ok(diagnosticReportService.getDiagnosticReportsForPatient(patientId));
   }
