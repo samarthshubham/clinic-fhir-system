@@ -33,6 +33,9 @@ services:
       hapi.fhir.allow_external_references: "true"
       hapi.fhir.reuse_cached_search_results_millis: "-1"
       hapi.fhir.allow_cascading_deletes: "true"
+      hapi.fhir.subscription.resthook_enabled: "true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/fhir/metadata > /dev/null || exit 1"]
       interval: 30s
