@@ -44,7 +44,8 @@ public final class FhirClientStub {
   private final IGenericClient client = lenientMock(IGenericClient.class, Answers.RETURNS_DEFAULTS);
   private final Map<Class<?>, IQuery<?>> queries = new HashMap<>();
   private final Map<Class<?>, Deque<Bundle>> searchResults = new HashMap<>();
-  private final Map<Class<?>, Map<String, IBaseResource>> stored = new HashMap<>();
+  private final Map<Class<?>, Map<String, Resource>> stored = new HashMap<>();
+  private final Map<String, RuntimeException> readFailures = new HashMap<>();
   private final Map<Class<?>, List<String>> pendingCriteria = new HashMap<>();
   private final Map<Class<?>, List<List<String>>> executedSearches = new HashMap<>();
   private final List<IBaseResource> created = new ArrayList<>();
@@ -55,7 +56,7 @@ public final class FhirClientStub {
     IUntypedQuery<?> untypedQuery = lenientMock(IUntypedQuery.class, Answers.RETURNS_DEFAULTS);
     lenient().doReturn(untypedQuery).when(client).search();
     lenient()
-        .doAnswer(inv -> query(inv.getArgument(0)))
+        .doAnswer(inv -> startQuery(inv.getArgument(0)))
         .when(untypedQuery)
         .forResource(any(Class.class));
 
@@ -82,8 +83,8 @@ public final class FhirClientStub {
     return client;
   }
 
-  public IQuery<?> query(Class<? extends IBaseResource> type) {
-    return queries.computeIfAbsent(type, this::newQuery);
+  public int searchCount(Class<? extends IBaseResource> type) {
+    return executedSearches.getOrDefault(type, List.of()).size();
   }
 
   public List<String> lastSearchCriteria(Class<? extends IBaseResource> type) {
@@ -100,7 +101,15 @@ public final class FhirClientStub {
 
   public void givenStored(IBaseResource resource, String id) {
     resource.setId(id);
-    stored.computeIfAbsent(resource.getClass(), k -> new HashMap<>()).put(id, resource);
+    store((Resource) resource, id);
+  }
+
+  public void givenReadFails(Class<? extends IBaseResource> type, String id, RuntimeException e) {
+    readFailures.put(type.getSimpleName() + "/" + id, e);
+  }
+
+  public <T extends IBaseResource> T stored(Class<T> type, String id) {
+    return type.cast(stored.getOrDefault(type, Map.of()).get(id));
   }
 
   public List<IBaseResource> created() {
@@ -121,6 +130,17 @@ public final class FhirClientStub {
       bundle.addEntry().setResource(resource);
     }
     return bundle;
+  }
+
+  private IQuery<?> startQuery(Class<?> type) {
+    pendingCriteria.remove(type);
+    return queries.computeIfAbsent(type, this::newQuery);
+  }
+
+  private void store(Resource resource, String id) {
+    Resource copy = resource.copy();
+    copy.setId(id);
+    stored.computeIfAbsent(resource.getClass(), k -> new HashMap<>()).put(id, copy);
   }
 
   private IQuery<?> newQuery(Class<?> type) {
@@ -186,7 +206,7 @@ public final class FhirClientStub {
         .doAnswer(
             inv -> {
               String id = String.valueOf(nextId++);
-              givenStored(resource, id);
+              store((Resource) resource, id);
               created.add(resource);
               return new MethodOutcome(new IdType(resource.fhirType(), id));
             })
@@ -201,7 +221,10 @@ public final class FhirClientStub {
         .doAnswer(
             inv -> {
               String id = resource.getIdElement().getIdPart();
-              givenStored(resource, id);
+              if (id == null) {
+                throw new IllegalArgumentException("Cannot update a resource without an id");
+              }
+              store((Resource) resource, id);
               updated.add(resource);
               return new MethodOutcome(new IdType(resource.fhirType(), id));
             })
@@ -225,11 +248,15 @@ public final class FhirClientStub {
     lenient()
         .doAnswer(
             inv -> {
-              IBaseResource resource = stored.getOrDefault(type, Map.of()).get(id);
-              if (resource == null) {
-                throw new ResourceNotFoundException(type.getSimpleName() + "/" + id);
+              RuntimeException failure = readFailures.get(type.getSimpleName() + "/" + id);
+              if (failure != null) {
+                throw failure;
               }
-              return resource;
+              Resource resource = stored.getOrDefault(type, Map.of()).get(id);
+              if (resource == null) {
+                throw new ResourceNotFoundException(new IdType(type.getSimpleName(), id));
+              }
+              return resource.copy();
             })
         .when(readExecutable)
         .execute();
