@@ -118,6 +118,7 @@ docker compose -f infra/docker-compose.yml down -v  # stop + wipe data
 ./mvnw spring-boot:run
 ./mvnw clean package
 ./mvnw test
+./mvnw verify          # tests + JaCoCo report at target/site/jacoco/index.html
 ./mvnw spotless:apply   # format Java (Google style)
 ./mvnw spotless:check
 ```
@@ -128,6 +129,7 @@ npx nx serve clinician-app    # dev server — proxies /api → localhost:9090
 npx nx serve patient-app
 npx nx build clinician-app
 npx nx test clinician-app
+npx nx test clinician-app --coverage --watch=false   # lcov + report in coverage/clinician-app/
 ```
 
 ### Seed data

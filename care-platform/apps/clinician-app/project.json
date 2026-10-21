@@ -65,7 +65,11 @@
     },
     "test": {
       "executor": "@angular/build:unit-test",
-      "options": {}
+      "options": {
+        "coverageInclude": ["apps/clinician-app/src/**/*.ts"],
+        "coverageExclude": ["**/*.spec.ts", "**/main.ts"],
+        "coverageReporters": ["lcov", "text-summary"]
+      }
     },
     "serve-static": {
       "continuous": true,

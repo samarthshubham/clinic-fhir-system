@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: clinic-api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Check formatting
+        run: ./mvnw -B spotless:check
+
+      - name: Build, test and measure coverage
+        run: ./mvnw -B verify
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import xml.etree.ElementTree as ET
+          root = ET.parse('target/site/jacoco/jacoco.xml').getroot()
+          line = next(c for c in root.findall('counter') if c.get('type') == 'LINE')
+          missed, covered = int(line.get('missed')), int(line.get('covered'))
+          print(f"### Backend line coverage: {covered / (missed + covered):.1%} ({covered}/{missed + covered})")
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: clinic-api/target/site/jacoco/
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: care-platform
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: care-platform/package-lock.json
+
+      - run: npm ci
+
+      - name: Lint changed files
+        if: github.event_name == 'pull_request'
+        run: |
+          files=$(git diff --name-only --diff-filter=ACMR "origin/${{ github.base_ref }}...HEAD" -- 'care-platform/apps/**/*.ts' 'care-platform/apps/**/*.html' | sed 's|^care-platform/||')
+          if [ -z "$files" ]; then
+            echo "No changed frontend files to lint."
+            exit 0
+          fi
+          echo "$files"
+          echo "$files" | xargs npx eslint --flag unstable_config_lookup_from_file
+
+      - name: Test with coverage
+        run: npx nx test clinician-app --coverage --watch=false
+
+      - name: Build
+        run: npx nx build clinician-app
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: care-platform/coverage/clinician-app/
+
+  coverage-gate:
+    if: github.event_name == 'pull_request'
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage
+          path: reports/backend
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: reports/frontend
+
+      - run: pip install diff-cover
+
+      - name: Changed lines must be at least 70% covered
+        run: |
+          sed 's|^SF:apps/|SF:care-platform/apps/|' reports/frontend/lcov.info > reports/frontend/lcov-repo.info
+          status=0
+          diff-cover reports/backend/jacoco.xml --src-roots clinic-api/src/main/java \
+            --compare-branch="origin/${{ github.base_ref }}" --fail-under=70 \
+            --format markdown:backend.md || status=1
+          diff-cover reports/frontend/lcov-repo.info \
+            --compare-branch="origin/${{ github.base_ref }}" --fail-under=70 \
+            --format markdown:frontend.md || status=1
+          { echo "## Backend changed-line coverage"; cat backend.md; echo; echo "## Frontend changed-line coverage"; cat frontend.md; } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
