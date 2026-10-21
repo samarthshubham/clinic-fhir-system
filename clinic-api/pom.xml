@@ -10,7 +10,7 @@
 		<relativePath/>
 	</parent>
 
-	<groupId>io.github.shubhamforge</groupId>
+	<groupId>io.github.samarthshubham</groupId>
 	<artifactId>clinic-api</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>clinic-api</name>

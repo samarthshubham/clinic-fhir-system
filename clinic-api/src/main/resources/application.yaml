@@ -27,7 +27,7 @@ clinic:
 
 logging:
   level:
-    io.github.shubhamforge.clinic: DEBUG
+    io.github.samarthshubham.clinic: DEBUG
     ca.uhn.fhir: WARN
 
 management:

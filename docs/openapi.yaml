@@ -8,8 +8,8 @@ info:
     **Experience API endpoints** (`/snapshot`, `/trends`, `/timeline`, `/dashboard`) return `application/json` flat DTOs.
   version: 1.0.0
   contact:
-    name: shubhamforge
-    url: https://github.com/shubhamforge/clinic-fhir-system
+    name: samarthshubham
+    url: https://github.com/samarthshubham/clinic-fhir-system
 
 servers:
   - url: http://localhost:9090
