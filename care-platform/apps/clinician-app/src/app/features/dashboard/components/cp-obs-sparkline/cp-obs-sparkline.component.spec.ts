@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { CpObsSparklineComponent } from './cp-obs-sparkline.component';
-import { DataPoint } from '../../dashboard.model';
+import { DataPoint } from '@features/dashboard/dashboard.model';
 
 const points: DataPoint[] = [
   { date: '2024-01-01', value: 120 },

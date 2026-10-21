@@ -13,8 +13,11 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { TimelineEvent, TrendsResponse } from '../../dashboard.model';
-import { CpTimelineGroupComponent } from '../cp-timeline-group/cp-timeline-group.component';
+import {
+  TimelineEvent,
+  TrendsResponse,
+} from '@features/dashboard/dashboard.model';
+import { CpTimelineGroupComponent } from '@features/dashboard/components/cp-timeline-group/cp-timeline-group.component';
 
 interface TimelineGroup {
   date: string;

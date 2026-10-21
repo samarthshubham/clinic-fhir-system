@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { CpGoalRowComponent } from './cp-goal-row.component';
-import { GoalSummary } from '../../dashboard.model';
+import { GoalSummary } from '@features/dashboard/dashboard.model';
 
 function goal(overrides: Partial<GoalSummary['progress']> = {}): GoalSummary {
   return {

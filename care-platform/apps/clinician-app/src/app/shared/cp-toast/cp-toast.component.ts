@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { ToastService } from '../../toast.service';
+import { ToastService } from '@core/toast.service';
 
 @Component({
   selector: 'cp-toast',

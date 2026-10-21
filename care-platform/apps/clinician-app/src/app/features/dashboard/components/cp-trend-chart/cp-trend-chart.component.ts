@@ -6,7 +6,11 @@ import {
   signal,
 } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { BpSeries, DataPoint, SimpleSeries } from '../../dashboard.model';
+import {
+  BpSeries,
+  DataPoint,
+  SimpleSeries,
+} from '@features/dashboard/dashboard.model';
 
 const W = 340;
 const H = 110;

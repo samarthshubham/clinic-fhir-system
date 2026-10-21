@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { CpTimelineGroupComponent } from './cp-timeline-group.component';
-import { TimelineEvent } from '../../dashboard.model';
+import { TimelineEvent } from '@features/dashboard/dashboard.model';
 
 function event(id: string): TimelineEvent {
   return {

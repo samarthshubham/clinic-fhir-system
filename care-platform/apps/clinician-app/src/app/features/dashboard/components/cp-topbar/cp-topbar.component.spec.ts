@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { CpTopbarComponent } from './cp-topbar.component';
-import { ThemeService } from '../../../../theme.service';
-import { ToastService } from '../../../../toast.service';
+import { ThemeService } from '@core/theme.service';
+import { ToastService } from '@core/toast.service';
 
 describe('CpTopbarComponent', () => {
   beforeEach(async () => {

@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { GoalSummary } from '../../dashboard.model';
+import { GoalSummary } from '@features/dashboard/dashboard.model';
 
 @Component({
   selector: 'cp-goal-row',

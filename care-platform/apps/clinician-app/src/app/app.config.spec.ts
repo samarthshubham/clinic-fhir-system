@@ -1,7 +1,7 @@
 import { APP_INITIALIZER, FactoryProvider } from '@angular/core';
 import { MatIconRegistry } from '@angular/material/icon';
 import { appConfig } from './app.config';
-import { ThemeService } from './theme.service';
+import { ThemeService } from '@core/theme.service';
 
 describe('appConfig', () => {
   const initializers = appConfig.providers.filter(

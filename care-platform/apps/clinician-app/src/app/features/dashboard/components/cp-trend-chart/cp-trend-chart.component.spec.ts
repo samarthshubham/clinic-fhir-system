@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { CpTrendChartComponent } from './cp-trend-chart.component';
-import { BpSeries, SimpleSeries } from '../../dashboard.model';
+import { BpSeries, SimpleSeries } from '@features/dashboard/dashboard.model';
 
 const weight: SimpleSeries = {
   values: [
