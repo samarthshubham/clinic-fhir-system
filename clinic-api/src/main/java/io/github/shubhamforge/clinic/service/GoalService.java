@@ -55,7 +55,8 @@ public class GoalService {
     ids.forEach(
         id -> {
           try {
-            result.addEntry().setResource(getGoal(id));
+            Goal goal = getGoal(id);
+            result.addEntry().setResource(goal);
           } catch (ResourceNotFoundException e) {
             // skip missing goals
           }
