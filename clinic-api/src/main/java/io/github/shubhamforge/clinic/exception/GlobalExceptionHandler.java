@@ -27,6 +27,12 @@ public class GlobalExceptionHandler {
         .body(new ErrorResponse(422, ex.getMessage()));
   }
 
+  @ExceptionHandler(UnauthorizedWebhookException.class)
+  public ResponseEntity<ErrorResponse> handleUnauthorizedWebhook(UnauthorizedWebhookException ex) {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        .body(new ErrorResponse(401, ex.getMessage()));
+  }
+
   @ExceptionHandler(FhirClientConnectionException.class)
   public ResponseEntity<ErrorResponse> handleFhirConnectionError(FhirClientConnectionException ex) {
     return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)

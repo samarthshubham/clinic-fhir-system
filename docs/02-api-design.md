@@ -373,6 +373,20 @@ Unified chronological event feed. Supports cursor pagination (`before` = ISO dat
 
 ---
 
+## Alert APIs
+
+### POST /api/alerts/bp-subscription
+
+Webhook called by HAPI FHIR's rest-hook Subscription `Subscription/clinic-high-systolic-bp` (registered by clinic-api at startup) whenever a systolic BP Observation (LOINC `8480-6`) above `clinical.thresholds.systolic-critical` is stored. The notification has an empty body, so no PHI crosses the wire. It must carry the `X-Alert-Secret` header matching `clinic.alerts.webhook-secret`, otherwise clinic-api returns `401`. clinic-api then searches for the new critical readings and sends one alert per reading through the `Notifier` (default: mock SMS written to the log) with only resource references:
+
+```
+[mock-sms] Clinician alert: Systolic BP above 180 mmHg for Patient/54 (Observation/55)
+```
+
+**Response `204 No Content`**, or `401` with `{ "status": 401, "message": "Missing or invalid webhook secret" }`. See [09-bp-alerts-demo.md](./09-bp-alerts-demo.md) for a scripted demo.
+
+---
+
 ## Error Response
 
 Errors return plain JSON (not FHIR) with `Content-Type: application/json`:

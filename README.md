@@ -177,6 +177,7 @@ Claude Code also reviews each pull request once when it is opened or marked read
 - Patient detail page with ApexCharts vitals timeline (`clinician-app`)
 - Cucumber-driven seed data app — 5 idempotent patient profiles with relative dates (`seed-demo-data`)
 - Full FHIR R4 compliance via HAPI FHIR
+- Clinician alerts for critical systolic BP via FHIR Subscriptions (mock SMS in the log) — see [demo](./docs/09-bp-alerts-demo.md)
 
 ## Tech Stack
 
@@ -203,6 +204,7 @@ See [`docs/`](./docs) for full system design:
 - [MVP Plan](./docs/06-mvp-plan.md)
 - [Best Practices](./docs/07-best-practices.md)
 - [Design System](./docs/08-design-system.md)
+- [High BP Alerts Demo](./docs/09-bp-alerts-demo.md)
 
 ---
 

@@ -14,6 +14,8 @@ import ca.uhn.fhir.rest.gclient.ICreate;
 import ca.uhn.fhir.rest.gclient.ICreateTyped;
 import ca.uhn.fhir.rest.gclient.ICriterion;
 import ca.uhn.fhir.rest.gclient.ICriterionInternal;
+import ca.uhn.fhir.rest.gclient.IGetPage;
+import ca.uhn.fhir.rest.gclient.IGetPageTyped;
 import ca.uhn.fhir.rest.gclient.IQuery;
 import ca.uhn.fhir.rest.gclient.IRead;
 import ca.uhn.fhir.rest.gclient.IReadExecutable;
@@ -31,6 +33,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.DateTimeType;
@@ -53,6 +56,8 @@ public final class FhirClientStub {
   private final Map<Class<?>, List<List<String>>> executedSearches = new HashMap<>();
   private final List<IBaseResource> created = new ArrayList<>();
   private final List<IBaseResource> updated = new ArrayList<>();
+  private final Map<String, Bundle> pages = new HashMap<>();
+  private final List<String> loadedPages = new ArrayList<>();
   private int nextId = 1;
 
   public FhirClientStub() {
@@ -80,6 +85,13 @@ public final class FhirClientStub {
         .doAnswer(inv -> updateTyped(inv.getArgument(0)))
         .when(update)
         .resource(any(IBaseResource.class));
+
+    IGetPage getPage = lenientMock(IGetPage.class, Answers.RETURNS_DEFAULTS);
+    lenient().doReturn(getPage).when(client).loadPage();
+    lenient()
+        .doAnswer(inv -> nextPageTyped(inv.getArgument(0)))
+        .when(getPage)
+        .next(any(IBaseBundle.class));
   }
 
   public IGenericClient client() {
@@ -131,6 +143,14 @@ public final class FhirClientStub {
 
   public <T extends IBaseResource> T stored(Class<T> type, String id) {
     return type.cast(stored.getOrDefault(type, Map.of()).get(id));
+  }
+
+  public void givenPage(String url, Bundle page) {
+    pages.put(url, page);
+  }
+
+  public List<String> loadedPages() {
+    return List.copyOf(loadedPages);
   }
 
   public List<IBaseResource> created() {
@@ -282,6 +302,24 @@ public final class FhirClientStub {
         .when(updateTyped)
         .execute();
     return updateTyped;
+  }
+
+  private IGetPageTyped<?> nextPageTyped(Bundle current) {
+    IGetPageTyped<?> pageTyped = lenientMock(IGetPageTyped.class, Answers.RETURNS_DEFAULTS);
+    lenient()
+        .doAnswer(
+            inv -> {
+              String url = current.getLink(Bundle.LINK_NEXT).getUrl();
+              Bundle page = pages.get(url);
+              if (page == null) {
+                throw new AssertionError("No page stubbed for " + url);
+              }
+              loadedPages.add(url);
+              return page.copy();
+            })
+        .when(pageTyped)
+        .execute();
+    return pageTyped;
   }
 
   private IReadTyped<?> readTyped(Class<?> type) {

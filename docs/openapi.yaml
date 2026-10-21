@@ -40,6 +40,8 @@ tags:
     description: Clinical goals
   - name: Experience APIs
     description: Aggregated clinical data (flat JSON, not FHIR)
+  - name: Alerts
+    description: Clinician alerts driven by FHIR Subscriptions
 
 paths:
 
@@ -758,6 +760,29 @@ paths:
                 $ref: '#/components/schemas/DashboardResponse'
         '404':
           $ref: '#/components/responses/NotFound'
+
+  # ── Alerts ────────────────────────────────────────────────────────────────
+
+  /api/alerts/bp-subscription:
+    post:
+      tags: [Alerts]
+      summary: FHIR Subscription webhook for critical systolic BP
+      description: |
+        Called by HAPI FHIR (rest-hook, empty payload) when a systolic BP Observation above
+        `clinical.thresholds.systolic-critical` is stored. The request carries no body; clinic-api
+        looks up the new readings and notifies clinicians with Patient/Observation references only.
+      parameters:
+        - name: X-Alert-Secret
+          in: header
+          required: true
+          description: Shared secret from `clinic.alerts.webhook-secret`, sent by the Subscription channel header
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Notification processed
+        '401':
+          description: Missing or invalid webhook secret
 
 # ── Components ──────────────────────────────────────────────────────────────
 

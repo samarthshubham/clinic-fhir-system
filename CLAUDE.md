@@ -34,13 +34,14 @@ clinic-api/         Spring Boot backend (Maven)
                     PractitionerController, ConditionController, MedicationController,
                     AppointmentController, ServiceRequestController,
                     DiagnosticReportController, CarePlanController, GoalController,
-                    DashboardController
+                    DashboardController, AlertController
     service/        PatientService, EncounterService, VitalsService, SummaryService,
                     PractitionerService, ConditionService, MedicationService,
                     AppointmentService, ServiceRequestService, DiagnosticReportService,
                     CarePlanService, GoalService,
                     SnapshotService, TrendsService, TimelineService,
-                    DashboardService, ConditionEvaluationService
+                    DashboardService, ConditionEvaluationService,
+                    HighBpAlertService, Notifier, LoggingSmsNotifier
     mapper/         PatientMapper, EncounterMapper, ObservationMapper,
                     PractitionerMapper, ConditionMapper, MedicationMapper,
                     AppointmentMapper, ServiceRequestMapper, DiagnosticReportMapper,
@@ -51,7 +52,7 @@ clinic-api/         Spring Boot backend (Maven)
                     CarePlanRequest, GoalRequest,
                     SnapshotResponse, TrendsResponse, TimelineEvent, DashboardResponse,
                     AlertItem, VitalReading, LatestVitals, GoalProgress,
-                    DataPoint, BpSeries, SimpleSeries  (all Java records)
+                    DataPoint, BpSeries, SimpleSeries, ClinicianAlert  (all Java records)
     exception/      ResourceNotFoundException, ReferenceValidationException,
                     GlobalExceptionHandler
   seed-data/        13 Synthea FHIR R4 patient bundles + load.sh
@@ -72,7 +73,7 @@ care-platform/      Angular 21 Nx monorepo
   libs/shared/          ThemeService, FHIR model types (planned)
 
 infra/
-  docker-compose.yml    HAPI FHIR + PostgreSQL 15
+  docker-compose.yml    HAPI FHIR (rest-hook subscriptions on) + PostgreSQL 15
 
 docs/
   00-architecture.md    System design
@@ -84,6 +85,7 @@ docs/
   06-mvp-plan.md        MVP checklist
   07-best-practices.md  Spring + FHIR patterns
   08-design-system.md   Angular Material M3 design system spec
+  09-bp-alerts-demo.md  High BP subscription alerts + scripted demo
 ```
 
 ---
@@ -327,6 +329,9 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 | `clinical.thresholds.spo2-warn` | `95.0` | SpO2 warning level (below) |
 | `clinical.thresholds.spo2-critical` | `90.0` | SpO2 critical level (below) |
 | `clinic.default-org-id` | `seed-default-org` | HAPI FHIR Organization ID for care team |
+| `clinic.alerts.webhook-url` | `http://host.docker.internal:9090/api/alerts/bp-subscription` | Rest-hook endpoint HAPI calls for critical systolic BP |
+| `clinic.alerts.webhook-secret` | `${CLINIC_ALERTS_WEBHOOK_SECRET:dev-only-alert-secret}` | Shared secret HAPI sends as `X-Alert-Secret`; webhook returns 401 otherwise |
+| `clinic.alerts.first-lookback` | `24h` | How far back the first notification after a restart searches (may re-alert) |
 
 ---
 
@@ -375,6 +380,12 @@ Base URL: `http://localhost:9090`
 | `GET` | `/api/patients/{id}/snapshot` | At-a-glance: active conditions, meds, latest vitals, alerts |
 | `GET` | `/api/patients/{id}/trends?type=bp,spo2,weight&period=30d` | Chart-ready vitals series; `bp` returns paired systolic+diastolic |
 | `GET` | `/api/patients/{id}/timeline?limit=20&before=2026-05-01&types=encounter,report` | Unified chronological event feed with cursor pagination |
+
+### Alerts
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/alerts/bp-subscription` | HAPI rest-hook webhook (empty body, `X-Alert-Secret` header required) — alerts clinicians via `Notifier` on systolic BP above `systolic-critical`; alerts carry only Patient/Observation references |
 
 ---
 
