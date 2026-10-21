@@ -150,7 +150,7 @@ public class SnapshotService {
             .execute();
     if (bundle.getEntry() == null || bundle.getEntry().isEmpty()) return null;
     Observation obs = (Observation) bundle.getEntryFirstRep().getResource();
-    if (!(obs.getValue() instanceof Quantity q)) return null;
+    if (!(obs.getValue() instanceof Quantity q) || !q.hasValue()) return null;
     double value = q.getValue().doubleValue();
     String date =
         obs.hasEffectiveDateTimeType()

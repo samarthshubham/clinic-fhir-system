@@ -365,7 +365,7 @@ public class DashboardService {
     m.put("status", goal.getLifecycleStatus() != null ? goal.getLifecycleStatus().toCode() : null);
     if (goal.hasTarget() && !goal.getTarget().isEmpty()) {
       Goal.GoalTargetComponent target = goal.getTargetFirstRep();
-      if (target.hasDetail() && target.getDetail() instanceof Quantity q) {
+      if (target.hasDetail() && target.getDetail() instanceof Quantity q && q.hasValue()) {
         double targetValue = q.getValue().doubleValue();
         m.put("targetValue", targetValue);
         if (target.hasDue()) {
@@ -417,7 +417,7 @@ public class DashboardService {
             null, targetValue, null, null, "No matching measurements found", null);
       }
       Observation obs = (Observation) bundle.getEntryFirstRep().getResource();
-      if (!(obs.getValue() instanceof Quantity q)) {
+      if (!(obs.getValue() instanceof Quantity q) || !q.hasValue()) {
         return new GoalProgress(
             null, targetValue, null, null, "No matching measurements found", null);
       }
@@ -443,7 +443,7 @@ public class DashboardService {
                 .execute();
         if (earliestBundle.getEntry() != null && !earliestBundle.getEntry().isEmpty()) {
           Observation earliest = (Observation) earliestBundle.getEntryFirstRep().getResource();
-          if (earliest.getValue() instanceof Quantity bq) {
+          if (earliest.getValue() instanceof Quantity bq && bq.hasValue()) {
             baselineValue = bq.getValue().doubleValue();
           }
         }

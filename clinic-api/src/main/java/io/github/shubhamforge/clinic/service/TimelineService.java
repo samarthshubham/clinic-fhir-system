@@ -416,7 +416,7 @@ public class TimelineService {
       String loincCode = obs.getCode().getCodingFirstRep().getCode();
       String type = LOINC_TO_TYPE.get(loincCode);
       if (type == null) continue;
-      if (!(obs.getValue() instanceof Quantity q)) continue;
+      if (!(obs.getValue() instanceof Quantity q) || !q.hasValue()) continue;
       double value = q.getValue().doubleValue();
       String display = LOINC_TO_DISPLAY.getOrDefault(loincCode, type);
       result.add(

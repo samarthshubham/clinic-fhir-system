@@ -98,7 +98,7 @@ public class TrendsService {
     if (bundle.getEntry() == null) return points;
     for (var entry : bundle.getEntry()) {
       Observation obs = (Observation) entry.getResource();
-      if (!(obs.getValue() instanceof Quantity q)) continue;
+      if (!(obs.getValue() instanceof Quantity q) || !q.hasValue()) continue;
       double value = q.getValue().doubleValue();
       String date =
           obs.hasEffectiveDateTimeType()
@@ -116,7 +116,7 @@ public class TrendsService {
 
   private List<DataPoint> downsample(List<DataPoint> points) {
     if (points.size() <= MAX_POINTS) return points;
-    int n = (int) Math.floor((double) points.size() / MAX_POINTS);
+    int n = (int) Math.ceil((double) points.size() / MAX_POINTS);
     List<DataPoint> sampled = new ArrayList<>();
     for (int i = 0; i < points.size(); i += n) {
       sampled.add(points.get(i));

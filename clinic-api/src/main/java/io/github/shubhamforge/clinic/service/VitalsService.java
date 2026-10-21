@@ -73,7 +73,7 @@ public class VitalsService {
   }
 
   private void triggerConditionEvaluation(String patientId, Observation obs) {
-    if (!(obs.getValue() instanceof Quantity q)) return;
+    if (!(obs.getValue() instanceof Quantity q) || !q.hasValue()) return;
     double value = q.getValue().doubleValue();
     String vitalType = resolveVitalType(obs);
     if (vitalType == null) return;
