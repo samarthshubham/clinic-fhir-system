@@ -126,7 +126,7 @@ describe('CpGoalRowComponent', () => {
   it('should emit toggle with the goal id when the row is clicked', async () => {
     const fixture = await render(goal());
     const toggle = vi.fn();
-    fixture.componentInstance.toggle.subscribe(toggle);
+    fixture.componentInstance.goalToggle.subscribe(toggle);
 
     fixture.nativeElement.querySelector('.goal-row').click();
 
@@ -136,9 +136,39 @@ describe('CpGoalRowComponent', () => {
   it('should not emit toggle when clicking inside the expanded details', async () => {
     const fixture = await render(goal(), true);
     const toggle = vi.fn();
-    fixture.componentInstance.toggle.subscribe(toggle);
+    fixture.componentInstance.goalToggle.subscribe(toggle);
 
     fixture.nativeElement.querySelector('.goal-row__detail').click();
+
+    expect(toggle).not.toHaveBeenCalled();
+  });
+
+  it('should toggle from the keyboard with Enter or Space', async () => {
+    const fixture = await render(goal());
+    const toggle = vi.fn();
+    fixture.componentInstance.goalToggle.subscribe(toggle);
+    const row: HTMLElement = fixture.nativeElement.querySelector('.goal-row');
+    const space = new KeyboardEvent('keydown', { key: ' ', cancelable: true });
+
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    row.dispatchEvent(space);
+
+    expect(toggle).toHaveBeenCalledTimes(2);
+    expect(space.defaultPrevented).toBe(true);
+    expect(row.getAttribute('tabindex')).toBe('0');
+    expect(row.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('should not toggle on key presses inside the expanded details', async () => {
+    const fixture = await render(goal(), true);
+    const toggle = vi.fn();
+    fixture.componentInstance.goalToggle.subscribe(toggle);
+
+    fixture.nativeElement
+      .querySelector('.goal-row__detail')
+      .dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      );
 
     expect(toggle).not.toHaveBeenCalled();
   });

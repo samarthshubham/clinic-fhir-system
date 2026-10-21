@@ -27,11 +27,32 @@
         [routerLinkActiveOptions]="{ exact: true }"
         >Patients</a
       >
-      <a class="cp-topbar__nav-item" (click)="placeholder('Schedule')"
+      <a
+        class="cp-topbar__nav-item"
+        role="button"
+        tabindex="0"
+        (click)="placeholder('Schedule')"
+        (keydown.enter)="placeholder('Schedule')"
+        (keydown.space)="placeholder('Schedule'); $event.preventDefault()"
         >Schedule</a
       >
-      <a class="cp-topbar__nav-item" (click)="placeholder('Orders')">Orders</a>
-      <a class="cp-topbar__nav-item" (click)="placeholder('Inbox')">
+      <a
+        class="cp-topbar__nav-item"
+        role="button"
+        tabindex="0"
+        (click)="placeholder('Orders')"
+        (keydown.enter)="placeholder('Orders')"
+        (keydown.space)="placeholder('Orders'); $event.preventDefault()"
+        >Orders</a
+      >
+      <a
+        class="cp-topbar__nav-item"
+        role="button"
+        tabindex="0"
+        (click)="placeholder('Inbox')"
+        (keydown.enter)="placeholder('Inbox')"
+        (keydown.space)="placeholder('Inbox'); $event.preventDefault()"
+      >
         Inbox
         <span class="cp-topbar__nav-badge">3</span>
       </a>

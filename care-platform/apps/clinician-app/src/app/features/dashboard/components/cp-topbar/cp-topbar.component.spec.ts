@@ -57,4 +57,26 @@ describe('CpTopbarComponent', () => {
       'Inbox is a placeholder in this prototype',
     ]);
   });
+
+  it('should open unbuilt sections from the keyboard', async () => {
+    const fixture = TestBed.createComponent(CpTopbarComponent);
+    const show = vi.spyOn(TestBed.inject(ToastService), 'show');
+    await fixture.whenStable();
+    const [schedule, orders]: HTMLElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        '.cp-topbar__nav-item:not([href])',
+      ),
+    );
+    const space = new KeyboardEvent('keydown', { key: ' ', cancelable: true });
+
+    schedule.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    orders.dispatchEvent(space);
+
+    expect(show.mock.calls.map((c) => c[0])).toEqual([
+      'Schedule is a placeholder in this prototype',
+      'Orders is a placeholder in this prototype',
+    ]);
+    expect(space.defaultPrevented).toBe(true);
+    expect(schedule.getAttribute('tabindex')).toBe('0');
+  });
 });

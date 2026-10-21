@@ -5,7 +5,12 @@
     (isFuture ? ' future' : '') +
     (expanded ? ' expanded' : '')
   "
-  (click)="select.emit(ev.id)"
+  role="button"
+  tabindex="0"
+  [attr.aria-expanded]="expanded"
+  (click)="eventSelect.emit(ev.id)"
+  (keydown.enter)="eventSelect.emit(ev.id)"
+  (keydown.space)="eventSelect.emit(ev.id); $event.preventDefault()"
 >
   <div class="tl-rail">
     <div class="tl-node" [style.--c]="meta.color">
@@ -75,7 +80,12 @@
     }
 
     @if (expanded) {
-      <div class="tl-expand" (click)="$event.stopPropagation()">
+      <div
+        class="tl-expand"
+        role="presentation"
+        (click)="$event.stopPropagation()"
+        (keydown)="$event.stopPropagation()"
+      >
         @if (ev.chiefComplaint || ev.note) {
           <div class="tl-expand-notes">
             @if (ev.chiefComplaint) {

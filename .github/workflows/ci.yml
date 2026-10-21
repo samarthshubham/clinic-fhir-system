@@ -65,10 +65,13 @@ jobs:
 
       - run: npm ci
 
-      - name: Lint changed files
+      - name: Lint clinician-app
+        run: npx nx lint clinician-app
+
+      - name: Lint changed files in other apps
         if: github.event_name == 'pull_request'
         run: |
-          files=$(git diff --name-only --diff-filter=ACMR "origin/${{ github.base_ref }}...HEAD" -- 'care-platform/apps/**/*.ts' 'care-platform/apps/**/*.html' | sed 's|^care-platform/||')
+          files=$(git diff --name-only --diff-filter=ACMR "origin/${{ github.base_ref }}...HEAD" -- 'care-platform/apps/**/*.ts' 'care-platform/apps/**/*.html' ':!care-platform/apps/clinician-app/**' | sed 's|^care-platform/||')
           if [ -z "$files" ]; then
             echo "No changed frontend files to lint."
             exit 0

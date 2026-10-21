@@ -20,7 +20,7 @@ import { GoalSummary } from '../../dashboard.model';
 export class CpGoalRowComponent {
   readonly goal = input.required<GoalSummary>();
   readonly expanded = input(false);
-  readonly toggle = output<string>();
+  readonly goalToggle = output<string>();
 
   readonly percent = computed(() => {
     const p = this.goal().progress.percentToGoal;
