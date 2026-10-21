@@ -7,8 +7,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -52,5 +55,35 @@ public class GlobalExceptionHandler {
             .map(FieldError::getDefaultMessage)
             .collect(Collectors.joining(", "));
     return ResponseEntity.badRequest().body(new ErrorResponse(400, message));
+  }
+
+  @ExceptionHandler(HandlerMethodValidationException.class)
+  public ResponseEntity<ErrorResponse> handleParameterValidation(
+      HandlerMethodValidationException ex) {
+    String message =
+        ex.getParameterValidationResults().stream()
+            .flatMap(
+                result ->
+                    result.getResolvableErrors().stream()
+                        .map(
+                            error ->
+                                result.getMethodParameter().getParameterName()
+                                    + " "
+                                    + error.getDefaultMessage()))
+            .collect(Collectors.joining(", "));
+    return ResponseEntity.badRequest().body(new ErrorResponse(400, message));
+  }
+
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+    return ResponseEntity.badRequest()
+        .body(new ErrorResponse(400, "Invalid value for parameter '" + ex.getName() + "'"));
+  }
+
+  @ExceptionHandler(MissingServletRequestParameterException.class)
+  public ResponseEntity<ErrorResponse> handleMissingParameter(
+      MissingServletRequestParameterException ex) {
+    return ResponseEntity.badRequest()
+        .body(new ErrorResponse(400, "Missing required parameter '" + ex.getParameterName() + "'"));
   }
 }

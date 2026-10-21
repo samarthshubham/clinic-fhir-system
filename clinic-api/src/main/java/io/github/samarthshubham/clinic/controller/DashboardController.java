@@ -2,6 +2,7 @@ package io.github.samarthshubham.clinic.controller;
 
 import io.github.samarthshubham.clinic.dto.DashboardResponse;
 import io.github.samarthshubham.clinic.service.DashboardService;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,7 +20,7 @@ public class DashboardController {
   }
 
   @GetMapping("/{patientId}")
-  public ResponseEntity<DashboardResponse> getDashboard(@PathVariable String patientId) {
+  public ResponseEntity<DashboardResponse> getDashboard(@PathVariable @NotBlank String patientId) {
     return ResponseEntity.ok(dashboardService.getDashboard(patientId));
   }
 }

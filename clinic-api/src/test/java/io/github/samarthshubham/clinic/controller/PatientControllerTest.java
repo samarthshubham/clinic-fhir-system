@@ -175,7 +175,7 @@ class PatientControllerTest {
             null,
             null,
             null);
-    when(timelineService.getTimeline("p1", 5, "2024-06-01", "encounter"))
+    when(timelineService.getTimeline("p1", 5, LocalDate.of(2024, 6, 1), "encounter"))
         .thenReturn(List.of(event));
 
     assertThat(
@@ -195,5 +195,35 @@ class PatientControllerTest {
     assertThat(mvc.get().uri("/api/patients/p1/timeline").param("limit", "ten"))
         .hasStatus(HttpStatus.BAD_REQUEST);
     verifyNoInteractions(timelineService);
+  }
+
+  @Test
+  void timelineWithMalformedBeforeDateReturnsBadRequest() {
+    assertThat(mvc.get().uri("/api/patients/p1/timeline").param("before", "not-a-date"))
+        .hasStatus(HttpStatus.BAD_REQUEST)
+        .bodyJson()
+        .isLenientlyEqualTo(
+            """
+            {"status":400,"message":"Invalid value for parameter 'before'"}
+            """);
+    verifyNoInteractions(timelineService);
+  }
+
+  @Test
+  void getWithBlankIdReturnsBadRequest() {
+    assertThat(mvc.get().uri("/api/patients/{id}", " "))
+        .hasStatus(HttpStatus.BAD_REQUEST)
+        .bodyJson()
+        .isLenientlyEqualTo(
+            """
+            {"status":400,"message":"id must not be blank"}
+            """);
+    verifyNoInteractions(patientService);
+  }
+
+  @Test
+  void snapshotWithBlankIdReturnsBadRequest() {
+    assertThat(mvc.get().uri("/api/patients/{id}/snapshot", " ")).hasStatus(HttpStatus.BAD_REQUEST);
+    verifyNoInteractions(snapshotService);
   }
 }

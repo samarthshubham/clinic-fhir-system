@@ -3,6 +3,7 @@ package io.github.samarthshubham.clinic.controller;
 import io.github.samarthshubham.clinic.dto.CarePlanRequest;
 import io.github.samarthshubham.clinic.service.CarePlanService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.CarePlan;
 import org.springframework.http.HttpStatus;
@@ -30,7 +31,7 @@ public class CarePlanController {
   }
 
   @GetMapping
-  public ResponseEntity<Bundle> getCarePlansForPatient(@RequestParam String patientId) {
+  public ResponseEntity<Bundle> getCarePlansForPatient(@RequestParam @NotBlank String patientId) {
     return ResponseEntity.ok(carePlanService.getCarePlansForPatient(patientId));
   }
 }

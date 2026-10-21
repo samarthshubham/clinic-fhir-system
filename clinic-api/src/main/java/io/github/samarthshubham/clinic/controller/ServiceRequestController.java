@@ -3,6 +3,7 @@ package io.github.samarthshubham.clinic.controller;
 import io.github.samarthshubham.clinic.dto.ServiceRequestRequest;
 import io.github.samarthshubham.clinic.service.ServiceRequestService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.ServiceRequest;
 import org.springframework.http.HttpStatus;
@@ -33,13 +34,13 @@ public class ServiceRequestController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<ServiceRequest> getServiceRequest(@PathVariable String id) {
+  public ResponseEntity<ServiceRequest> getServiceRequest(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(serviceRequestService.getServiceRequest(id));
   }
 
   @GetMapping
   public ResponseEntity<Bundle> getServiceRequestsForPatient(
-      @RequestParam String patientId, @RequestParam(required = false) String status) {
+      @RequestParam @NotBlank String patientId, @RequestParam(required = false) String status) {
     return ResponseEntity.ok(serviceRequestService.getServiceRequestsForPatient(patientId, status));
   }
 }

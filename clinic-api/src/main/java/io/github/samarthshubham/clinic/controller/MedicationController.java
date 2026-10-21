@@ -3,6 +3,7 @@ package io.github.samarthshubham.clinic.controller;
 import io.github.samarthshubham.clinic.dto.MedicationRequest;
 import io.github.samarthshubham.clinic.service.MedicationService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.MedicationStatement;
 import org.springframework.http.HttpStatus;
@@ -32,7 +33,7 @@ public class MedicationController {
   }
 
   @GetMapping
-  public ResponseEntity<Bundle> getMedicationsForPatient(@RequestParam String patientId) {
+  public ResponseEntity<Bundle> getMedicationsForPatient(@RequestParam @NotBlank String patientId) {
     return ResponseEntity.ok(medicationService.getMedicationsForPatient(patientId));
   }
 }

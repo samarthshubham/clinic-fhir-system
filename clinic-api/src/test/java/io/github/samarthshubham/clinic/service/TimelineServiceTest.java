@@ -150,7 +150,7 @@ class TimelineServiceTest {
 
   @Test
   void beforeCursorIsSentToEachPastSourceAndFiltersTheResult() {
-    String cursor = TODAY.minusDays(6).toString();
+    LocalDate cursor = TODAY.minusDays(6);
     givenEncounters(encounter("e1", TODAY.minusDays(10), null));
     givenReports(report("r1", TODAY.minusDays(5), null));
     givenServiceRequests(serviceRequest("sr1", TODAY.minusDays(6), null));
@@ -162,7 +162,8 @@ class TimelineServiceTest {
     assertThat(fhir.lastSearchCriteria(Encounter.class)).contains("date=lt" + cursor);
     assertThat(fhir.lastSearchCriteria(DiagnosticReport.class)).contains("issued=lt" + cursor);
     assertThat(fhir.lastSearchCriteria(ServiceRequest.class)).contains("authored=lt" + cursor);
-    assertThat(fhir.lastSearchCriteria(Appointment.class)).noneMatch(c -> c.contains(cursor));
+    assertThat(fhir.lastSearchCriteria(Appointment.class))
+        .noneMatch(c -> c.contains(cursor.toString()));
   }
 
   @Test
