@@ -10,9 +10,11 @@ POST /api/vitals (systolic 185)
     → clinic-api creates Observation (LOINC 8480-6) in HAPI FHIR
     → HAPI matches Subscription/clinic-high-systolic-bp
         criteria: Observation?code=http://loinc.org|8480-6&value-quantity=gt180
-    → HAPI rest-hook POSTs an empty notification to
+    → HAPI rest-hook POSTs an empty notification with header X-Alert-Secret to
         http://host.docker.internal:9090/api/alerts/bp-subscription
-    → clinic-api searches critical systolic readings updated since the last alert
+    → clinic-api rejects the call with 401 unless the secret matches
+    → clinic-api searches critical systolic readings updated since the last alert,
+      following every next page of results
     → Notifier (default LoggingSmsNotifier) logs one mock SMS per reading
 ```
 
@@ -21,10 +23,28 @@ POST /api/vitals (systolic 185)
   `host.docker.internal` to the host so HAPI can reach clinic-api running on the host.
 - clinic-api creates or updates the Subscription at startup (PUT with a fixed id, so it is
   idempotent). The webhook URL is `clinic.alerts.webhook-url` in `application.yaml`.
+- The Subscription sends `X-Alert-Secret: <clinic.alerts.webhook-secret>` as a channel header.
+  The dev default lives in `application.yaml`; override it with the
+  `CLINIC_ALERTS_WEBHOOK_SECRET` environment variable. Calls without the right secret get `401`.
 - The Subscription has no payload, so the notification body is empty. The alert only carries
   `Patient/{id}` and `Observation/{id}` references, never names or values.
 - `spring-boot:run` starts the JVM with `-Djava.net.preferIPv4Stack=true` so Docker Desktop on
-  WSL can forward `host.docker.internal:9090` to clinic-api.
+  WSL can forward `host.docker.internal:9090` to clinic-api. The flag is set only for
+  `spring-boot:run` (`pom.xml`); a packaged jar needs `java -Djava.net.preferIPv4Stack=true -jar ...`.
+
+## Delivery guarantees
+
+- clinic-api remembers the `lastUpdated` of the last reading it alerted on, in memory only.
+- After a restart the first notification looks back `clinic.alerts.first-lookback`
+  (default `24h`). Missing an alert is worse than sending it twice, so a reading already alerted
+  in that window **can be alerted again after a restart**.
+- If the notifier fails for a reading, the error is logged with references only and the
+  remaining readings are still sent. The high-water mark stops before the first failed reading,
+  so the next notification retries it (and may repeat readings sent after it).
+- Registration runs once at startup. If HAPI is unreachable or rejects the Subscription, clinic-api
+  only logs a warning (`High BP subscription not registered, alerts disabled`) and keeps running.
+  A Subscription registered by an earlier run keeps working; otherwise restart clinic-api once
+  HAPI is healthy.
 
 ## Scripted demo
 
@@ -66,5 +86,5 @@ A reading at or below the threshold (for example `"systolicBp":120`) produces no
   `curl -s http://localhost:8080/fhir/Subscription/clinic-high-systolic-bp | grep status`
 - Delivery errors are logged by HAPI:
   `docker compose -f infra/docker-compose.yml logs hapi-fhir | grep -i subscription`
-- If clinic-api started before HAPI was up, the Subscription is not registered (a warning is
-  logged). Restart clinic-api once HAPI is healthy.
+- `401` responses on the webhook mean the Subscription header and `clinic.alerts.webhook-secret`
+  differ. Restart clinic-api so it re-registers the Subscription with the current secret.

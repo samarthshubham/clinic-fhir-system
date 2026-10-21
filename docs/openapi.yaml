@@ -771,9 +771,18 @@ paths:
         Called by HAPI FHIR (rest-hook, empty payload) when a systolic BP Observation above
         `clinical.thresholds.systolic-critical` is stored. The request carries no body; clinic-api
         looks up the new readings and notifies clinicians with Patient/Observation references only.
+      parameters:
+        - name: X-Alert-Secret
+          in: header
+          required: true
+          description: Shared secret from `clinic.alerts.webhook-secret`, sent by the Subscription channel header
+          schema:
+            type: string
       responses:
         '204':
           description: Notification processed
+        '401':
+          description: Missing or invalid webhook secret
 
 # ── Components ──────────────────────────────────────────────────────────────
 

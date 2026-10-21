@@ -330,6 +330,8 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 | `clinical.thresholds.spo2-critical` | `90.0` | SpO2 critical level (below) |
 | `clinic.default-org-id` | `seed-default-org` | HAPI FHIR Organization ID for care team |
 | `clinic.alerts.webhook-url` | `http://host.docker.internal:9090/api/alerts/bp-subscription` | Rest-hook endpoint HAPI calls for critical systolic BP |
+| `clinic.alerts.webhook-secret` | `${CLINIC_ALERTS_WEBHOOK_SECRET:dev-only-alert-secret}` | Shared secret HAPI sends as `X-Alert-Secret`; webhook returns 401 otherwise |
+| `clinic.alerts.first-lookback` | `24h` | How far back the first notification after a restart searches (may re-alert) |
 
 ---
 
@@ -383,7 +385,7 @@ Base URL: `http://localhost:9090`
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/alerts/bp-subscription` | HAPI rest-hook webhook (empty body) — alerts clinicians via `Notifier` on systolic BP above `systolic-critical`; alerts carry only Patient/Observation references |
+| `POST` | `/api/alerts/bp-subscription` | HAPI rest-hook webhook (empty body, `X-Alert-Secret` header required) — alerts clinicians via `Notifier` on systolic BP above `systolic-critical`; alerts carry only Patient/Observation references |
 
 ---
 
