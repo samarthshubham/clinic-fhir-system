@@ -1,8 +1,21 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+} from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { ThemeService } from '@core/theme.service';
 import { ToastService } from '@core/toast.service';
+import { AuthService } from '@core/auth.service';
+import { Role } from '@core/auth.models';
+
+const ROLE_LABELS: Record<Role, string> = {
+  ADMIN: 'Admin',
+  CLINICIAN: 'Clinician',
+  FRONT_DESK: 'Front desk',
+};
 
 @Component({
   selector: 'cp-topbar',
@@ -13,7 +26,23 @@ import { ToastService } from '@core/toast.service';
 })
 export class CpTopbarComponent {
   protected readonly theme = inject(ThemeService);
+  protected readonly auth = inject(AuthService);
   private readonly toastService = inject(ToastService);
+
+  protected readonly canSeeClinical = computed(
+    () => !!this.auth.user() && this.auth.hasRole('ADMIN', 'CLINICIAN'),
+  );
+  protected readonly initials = computed(() =>
+    (this.auth.user()?.name ?? '')
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0].toUpperCase())
+      .join(''),
+  );
+  protected readonly roleLabel = computed(() =>
+    (this.auth.user()?.roles ?? []).map((role) => ROLE_LABELS[role]).join(', '),
+  );
 
   placeholder(label: string): void {
     this.toastService.show(`${label} is a placeholder in this prototype`);

@@ -1,4 +1,5 @@
 import { Route } from '@angular/router';
+import { authGuard, guestGuard, roleGuard } from '@core/auth.guard';
 
 export const appRoutes: Route[] = [
   {
@@ -7,7 +8,14 @@ export const appRoutes: Route[] = [
     pathMatch: 'full',
   },
   {
+    path: 'login',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./features/login/login.component').then((m) => m.LoginComponent),
+  },
+  {
     path: 'patients',
+    canActivate: [authGuard],
     loadComponent: () =>
       import(
         './features/patients/patient-roster/patient-roster.component'
@@ -15,6 +23,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'patients/:id',
+    canActivate: [authGuard, roleGuard('ADMIN', 'CLINICIAN')],
     loadComponent: () =>
       import('./features/dashboard/dashboard.component').then(
         (m) => m.DashboardComponent,

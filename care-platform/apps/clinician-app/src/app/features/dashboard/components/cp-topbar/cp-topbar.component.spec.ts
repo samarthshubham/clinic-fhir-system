@@ -3,13 +3,40 @@ import { provideRouter } from '@angular/router';
 import { CpTopbarComponent } from './cp-topbar.component';
 import { ThemeService } from '@core/theme.service';
 import { ToastService } from '@core/toast.service';
+import { computed, signal } from '@angular/core';
+import { AuthService } from '@core/auth.service';
+import { AuthUser, Role } from '@core/auth.models';
+
+function fakeAuth(...roles: Role[]) {
+  const user = signal<AuthUser | null>(
+    roles.length
+      ? {
+          username: 'clinician',
+          name: 'Anika Patel',
+          title: 'Internal Medicine',
+          practitionerId: 'user-clinician',
+          roles,
+        }
+      : null,
+  );
+  return {
+    user,
+    isAuthenticated: computed(() => user() !== null),
+    hasRole: (...wanted: Role[]) =>
+      wanted.some((role) => user()?.roles.includes(role) ?? false),
+    logout: vi.fn(),
+  };
+}
 
 describe('CpTopbarComponent', () => {
+  let auth: ReturnType<typeof fakeAuth>;
+
   beforeEach(async () => {
     localStorage.clear();
+    auth = fakeAuth('CLINICIAN');
     await TestBed.configureTestingModule({
       imports: [CpTopbarComponent],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), { provide: AuthService, useValue: auth }],
     }).compileComponents();
   });
 
@@ -78,5 +105,55 @@ describe('CpTopbarComponent', () => {
     ]);
     expect(space.defaultPrevented).toBe(true);
     expect(schedule.getAttribute('tabindex')).toBe('0');
+  });
+
+  it('should show the signed-in user and sign out', async () => {
+    const fixture = TestBed.createComponent(CpTopbarComponent);
+    await fixture.whenStable();
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(
+      el.querySelector('.cp-topbar__user-avatar')?.textContent?.trim(),
+    ).toBe('AP');
+    expect(el.querySelector('.cp-topbar__user-name')?.textContent).toBe(
+      'Anika Patel',
+    );
+    expect(el.querySelector('.cp-topbar__user-role')?.textContent).toBe(
+      'Clinician · Internal Medicine',
+    );
+
+    (el.querySelector('[aria-label="Sign out"]') as HTMLButtonElement).click();
+
+    expect(auth.logout).toHaveBeenCalled();
+  });
+
+  it('should hide clinical sections from the front desk', async () => {
+    auth.user.set({
+      username: 'frontdesk',
+      name: 'Jordan Lee',
+      title: null,
+      practitionerId: null,
+      roles: ['FRONT_DESK'],
+    });
+    const fixture = TestBed.createComponent(CpTopbarComponent);
+    await fixture.whenStable();
+    const el: HTMLElement = fixture.nativeElement;
+
+    const sections = Array.from(
+      el.querySelectorAll('.cp-topbar__nav-item:not([href])'),
+    ).map((item) => item.textContent?.trim());
+
+    expect(sections).toEqual(['Schedule']);
+    expect(el.querySelector('.cp-topbar__user-role')?.textContent).toBe(
+      'Front desk',
+    );
+  });
+
+  it('should hide the user block when signed out', async () => {
+    auth.user.set(null);
+    const fixture = TestBed.createComponent(CpTopbarComponent);
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('.cp-topbar__user')).toBeNull();
   });
 });
