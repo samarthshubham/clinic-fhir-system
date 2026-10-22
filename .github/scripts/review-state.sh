@@ -47,7 +47,7 @@ range() {
     return
   fi
 
-  commits=$(git rev-list --no-merges --reverse "$last..$head" | tr '\n' ' ')
+  commits=$(git rev-list --no-merges --reverse "$last..$head" "^origin/${BASE_REF:-main}" | tr '\n' ' ')
   if [[ -z "${commits// /}" ]]; then
     output mode skip
     output base "$last"
