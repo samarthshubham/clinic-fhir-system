@@ -10,7 +10,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.areas.outputs.backend }}
+      frontend: ${{ steps.areas.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect which apps changed
+        id: areas
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: bash .github/scripts/changed-areas.sh
+
   backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -48,6 +66,8 @@ jobs:
           path: clinic-api/target/site/jacoco/
 
   frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -101,41 +121,64 @@ jobs:
           path: care-platform/coverage/seed-demo-data/lcov.info
 
   coverage-gate:
-    if: github.event_name == 'pull_request'
-    needs: [backend, frontend]
+    if: github.event_name == 'pull_request' && !cancelled()
+    needs: [changes, backend, frontend]
     runs-on: ubuntu-latest
     steps:
+      - name: Upstream jobs must not have failed
+        if: contains(needs.*.result, 'failure')
+        run: |
+          echo "::error::changes=${{ needs.changes.result }} backend=${{ needs.backend.result }} frontend=${{ needs.frontend.result }}"
+          exit 1
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - run: pip install diff-cover
+
       - uses: actions/download-artifact@v4
+        if: needs.backend.result == 'success'
         with:
           name: backend-coverage
           path: reports/backend
 
+      - name: Backend changed lines must be at least 70% covered
+        if: needs.backend.result == 'success'
+        run: |
+          status=0
+          diff-cover reports/backend/jacoco.xml --src-roots clinic-api/src/main/java \
+            --compare-branch="origin/${{ github.base_ref }}" --fail-under=70 \
+            --format markdown:backend.md || status=1
+          { echo "## Backend changed-line coverage"; cat backend.md; } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+
       - uses: actions/download-artifact@v4
+        if: needs.frontend.result == 'success'
         with:
           name: frontend-coverage
           path: reports/frontend
 
       - uses: actions/download-artifact@v4
+        if: needs.frontend.result == 'success'
         with:
           name: seed-demo-data-coverage
           path: reports/seed-demo-data
 
-      - run: pip install diff-cover
-
-      - name: Changed lines must be at least 70% covered
+      - name: Frontend changed lines must be at least 70% covered
+        if: needs.frontend.result == 'success'
         run: |
           sed 's|^SF:apps/|SF:care-platform/apps/|' reports/frontend/lcov.info > reports/frontend/lcov-repo.info
           sed 's|^SF:apps/|SF:care-platform/apps/|' reports/seed-demo-data/lcov.info > reports/seed-demo-data/lcov-repo.info
           status=0
-          diff-cover reports/backend/jacoco.xml --src-roots clinic-api/src/main/java \
-            --compare-branch="origin/${{ github.base_ref }}" --fail-under=70 \
-            --format markdown:backend.md || status=1
           diff-cover reports/frontend/lcov-repo.info reports/seed-demo-data/lcov-repo.info \
             --compare-branch="origin/${{ github.base_ref }}" --fail-under=70 \
             --format markdown:frontend.md || status=1
-          { echo "## Backend changed-line coverage"; cat backend.md; echo; echo "## Frontend changed-line coverage"; cat frontend.md; } >> "$GITHUB_STEP_SUMMARY"
+          { echo "## Frontend changed-line coverage"; cat frontend.md; } >> "$GITHUB_STEP_SUMMARY"
           exit $status
+
+      - name: Note skipped areas
+        if: needs.backend.result != 'success' || needs.frontend.result != 'success'
+        run: |
+          [ "${{ needs.backend.result }}" = success ] || echo "Backend: skipped, no backend changes." >> "$GITHUB_STEP_SUMMARY"
+          [ "${{ needs.frontend.result }}" = success ] || echo "Frontend: skipped, no frontend changes." >> "$GITHUB_STEP_SUMMARY"
