@@ -91,6 +91,8 @@ public class TrendsService {
             .and(new DateClientParam("date").afterOrEquals().day(from.toString()))
             .sort()
             .ascending("date")
+            .sort()
+            .ascending("_lastUpdated")
             .returnBundle(Bundle.class)
             .execute();
 

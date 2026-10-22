@@ -99,12 +99,14 @@ class TrendsServiceTest {
                 "subject=Patient/p1",
                 "code=http://loinc.org|" + SYSTOLIC,
                 "date=ge" + trends.from(),
-                "_sort=date"),
+                "_sort=date",
+                "_sort=_lastUpdated"),
             List.of(
                 "subject=Patient/p1",
                 "code=http://loinc.org|" + DIASTOLIC,
                 "date=ge" + trends.from(),
-                "_sort=date"));
+                "_sort=date",
+                "_sort=_lastUpdated"));
   }
 
   @Test
