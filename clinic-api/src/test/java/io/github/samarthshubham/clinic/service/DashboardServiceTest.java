@@ -294,8 +294,10 @@ class DashboardServiceTest {
         .containsEntry("progress", new GoalProgress(140.0, 130.0, false, 93, null, 160.0));
     assertThat(fhir.searches(Observation.class))
         .containsExactlyInAnyOrder(
-            List.of("subject=Patient/p1", SYSTOLIC, "_sort=-date", "_count=1"),
-            List.of("subject=Patient/p1", SYSTOLIC, "_sort=date", "_count=1"));
+            List.of(
+                "subject=Patient/p1", SYSTOLIC, "_sort=-date", "_sort=-_lastUpdated", "_count=1"),
+            List.of(
+                "subject=Patient/p1", SYSTOLIC, "_sort=date", "_sort=_lastUpdated", "_count=1"));
   }
 
   @Test

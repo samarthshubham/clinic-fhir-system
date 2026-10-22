@@ -378,6 +378,8 @@ public class DashboardService {
               .and(new TokenClientParam("code").exactly().systemAndCode(LOINC_SYSTEM, loincCode))
               .sort()
               .descending("date")
+              .sort()
+              .descending("_lastUpdated")
               .count(1)
               .returnBundle(Bundle.class)
               .execute();
@@ -407,6 +409,8 @@ public class DashboardService {
                 .and(new TokenClientParam("code").exactly().systemAndCode(LOINC_SYSTEM, loincCode))
                 .sort()
                 .ascending("date")
+                .sort()
+                .ascending("_lastUpdated")
                 .count(1)
                 .returnBundle(Bundle.class)
                 .execute();

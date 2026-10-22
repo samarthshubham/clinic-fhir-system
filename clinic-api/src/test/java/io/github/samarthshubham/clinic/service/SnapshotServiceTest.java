@@ -133,7 +133,11 @@ class SnapshotServiceTest {
     assertThat(vitals.temperature()).isEqualTo(new VitalReading(36.8, "Cel", day, false));
     assertThat(fhir.searches(Observation.class))
         .hasSize(6)
-        .allSatisfy(c -> assertThat(c).contains("subject=Patient/p1", "_sort=-date", "_count=1"));
+        .allSatisfy(
+            c ->
+                assertThat(c)
+                    .contains(
+                        "subject=Patient/p1", "_sort=-date", "_sort=-_lastUpdated", "_count=1"));
   }
 
   @Test

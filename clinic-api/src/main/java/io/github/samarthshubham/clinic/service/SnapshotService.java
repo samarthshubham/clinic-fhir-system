@@ -145,6 +145,8 @@ public class SnapshotService {
                     .systemAndCode(LOINC_SYSTEM, VITAL_LOINC.get(type)))
             .sort()
             .descending("date")
+            .sort()
+            .descending("_lastUpdated")
             .count(1)
             .returnBundle(Bundle.class)
             .execute();
