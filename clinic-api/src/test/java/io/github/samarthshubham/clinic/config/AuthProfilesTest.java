@@ -1,6 +1,7 @@
 package io.github.samarthshubham.clinic.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.github.samarthshubham.clinic.security.Role;
 import org.junit.jupiter.api.Test;
@@ -26,13 +27,18 @@ class AuthProfilesTest {
   }
 
   @Test
-  void devProfileProvidesOneDemoUserPerRole() {
+  void devProfileProvidesOneStaffUserPerRoleAndTwoLinkedPatients() {
     runner
         .withPropertyValues("spring.profiles.active=dev")
         .run(
             context ->
                 assertThat(context.getBean(AuthProperties.class).users())
-                    .extracting(AuthProperties.User::role)
-                    .containsExactlyInAnyOrder(Role.ADMIN, Role.CLINICIAN, Role.FRONT_DESK));
+                    .extracting(AuthProperties.User::role, AuthProperties.User::patientId)
+                    .containsExactlyInAnyOrder(
+                        tuple(Role.ADMIN, null),
+                        tuple(Role.CLINICIAN, null),
+                        tuple(Role.FRONT_DESK, null),
+                        tuple(Role.PATIENT, "seed-tony-stark"),
+                        tuple(Role.PATIENT, "seed-priya-nair")));
   }
 }

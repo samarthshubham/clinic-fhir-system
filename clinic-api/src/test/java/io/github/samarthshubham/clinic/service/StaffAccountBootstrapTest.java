@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
@@ -32,6 +33,7 @@ class StaffAccountBootstrapTest {
     verify(practitionerService)
         .upsertStaffPractitioner(
             "frontdesk", new PractitionerRequest("Jordan", "Lee", "Front desk", null, null));
+    verify(practitionerService, never()).upsertStaffPractitioner(eq("tony"), any());
   }
 
   @Test

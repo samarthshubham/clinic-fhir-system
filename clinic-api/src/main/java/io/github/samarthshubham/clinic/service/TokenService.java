@@ -45,6 +45,9 @@ public class TokenService {
     if (user.practitionerId() != null) {
       access.claim("practitioner_id", user.practitionerId());
     }
+    if (user.patientId() != null) {
+      access.claim(JwtConfig.PATIENT_ID_CLAIM, user.patientId());
+    }
     JwtClaimsSet refresh =
         JwtClaimsSet.builder()
             .issuer(authProperties.issuer())

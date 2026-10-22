@@ -27,14 +27,14 @@ public class VitalsController {
     this.vitalsService = vitalsService;
   }
 
-  @PreAuthorize("hasAuthority('vitals:write')")
+  @PreAuthorize("hasAuthority('vitals:write') or @patientAccess.isSelf(#request.patientId())")
   @PostMapping
   public ResponseEntity<List<ObservationResponse>> recordVitals(
       @Valid @RequestBody VitalsRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(vitalsService.recordVitals(request));
   }
 
-  @PreAuthorize("hasAuthority('clinical:read')")
+  @PreAuthorize("hasAuthority('clinical:read') or @patientAccess.isSelf(#patientId)")
   @GetMapping
   public ResponseEntity<PageResponse<ObservationResponse>> getVitals(
       @RequestParam @NotBlank String patientId, @RequestParam(required = false) String type) {

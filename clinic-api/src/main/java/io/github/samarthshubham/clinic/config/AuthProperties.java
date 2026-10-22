@@ -28,5 +28,6 @@ public record AuthProperties(
       Role role,
       String firstName,
       String lastName,
-      String title) {}
+      String title,
+      String patientId) {}
 }

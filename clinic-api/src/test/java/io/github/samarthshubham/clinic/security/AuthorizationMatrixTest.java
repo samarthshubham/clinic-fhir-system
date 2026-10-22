@@ -2,6 +2,8 @@ package io.github.samarthshubham.clinic.security;
 
 import static io.github.samarthshubham.clinic.security.Role.ADMIN;
 import static io.github.samarthshubham.clinic.security.Role.CLINICIAN;
+import static io.github.samarthshubham.clinic.security.Role.FRONT_DESK;
+import static io.github.samarthshubham.clinic.security.Role.PATIENT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.samarthshubham.clinic.config.AuthProperties;
@@ -49,21 +51,24 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 @Import(SecurityConfig.class)
 class AuthorizationMatrixTest {
 
-  private static final Set<Role> EVERYONE = EnumSet.allOf(Role.class);
+  private static final Set<Role> EVERYONE = EnumSet.of(ADMIN, CLINICIAN, FRONT_DESK);
+  private static final Set<Role> EVERYONE_AND_OWNER =
+      EnumSet.of(ADMIN, CLINICIAN, FRONT_DESK, PATIENT);
   private static final Set<Role> CLINICAL_STAFF = EnumSet.of(ADMIN, CLINICIAN);
+  private static final Set<Role> CLINICAL_STAFF_AND_OWNER = EnumSet.of(ADMIN, CLINICIAN, PATIENT);
   private static final Set<Role> ADMIN_ONLY = EnumSet.of(ADMIN);
 
   private static final List<Endpoint> ENDPOINTS =
       List.of(
           get("/api/patients", EVERYONE),
-          get("/api/patients/p1", EVERYONE),
+          get("/api/patients/p1", EVERYONE_AND_OWNER),
           post(
               "/api/patients",
               """
               {"firstName":"Priya","lastName":"Nair","dateOfBirth":"1985-03-14","gender":"female"}
               """,
               EVERYONE),
-          get("/api/appointments?patientId=p1", EVERYONE),
+          get("/api/appointments?patientId=p1", EVERYONE_AND_OWNER),
           post(
               "/api/appointments",
               """
@@ -78,10 +83,10 @@ class AuthorizationMatrixTest {
               {"firstName":"Anil","lastName":"Rao","specialty":"Cardiology"}
               """,
               ADMIN_ONLY),
-          get("/api/patients/p1/snapshot", CLINICAL_STAFF),
-          get("/api/patients/p1/trends", CLINICAL_STAFF),
-          get("/api/patients/p1/timeline", CLINICAL_STAFF),
-          get("/api/dashboard/p1", CLINICAL_STAFF),
+          get("/api/patients/p1/snapshot", CLINICAL_STAFF_AND_OWNER),
+          get("/api/patients/p1/trends", CLINICAL_STAFF_AND_OWNER),
+          get("/api/patients/p1/timeline", CLINICAL_STAFF_AND_OWNER),
+          get("/api/dashboard/p1", CLINICAL_STAFF_AND_OWNER),
           get("/api/encounters/e1", CLINICAL_STAFF),
           get("/api/encounters?patientId=p1", CLINICAL_STAFF),
           post(
@@ -90,13 +95,13 @@ class AuthorizationMatrixTest {
               {"patientId":"p1","visitDate":"2024-05-01","reason":"Headache","status":"finished"}
               """,
               CLINICAL_STAFF),
-          get("/api/vitals?patientId=p1", CLINICAL_STAFF),
+          get("/api/vitals?patientId=p1", CLINICAL_STAFF_AND_OWNER),
           post(
               "/api/vitals",
               """
               {"patientId":"p1","encounterId":"e1","effectiveDate":"2024-05-01","systolicBp":142}
               """,
-              CLINICAL_STAFF),
+              CLINICAL_STAFF_AND_OWNER),
           get("/api/conditions/c1", CLINICAL_STAFF),
           get("/api/conditions?patientId=p1", CLINICAL_STAFF),
           post(
@@ -111,7 +116,17 @@ class AuthorizationMatrixTest {
           get("/api/service-requests?patientId=p1", CLINICAL_STAFF),
           get("/api/diagnostic-reports?patientId=p1", CLINICAL_STAFF),
           get("/api/care-plans?patientId=p1", CLINICAL_STAFF),
-          get("/api/goals?patientId=p1", CLINICAL_STAFF));
+          get("/api/goals?patientId=p1", CLINICAL_STAFF),
+          get("/api/patients/p2", EVERYONE),
+          get("/api/patients/p2/snapshot", CLINICAL_STAFF),
+          get("/api/dashboard/p2", CLINICAL_STAFF),
+          get("/api/appointments?patientId=p2", EVERYONE),
+          post(
+              "/api/vitals",
+              """
+              {"patientId":"p2","encounterId":"e1","effectiveDate":"2024-05-01","systolicBp":142}
+              """,
+              CLINICAL_STAFF));
 
   @Autowired private MockMvcTester mvc;
   @Autowired private JwtEncoder jwtEncoder;
