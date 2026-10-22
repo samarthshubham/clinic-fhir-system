@@ -196,4 +196,21 @@ class VitalsServiceTest {
         .isInstanceOf(ReferenceValidationException.class)
         .hasMessage("Referenced Encounter with id 'nope' does not exist");
   }
+
+  @Test
+  void patientReportedVitalsAreMarkedAndSkipConditionEvaluation() {
+    List<ObservationResponse> result =
+        service.recordVitals(
+            new VitalsRequest(PATIENT_ID, null, TODAY, 185, null, null, null, null, null), true);
+
+    assertThat(result).hasSize(1);
+    assertThat(fhir.created())
+        .singleElement()
+        .isInstanceOfSatisfying(
+            Observation.class,
+            obs ->
+                assertThat(obs.getPerformerFirstRep().getReference())
+                    .isEqualTo("Patient/" + PATIENT_ID));
+    verifyNoInteractions(conditionEvaluationService);
+  }
 }

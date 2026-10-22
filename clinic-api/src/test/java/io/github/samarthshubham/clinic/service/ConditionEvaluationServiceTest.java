@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Observation;
 import org.hl7.fhir.r4.model.Quantity;
+import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.StringType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,7 +61,7 @@ class ConditionEvaluationServiceTest {
   }
 
   @Test
-  void hypertensionSearchAsksForThisPatientsLatestThreeSystolicReadings() {
+  void hypertensionSearchAsksForThisPatientsLatestSystolicReadings() {
     givenReadings(150, 145, 141);
 
     service.evaluate(PATIENT_ID, "systolic", 150);
@@ -70,7 +71,7 @@ class ConditionEvaluationServiceTest {
             "subject=Patient/" + PATIENT_ID,
             "code=http://loinc.org|8480-6",
             "_sort=-date",
-            "_count=3");
+            "_count=20");
   }
 
   @Test
@@ -173,7 +174,7 @@ class ConditionEvaluationServiceTest {
             "subject=Patient/" + PATIENT_ID,
             "code=http://loinc.org|59408-5",
             "_sort=-date",
-            "_count=2");
+            "_count=20");
   }
 
   @Test
@@ -211,6 +212,22 @@ class ConditionEvaluationServiceTest {
 
     verifyNoInteractions(conditionService);
     verify(fhir.client(), never()).search();
+  }
+
+  @Test
+  void patientReportedReadingsDoNotCountTowardsHypertension() {
+    Observation homeReading = quantityObservation(190);
+    homeReading.addPerformer(new Reference("Patient/" + PATIENT_ID));
+    Observation secondHomeReading = quantityObservation(185);
+    secondHomeReading.addPerformer(new Reference("Patient/" + PATIENT_ID));
+    fhir.givenSearchResult(
+        Observation.class,
+        bundleOf(
+            homeReading, secondHomeReading, quantityObservation(150), quantityObservation(120)));
+
+    service.evaluate(PATIENT_ID, "systolic", 150);
+
+    verifyNoConditionCreated();
   }
 
   private void givenReadings(double... values) {

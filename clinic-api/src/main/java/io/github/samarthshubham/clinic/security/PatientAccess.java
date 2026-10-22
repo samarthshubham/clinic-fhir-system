@@ -11,14 +11,16 @@ public class PatientAccess {
 
   public boolean isSelf(String patientId) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (patientId == null
-        || authentication == null
-        || !(authentication.getPrincipal() instanceof Jwt jwt)) {
-      return false;
-    }
-    boolean isPatient =
-        authentication.getAuthorities().stream()
+    return patientId != null
+        && isPatient()
+        && authentication.getPrincipal() instanceof Jwt jwt
+        && patientId.equals(jwt.getClaimAsString(JwtConfig.PATIENT_ID_CLAIM));
+  }
+
+  public boolean isPatient() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    return authentication != null
+        && authentication.getAuthorities().stream()
             .anyMatch(authority -> PATIENT_AUTHORITY.equals(authority.getAuthority()));
-    return isPatient && patientId.equals(jwt.getClaimAsString(JwtConfig.PATIENT_ID_CLAIM));
   }
 }

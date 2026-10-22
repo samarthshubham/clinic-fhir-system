@@ -49,15 +49,21 @@ public class VitalsService {
   }
 
   public List<ObservationResponse> recordVitals(VitalsRequest request) {
+    return recordVitals(request, false);
+  }
+
+  public List<ObservationResponse> recordVitals(VitalsRequest request, boolean patientReported) {
     requireEncounterOfSamePatient(request);
-    return observationMapper.toFhirObservations(request).stream()
+    return observationMapper.toFhirObservations(request, patientReported).stream()
         .map(
             obs -> {
               var outcome = fhirClient.create().resource(obs).execute();
               String id = outcome.getId().getIdPart();
               Observation created =
                   fhirClient.read().resource(Observation.class).withId(id).execute();
-              triggerConditionEvaluation(request.patientId(), created);
+              if (!patientReported) {
+                triggerConditionEvaluation(request.patientId(), created);
+              }
               return observationMapper.toResponse(created);
             })
         .toList();

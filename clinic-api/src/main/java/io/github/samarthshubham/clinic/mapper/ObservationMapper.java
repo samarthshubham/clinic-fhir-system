@@ -32,35 +32,67 @@ public class ObservationMapper {
           Map.entry("temperature", new String[] {"8310-5", "Body temperature", "Cel"}));
 
   public List<Observation> toFhirObservations(VitalsRequest request) {
+    return toFhirObservations(request, false);
+  }
+
+  public List<Observation> toFhirObservations(VitalsRequest request, boolean patientReported) {
     List<Observation> observations = new ArrayList<>();
     Date effectiveDate =
         Date.from(request.effectiveDate().atStartOfDay(ZoneId.systemDefault()).toInstant());
 
     if (request.systolicBp() != null) {
       observations.add(
-          build(request, "systolic", request.systolicBp().doubleValue(), effectiveDate));
+          build(
+              request,
+              "systolic",
+              request.systolicBp().doubleValue(),
+              effectiveDate,
+              patientReported));
     }
     if (request.diastolicBp() != null) {
       observations.add(
-          build(request, "diastolic", request.diastolicBp().doubleValue(), effectiveDate));
+          build(
+              request,
+              "diastolic",
+              request.diastolicBp().doubleValue(),
+              effectiveDate,
+              patientReported));
     }
     if (request.weightKg() != null) {
-      observations.add(build(request, "weight", request.weightKg(), effectiveDate));
+      observations.add(
+          build(request, "weight", request.weightKg(), effectiveDate, patientReported));
     }
     if (request.spo2Percent() != null) {
-      observations.add(build(request, "spo2", request.spo2Percent(), effectiveDate));
+      observations.add(
+          build(request, "spo2", request.spo2Percent(), effectiveDate, patientReported));
     }
     if (request.heartRateBpm() != null) {
       observations.add(
-          build(request, "heartRate", request.heartRateBpm().doubleValue(), effectiveDate));
+          build(
+              request,
+              "heartRate",
+              request.heartRateBpm().doubleValue(),
+              effectiveDate,
+              patientReported));
     }
     if (request.temperatureCelsius() != null) {
-      observations.add(build(request, "temperature", request.temperatureCelsius(), effectiveDate));
+      observations.add(
+          build(
+              request,
+              "temperature",
+              request.temperatureCelsius(),
+              effectiveDate,
+              patientReported));
     }
     return observations;
   }
 
-  private Observation build(VitalsRequest request, String type, double value, Date effectiveDate) {
+  private Observation build(
+      VitalsRequest request,
+      String type,
+      double value,
+      Date effectiveDate,
+      boolean patientReported) {
     String[] meta = VITAL_META.get(type);
     Observation obs = new Observation();
     obs.setStatus(Observation.ObservationStatus.FINAL);
@@ -71,10 +103,18 @@ public class ObservationMapper {
     if (request.encounterId() != null) {
       obs.setEncounter(new Reference("Encounter/" + request.encounterId()));
     }
+    if (patientReported) {
+      obs.addPerformer(new Reference("Patient/" + request.patientId()));
+    }
     obs.setEffective(new DateTimeType(effectiveDate));
     obs.setValue(
         new Quantity().setValue(value).setUnit(meta[2]).setSystem(UCUM_SYSTEM).setCode(meta[2]));
     return obs;
+  }
+
+  public static boolean isPatientReported(Observation observation) {
+    return observation.getPerformer().stream()
+        .anyMatch(performer -> "Patient".equals(performer.getReferenceElement().getResourceType()));
   }
 
   public ObservationResponse toResponse(Observation observation) {
