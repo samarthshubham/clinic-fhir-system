@@ -34,7 +34,7 @@ public class AppointmentController {
         .body(appointmentService.createAppointment(request));
   }
 
-  @PreAuthorize("hasAuthority('appointment:read')")
+  @PreAuthorize("hasAuthority('appointment:read') or @patientAccess.isSelf(#patientId)")
   @GetMapping
   public ResponseEntity<PageResponse<AppointmentResponse>> getAppointmentsForPatient(
       @RequestParam @NotBlank String patientId) {

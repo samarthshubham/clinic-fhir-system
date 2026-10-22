@@ -46,4 +46,12 @@ class RolePermissionsTest {
             "appointment:write",
             "practitioner:read");
   }
+
+  @Test
+  void patientsGetNoGeneralPermissionsOnlyTheirRole() {
+    assertThat(RolePermissions.permissionsFor(Role.PATIENT)).isEmpty();
+    assertThat(RolePermissions.authoritiesFor(List.of(Role.PATIENT)))
+        .extracting(GrantedAuthority::getAuthority)
+        .containsExactly("ROLE_PATIENT");
+  }
 }

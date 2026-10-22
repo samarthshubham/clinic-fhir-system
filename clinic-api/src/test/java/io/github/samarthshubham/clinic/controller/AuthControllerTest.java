@@ -36,6 +36,7 @@ class AuthControllerTest {
               "Anika Patel",
               "Internal Medicine",
               "user-clinician",
+              null,
               List.of(Role.CLINICIAN)));
 
   private static final String TOKENS_JSON =
@@ -43,7 +44,7 @@ class AuthControllerTest {
       {"accessToken":"access.jwt","refreshToken":"refresh.jwt","tokenType":"Bearer",
        "expiresIn":900,
        "user":{"username":"clinician","name":"Anika Patel","title":"Internal Medicine",
-               "practitionerId":"user-clinician","roles":["CLINICIAN"]}}
+               "practitionerId":"user-clinician","patientId":null,"roles":["CLINICIAN"]}}
       """;
 
   @Autowired private MockMvcTester mvc;

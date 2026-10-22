@@ -55,17 +55,23 @@ Both are HS256 JWTs signed with `clinic.auth.jwt-secret` (env `CLINIC_JWT_SECRET
 ### Permissions
 Tokens carry **roles**; on each request the server expands them into **permissions** (`RolePermissions`), and each endpoint checks one permission with `@PreAuthorize("hasAuthority('…')")`.
 
-| Permission | Endpoints | FRONT_DESK | CLINICIAN | ADMIN |
-|---|---|:-:|:-:|:-:|
-| `patient:read` | `GET /api/patients`, `GET /api/patients/{id}` | ✓ | ✓ | ✓ |
-| `patient:write` | `POST /api/patients` | ✓ | ✓ | ✓ |
-| `appointment:read` / `appointment:write` | `GET` / `POST /api/appointments` | ✓ | ✓ | ✓ |
-| `practitioner:read` | `GET /api/practitioners/{id}` | ✓ | ✓ | ✓ |
-| `practitioner:write` | `POST /api/practitioners` | | | ✓ |
-| `clinical:read` | every other `GET`: encounters, vitals, conditions, medications, service-requests, diagnostic-reports, care-plans, goals, snapshot, trends, timeline, dashboard | | ✓ | ✓ |
-| `encounter:write`, `vitals:write`, `condition:write`, `medication:write` | matching `POST` | | ✓ | ✓ |
-| `order:write` | `POST /api/service-requests`, `POST /api/diagnostic-reports` | | ✓ | ✓ |
-| `careplan:write` | `POST /api/care-plans`, `POST /api/goals` | | ✓ | ✓ |
+| Permission | Endpoints | FRONT_DESK | CLINICIAN | ADMIN | PATIENT |
+|---|---|:-:|:-:|:-:|:-:|
+| `patient:read` | `GET /api/patients` | ✓ | ✓ | ✓ | |
+| `patient:read` | `GET /api/patients/{id}` | ✓ | ✓ | ✓ | own |
+| `patient:write` | `POST /api/patients` | ✓ | ✓ | ✓ | |
+| `appointment:read` | `GET /api/appointments?patientId=` | ✓ | ✓ | ✓ | own |
+| `appointment:write` | `POST /api/appointments` | ✓ | ✓ | ✓ | |
+| `practitioner:read` | `GET /api/practitioners/{id}` | ✓ | ✓ | ✓ | |
+| `practitioner:write` | `POST /api/practitioners` | | | ✓ | |
+| `clinical:read` | snapshot, trends, timeline, dashboard, `GET /api/vitals` | | ✓ | ✓ | own |
+| `clinical:read` | every other clinical `GET`: encounters, conditions, medications, service-requests, diagnostic-reports, care-plans, goals | | ✓ | ✓ | |
+| `vitals:write` | `POST /api/vitals` | | ✓ | ✓ | own |
+| `encounter:write`, `condition:write`, `medication:write` | matching `POST` | | ✓ | ✓ | |
+| `order:write` | `POST /api/service-requests`, `POST /api/diagnostic-reports` | | ✓ | ✓ | |
+| `careplan:write` | `POST /api/care-plans`, `POST /api/goals` | | ✓ | ✓ | |
+
+**own**: a `PATIENT` has no permissions of its own. These endpoints add `or @patientAccess.isSelf(#id)`, which is true only when the token's `patient_id` claim matches the patient in the request. Tony can read his own snapshot, but gets `403` for Priya's and for the patient list
 
 Request-body validation (`@Valid`) runs before the permission check, so an invalid body returns `400` even for a role that would get `403`.
 

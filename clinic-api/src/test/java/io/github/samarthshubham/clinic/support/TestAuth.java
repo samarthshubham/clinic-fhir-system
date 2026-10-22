@@ -25,6 +25,7 @@ public final class TestAuth {
   public static final String SECRET = "test-only-jwt-secret-0123456789abcdef";
   public static final String ISSUER = "clinic-api";
   public static final String PASSWORD = "Secret#123";
+  public static final String OWN_PATIENT_ID = "p1";
   public static final SecretKey KEY =
       new SecretKeySpec(SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
 
@@ -38,11 +39,13 @@ public final class TestAuth {
         accessTtl,
         refreshTtl,
         List.of(
-            new AuthProperties.User("admin", hash, Role.ADMIN, "Alex", "Morgan", "Admin"),
+            new AuthProperties.User("admin", hash, Role.ADMIN, "Alex", "Morgan", "Admin", null),
             new AuthProperties.User(
-                "clinician", hash, Role.CLINICIAN, "Anika", "Patel", "Internal Medicine"),
+                "clinician", hash, Role.CLINICIAN, "Anika", "Patel", "Internal Medicine", null),
             new AuthProperties.User(
-                "frontdesk", hash, Role.FRONT_DESK, "Jordan", "Lee", "Front desk")));
+                "frontdesk", hash, Role.FRONT_DESK, "Jordan", "Lee", "Front desk", null),
+            new AuthProperties.User(
+                "tony", hash, Role.PATIENT, "Tony", "Stark", null, OWN_PATIENT_ID)));
   }
 
   public static AuthProperties properties() {
@@ -58,8 +61,11 @@ public final class TestAuth {
   }
 
   public static AuthUser user(Role role) {
+    if (role == Role.PATIENT) {
+      return new AuthUser("tony", "Tony Stark", null, null, OWN_PATIENT_ID, List.of(role));
+    }
     return new AuthUser(
-        role.name().toLowerCase(), "Test " + role, "Tester", "user-" + role, List.of(role));
+        role.name().toLowerCase(), "Test " + role, "Tester", "user-" + role, null, List.of(role));
   }
 
   public static String signedToken(String tokenType, Instant issuedAt, Duration ttl) {

@@ -1,0 +1,91 @@
+<div class="pa-app">
+  <div class="pa-select-screen">
+    <div class="pa-brand">
+      <div class="pa-brand-mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M3 12h4l2-4 3 8 2-4h7"
+            stroke="white"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </div>
+      <span>Vitalist</span>
+      <span class="pa-brand-sub">· for patients</span>
+    </div>
+
+    <div class="pa-select-hero">
+      <h1>Welcome.</h1>
+      <p>Sign in to see your health record.</p>
+    </div>
+
+    <form class="pa-login-card" [formGroup]="form" (ngSubmit)="submit()">
+      <mat-form-field appearance="outline">
+        <mat-label>Username</mat-label>
+        <input matInput formControlName="username" autocomplete="username" />
+        @if (form.controls.username.hasError('required')) {
+          <mat-error>Username is required</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Password</mat-label>
+        <input
+          matInput
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+        />
+        @if (form.controls.password.hasError('required')) {
+          <mat-error>Password is required</mat-error>
+        }
+      </mat-form-field>
+
+      @if (state(); as s) {
+        @if (s.status === 'error') {
+          <p class="pa-login-error" role="alert">{{ s.message }}</p>
+        }
+      }
+
+      <button
+        mat-flat-button
+        type="submit"
+        [disabled]="state().status === 'submitting'"
+      >
+        {{ state().status === 'submitting' ? 'Signing in…' : 'Sign in' }}
+      </button>
+    </form>
+
+    @if (demoAccounts.length) {
+      <div class="pa-select-list" aria-label="Development quick login">
+        @for (account of demoAccounts; track account.username) {
+          <button
+            class="pa-select-row"
+            type="button"
+            [disabled]="state().status === 'submitting'"
+            (click)="signInAs(account)"
+          >
+            <cp-avatar
+              [firstName]="account.firstName"
+              [lastName]="account.lastName"
+              [hue]="hue(account.username)"
+              [size]="44"
+              [radiusPercent]="32"
+            />
+            <div class="pa-select-body">
+              <div class="pa-select-name">
+                {{ account.firstName }} {{ account.lastName }}
+              </div>
+              <div class="pa-select-meta">
+                Demo patient · {{ account.username }}
+              </div>
+            </div>
+          </button>
+        }
+      </div>
+      <div class="pa-select-footer">Dev quick login · tap a demo patient</div>
+    }
+  </div>
+</div>

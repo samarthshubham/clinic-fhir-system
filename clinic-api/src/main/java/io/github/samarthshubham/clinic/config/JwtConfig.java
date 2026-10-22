@@ -28,6 +28,7 @@ public class JwtConfig {
 
   public static final String TOKEN_TYPE_CLAIM = "token_type";
   public static final String ROLES_CLAIM = "roles";
+  public static final String PATIENT_ID_CLAIM = "patient_id";
   public static final String ACCESS_TOKEN = "access";
   public static final String REFRESH_TOKEN = "refresh";
 

@@ -20,7 +20,7 @@ public class DashboardController {
     this.dashboardService = dashboardService;
   }
 
-  @PreAuthorize("hasAuthority('clinical:read')")
+  @PreAuthorize("hasAuthority('clinical:read') or @patientAccess.isSelf(#patientId)")
   @GetMapping("/{patientId}")
   public ResponseEntity<DashboardResponse> getDashboard(@PathVariable @NotBlank String patientId) {
     return ResponseEntity.ok(dashboardService.getDashboard(patientId));

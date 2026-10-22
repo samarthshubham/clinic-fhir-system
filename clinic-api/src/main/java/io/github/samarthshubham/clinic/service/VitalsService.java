@@ -3,9 +3,12 @@ package io.github.samarthshubham.clinic.service;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.ReferenceClientParam;
 import ca.uhn.fhir.rest.gclient.TokenClientParam;
+import io.github.samarthshubham.clinic.dto.EncounterResponse;
 import io.github.samarthshubham.clinic.dto.ObservationResponse;
 import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.dto.VitalsRequest;
+import io.github.samarthshubham.clinic.exception.ReferenceValidationException;
+import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.ObservationMapper;
 import io.github.samarthshubham.clinic.mapper.PageMapper;
 import java.util.List;
@@ -32,28 +35,54 @@ public class VitalsService {
   private final IGenericClient fhirClient;
   private final ObservationMapper observationMapper;
   private final ConditionEvaluationService conditionEvaluationService;
+  private final EncounterService encounterService;
 
   public VitalsService(
       IGenericClient fhirClient,
       ObservationMapper observationMapper,
-      ConditionEvaluationService conditionEvaluationService) {
+      ConditionEvaluationService conditionEvaluationService,
+      EncounterService encounterService) {
     this.fhirClient = fhirClient;
     this.observationMapper = observationMapper;
     this.conditionEvaluationService = conditionEvaluationService;
+    this.encounterService = encounterService;
   }
 
   public List<ObservationResponse> recordVitals(VitalsRequest request) {
-    return observationMapper.toFhirObservations(request).stream()
+    return recordVitals(request, false);
+  }
+
+  public List<ObservationResponse> recordVitals(VitalsRequest request, boolean patientReported) {
+    requireEncounterOfSamePatient(request);
+    return observationMapper.toFhirObservations(request, patientReported).stream()
         .map(
             obs -> {
               var outcome = fhirClient.create().resource(obs).execute();
               String id = outcome.getId().getIdPart();
               Observation created =
                   fhirClient.read().resource(Observation.class).withId(id).execute();
-              triggerConditionEvaluation(request.patientId(), created);
+              if (!patientReported) {
+                triggerConditionEvaluation(request.patientId(), created);
+              }
               return observationMapper.toResponse(created);
             })
         .toList();
+  }
+
+  private void requireEncounterOfSamePatient(VitalsRequest request) {
+    if (request.encounterId() == null) {
+      return;
+    }
+    EncounterResponse encounter;
+    try {
+      encounter = encounterService.getEncounter(request.encounterId());
+    } catch (ResourceNotFoundException e) {
+      throw new ReferenceValidationException("Encounter", request.encounterId());
+    }
+    if (!request.patientId().equals(encounter.patientId())) {
+      throw new ReferenceValidationException(
+          "Encounter", request.encounterId(), request.patientId());
+    }
   }
 
   public PageResponse<ObservationResponse> getVitals(String patientId, String type) {

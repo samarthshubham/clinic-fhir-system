@@ -3,6 +3,8 @@ package io.github.samarthshubham.clinic.service;
 import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException;
 import io.github.samarthshubham.clinic.config.AuthProperties;
 import io.github.samarthshubham.clinic.dto.PractitionerRequest;
+import io.github.samarthshubham.clinic.security.Role;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -24,12 +26,14 @@ public class StaffAccountBootstrap {
   @EventListener(ApplicationReadyEvent.class)
   public void upsertStaffPractitionersOnStartup() {
     try {
-      for (AuthProperties.User user : authProperties.users()) {
+      List<AuthProperties.User> staff =
+          authProperties.users().stream().filter(user -> user.role() != Role.PATIENT).toList();
+      for (AuthProperties.User user : staff) {
         practitionerService.upsertStaffPractitioner(
             user.username(),
             new PractitionerRequest(user.firstName(), user.lastName(), user.title(), null, null));
       }
-      log.info("Upserted {} staff practitioners", authProperties.users().size());
+      log.info("Upserted {} staff practitioners", staff.size());
     } catch (BaseServerResponseException e) {
       log.warn("Staff practitioners not upserted, logins fall back to config: {}", e.getMessage());
     }

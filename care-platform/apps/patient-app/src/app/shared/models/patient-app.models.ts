@@ -24,15 +24,6 @@ export interface AppointmentResponse {
   status: string | null;
 }
 
-export interface PatientListItem {
-  id: string;
-  firstName: string;
-  lastName: string;
-  dob: string;
-  gender: string;
-  avatarHue: number;
-}
-
 export interface VitalReading {
   value: number | null;
   unit: string;

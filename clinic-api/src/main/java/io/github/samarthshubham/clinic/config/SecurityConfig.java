@@ -2,6 +2,7 @@ package io.github.samarthshubham.clinic.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.samarthshubham.clinic.security.JsonSecurityErrorHandler;
+import io.github.samarthshubham.clinic.security.PatientAccess;
 import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,6 +29,11 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 @Import(JwtConfig.class)
 public class SecurityConfig {
+
+  @Bean
+  PatientAccess patientAccess() {
+    return new PatientAccess();
+  }
 
   @Bean
   JsonSecurityErrorHandler jsonSecurityErrorHandler(ObjectMapper objectMapper) {

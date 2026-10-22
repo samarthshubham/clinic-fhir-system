@@ -2,6 +2,7 @@ package io.github.samarthshubham.clinic.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -45,7 +46,7 @@ class VitalsControllerTest {
 
   @Test
   void recordReturnsCreatedWithObservationList() {
-    when(vitalsService.recordVitals(any())).thenReturn(List.of(SYSTOLIC));
+    when(vitalsService.recordVitals(any(), eq(false))).thenReturn(List.of(SYSTOLIC));
 
     assertThat(
             mvc.post()
@@ -63,7 +64,8 @@ class VitalsControllerTest {
         .isStrictlyEqualTo("[" + SYSTOLIC_JSON + "]");
     verify(vitalsService)
         .recordVitals(
-            new VitalsRequest("p1", "e1", LocalDate.of(2024, 5, 1), 142, 91, 78.5, 97.0, 72, 36.8));
+            new VitalsRequest("p1", "e1", LocalDate.of(2024, 5, 1), 142, 91, 78.5, 97.0, 72, 36.8),
+            false);
   }
 
   @Test

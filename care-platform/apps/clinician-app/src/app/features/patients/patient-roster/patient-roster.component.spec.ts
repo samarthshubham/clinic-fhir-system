@@ -5,8 +5,7 @@ import { PatientRosterComponent } from './patient-roster.component';
 import { PatientService } from '@features/patients/services/patient.service';
 import { PatientListItem } from '@features/patients/models/patient-list-item.model';
 import { computed, signal } from '@angular/core';
-import { AuthService } from '@core/auth.service';
-import { AuthUser, Role } from '@core/auth.models';
+import { AuthService, AuthUser, Role } from '@care-platform/auth';
 
 function fakeAuth(...roles: Role[]) {
   const user = signal<AuthUser | null>(
@@ -16,6 +15,7 @@ function fakeAuth(...roles: Role[]) {
           name: 'Anika Patel',
           title: 'Internal Medicine',
           practitionerId: 'user-clinician',
+          patientId: null,
           roles,
         }
       : null,
@@ -274,6 +274,7 @@ describe('PatientRosterComponent', () => {
       name: 'Jordan Lee',
       title: null,
       practitionerId: null,
+      patientId: null,
       roles: ['FRONT_DESK'],
     });
     const fixture = await loaded();

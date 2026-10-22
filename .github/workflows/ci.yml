@@ -85,8 +85,8 @@ jobs:
 
       - run: npm ci
 
-      - name: Lint clinician-app
-        run: npx nx lint clinician-app
+      - name: Lint clinician-app and the auth library
+        run: npx nx run-many -t lint -p clinician-app auth
 
       - name: Lint changed files in other apps
         if: github.event_name == 'pull_request'
@@ -105,6 +105,9 @@ jobs:
       - name: Test seed-demo-data with coverage
         run: npx nx test seed-demo-data --coverage
 
+      - name: Test the auth library with coverage
+        run: npx nx test auth --coverage --watch=false
+
       - name: Build
         run: npx nx build clinician-app
 
@@ -119,6 +122,12 @@ jobs:
         with:
           name: seed-demo-data-coverage
           path: care-platform/coverage/seed-demo-data/lcov.info
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: auth-coverage
+          path: care-platform/coverage/auth/lcov.info
 
   coverage-gate:
     if: github.event_name == 'pull_request' && !cancelled()
@@ -165,13 +174,20 @@ jobs:
           name: seed-demo-data-coverage
           path: reports/seed-demo-data
 
+      - uses: actions/download-artifact@v4
+        if: needs.frontend.result == 'success'
+        with:
+          name: auth-coverage
+          path: reports/auth
+
       - name: Frontend changed lines must be at least 70% covered
         if: needs.frontend.result == 'success'
         run: |
           sed 's|^SF:apps/|SF:care-platform/apps/|' reports/frontend/lcov.info > reports/frontend/lcov-repo.info
           sed 's|^SF:apps/|SF:care-platform/apps/|' reports/seed-demo-data/lcov.info > reports/seed-demo-data/lcov-repo.info
+          sed 's|^SF:libs/|SF:care-platform/libs/|' reports/auth/lcov.info > reports/auth/lcov-repo.info
           status=0
-          diff-cover reports/frontend/lcov-repo.info reports/seed-demo-data/lcov-repo.info \
+          diff-cover reports/frontend/lcov-repo.info reports/seed-demo-data/lcov-repo.info reports/auth/lcov-repo.info \
             --compare-branch="origin/${{ github.base_ref }}" --fail-under=70 \
             --format markdown:frontend.md || status=1
           { echo "## Frontend changed-line coverage"; cat frontend.md; } >> "$GITHUB_STEP_SUMMARY"

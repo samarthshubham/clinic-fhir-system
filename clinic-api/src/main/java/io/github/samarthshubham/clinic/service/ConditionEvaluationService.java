@@ -5,6 +5,7 @@ import ca.uhn.fhir.rest.gclient.ReferenceClientParam;
 import ca.uhn.fhir.rest.gclient.TokenClientParam;
 import io.github.samarthshubham.clinic.config.ClinicalThresholds;
 import io.github.samarthshubham.clinic.dto.ConditionRequest;
+import io.github.samarthshubham.clinic.mapper.ObservationMapper;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ public class ConditionEvaluationService {
   private static final String HYPERTENSION_CODE = "59621000";
   private static final String LOW_SPO2_CODE = "86290005";
   private static final String LOINC_SYSTEM = "http://loinc.org";
+  private static final int EVALUATION_SEARCH_SIZE = 20;
 
   private static final Map<String, String> VITAL_LOINC =
       Map.of(
@@ -88,13 +90,15 @@ public class ConditionEvaluationService {
                     .systemAndCode(LOINC_SYSTEM, VITAL_LOINC.get(type)))
             .sort()
             .descending("date")
-            .count(n)
+            .count(EVALUATION_SEARCH_SIZE)
             .returnBundle(Bundle.class)
             .execute();
     if (bundle.getEntry() == null) return List.of();
     return bundle.getEntry().stream()
         .map(e -> (Observation) e.getResource())
+        .filter(obs -> !ObservationMapper.isPatientReported(obs))
         .filter(obs -> obs.getValue() instanceof Quantity q && q.hasValue())
+        .limit(n)
         .map(obs -> ((Quantity) obs.getValue()).getValue().doubleValue())
         .toList();
   }

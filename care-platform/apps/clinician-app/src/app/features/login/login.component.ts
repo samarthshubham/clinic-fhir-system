@@ -11,8 +11,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, exhaustMap, map, of, startWith, Subject, tap } from 'rxjs';
-import { AuthService } from '@core/auth.service';
+import { catchError, exhaustMap, map, of, startWith, Subject } from 'rxjs';
+import { AuthService } from '@care-platform/auth';
 import { DEMO_ACCOUNTS } from './demo-accounts';
 
 interface Credentials {
@@ -61,8 +61,17 @@ export class LoginComponent {
     this.submit$.pipe(
       exhaustMap(({ username, password }) =>
         this.auth.login(username, password).pipe(
-          tap(() => this.router.navigateByUrl(this.returnUrl())),
-          map((): LoginState => ({ status: 'success' })),
+          map((user): LoginState => {
+            if (user.roles.includes('PATIENT')) {
+              this.auth.logout();
+              return {
+                status: 'error',
+                message: "This account can't use the clinician app.",
+              };
+            }
+            this.router.navigateByUrl(this.returnUrl());
+            return { status: 'success' };
+          }),
           catchError((error) => of(this.failure(error))),
           startWith<LoginState>({ status: 'submitting' }),
         ),

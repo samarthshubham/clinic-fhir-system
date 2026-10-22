@@ -62,6 +62,22 @@
   }
 }
 
+.pa-login-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 24px;
+  padding: 24px 16px 16px;
+  background: var(--px-surface);
+  border: 1px solid var(--px-border);
+  border-radius: 16px;
+}
+
+.pa-login-error {
+  margin: 0 0 8px;
+  color: var(--px-crit);
+}
+
 .pa-select-list {
   margin-top: 20px;
   background: var(--px-surface);
@@ -90,15 +106,8 @@
   &:active {
     background: var(--px-surface-2);
   }
-  &.selected {
-    background: color-mix(in srgb, var(--px-accent) 8%, transparent);
-  }
-
-  &--shimmer {
+  &:disabled {
     cursor: default;
-    &:active {
-      background: transparent;
-    }
   }
 }
 
@@ -117,11 +126,6 @@
   color: var(--px-text-subtle);
   margin-top: 2px;
   text-transform: capitalize;
-}
-
-.pa-select-chev {
-  color: var(--px-text-subtle);
-  flex-shrink: 0;
 }
 
 .pa-select-footer {
