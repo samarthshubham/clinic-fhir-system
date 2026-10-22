@@ -2,46 +2,18 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import {
-  PatientListItem,
   SnapshotResponse,
   DashboardResponse,
   TrendsApiResponse,
   AppointmentItem,
   PostVitalsRequest,
-  PageResponse,
-  PatientResponse,
   AppointmentResponse,
+  PageResponse,
 } from '../models/patient-app.models';
-
-function hashHue(str: string): number {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) {
-    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
-  }
-  return ((h % 360) + 360) % 360;
-}
 
 @Injectable({ providedIn: 'root' })
 export class PatientAppService {
   private readonly http = inject(HttpClient);
-
-  getPatients(): Observable<PatientListItem[]> {
-    return this.http.get<PageResponse<PatientResponse>>('/api/patients').pipe(
-      map((page) =>
-        page.items.map(
-          (p) =>
-            ({
-              id: p.id,
-              firstName: p.firstName ?? '',
-              lastName: p.lastName ?? '',
-              dob: p.dateOfBirth ?? '',
-              gender: p.gender ?? '',
-              avatarHue: hashHue(p.id),
-            }) satisfies PatientListItem,
-        ),
-      ),
-    );
-  }
 
   getSnapshot(patientId: string): Observable<SnapshotResponse> {
     return this.http.get<SnapshotResponse>(

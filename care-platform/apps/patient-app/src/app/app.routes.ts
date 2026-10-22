@@ -1,5 +1,5 @@
 import { Route } from '@angular/router';
-import { patientSelectedGuard } from './shared/guards/patient-selected.guard';
+import { authGuard, guestGuard } from '@care-platform/auth';
 
 export const appRoutes: Route[] = [
   {
@@ -8,21 +8,20 @@ export const appRoutes: Route[] = [
     pathMatch: 'full',
   },
   {
-    path: 'select',
+    path: 'login',
+    canActivate: [guestGuard],
     loadComponent: () =>
-      import('./features/patient-select/patient-select.component').then(
-        (m) => m.PatientSelectComponent,
-      ),
+      import('./features/login/login.component').then((m) => m.LoginComponent),
   },
   {
     path: 'home',
-    canActivate: [patientSelectedGuard],
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/home/home.component').then((m) => m.HomeComponent),
   },
   {
     path: 'vitals',
-    canActivate: [patientSelectedGuard],
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/vitals/vitals.component').then(
         (m) => m.VitalsComponent,
@@ -30,7 +29,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'vitals/record',
-    canActivate: [patientSelectedGuard],
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/vitals/record-vitals/record-vitals.component').then(
         (m) => m.RecordVitalsComponent,
@@ -38,7 +37,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'messages',
-    canActivate: [patientSelectedGuard],
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/messages/messages.component').then(
         (m) => m.MessagesComponent,
@@ -46,7 +45,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'profile',
-    canActivate: [patientSelectedGuard],
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/profile/profile.component').then(
         (m) => m.ProfileComponent,

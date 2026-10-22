@@ -4,7 +4,7 @@ import {
   computed,
   inject,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { AuthService } from '@care-platform/auth';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { catchError, of, startWith } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -23,7 +23,7 @@ import { CpAvatarComponent } from '../../shared/components/cp-avatar/cp-avatar.c
 export class ProfileComponent {
   private readonly svc = inject(PatientAppService);
   private readonly selectSvc = inject(PatientSelectService);
-  private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
   readonly theme = inject(ThemeService);
 
   private readonly patientId = this.selectSvc.selectedId()!;
@@ -102,8 +102,7 @@ export class ProfileComponent {
     }
   }
 
-  switchProfile(): void {
-    this.selectSvc.clear();
-    this.router.navigate(['/select']);
+  signOut(): void {
+    this.auth.logout();
   }
 }
