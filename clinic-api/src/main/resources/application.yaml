@@ -24,6 +24,11 @@ clinic:
     webhook-url: http://host.docker.internal:9090/api/alerts/bp-subscription
     webhook-secret: ${CLINIC_ALERTS_WEBHOOK_SECRET:dev-only-alert-secret}
     first-lookback: 24h
+  auth:
+    jwt-secret: ${CLINIC_JWT_SECRET:}
+    issuer: clinic-api
+    access-token-ttl: 15m
+    refresh-token-ttl: 7d
 
 logging:
   level:

@@ -1,6 +1,8 @@
 import { appRoutes } from './app.routes';
 import { PatientRosterComponent } from './features/patients/patient-roster/patient-roster.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
+import { LoginComponent } from './features/login/login.component';
+import { authGuard, guestGuard } from '@core/auth.guard';
 
 describe('appRoutes', () => {
   function route(path: string) {
@@ -26,5 +28,16 @@ describe('appRoutes', () => {
     expect(await route('patients/:id').loadComponent?.()).toBe(
       DashboardComponent,
     );
+  });
+
+  it('should lazy load the login page for signed-out users only', async () => {
+    expect(route('login').canActivate).toEqual([guestGuard]);
+    expect(await route('login').loadComponent?.()).toBe(LoginComponent);
+  });
+
+  it('should require sign-in for the roster and a clinical role for charts', () => {
+    expect(route('patients').canActivate).toEqual([authGuard]);
+    expect(route('patients/:id').canActivate?.[0]).toBe(authGuard);
+    expect(route('patients/:id').canActivate).toHaveLength(2);
   });
 });

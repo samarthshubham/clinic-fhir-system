@@ -61,7 +61,7 @@ Target: 1–2 weeks. Single Spring Boot monolith. No microservices yet.
 - [ ] Wire `/api/dashboard`, `/snapshot`, `/trends`, `/timeline` to clinician-app
 - [ ] Encounter list in patient detail
 - [ ] CORS configuration (needed for any non-proxied deployment)
-- [ ] Auth / JWT
+- [x] Auth / JWT — login + refresh, roles → permissions, `@PreAuthorize` on every endpoint, clinician-app login (see [10-auth.md](./10-auth.md))
 
 ---
 
@@ -87,7 +87,6 @@ Target: 1–2 weeks. Single Spring Boot monolith. No microservices yet.
 |---|---|
 | Patient `PUT` update | Read-then-update pattern adds complexity |
 | Pagination on search | Not needed for demo data volume |
-| Spring Security / JWT | Adds significant setup without portfolio value at this stage |
 | patient-app features | Scaffolded; clinician-app is the active app |
 
 ---
@@ -128,7 +127,7 @@ Frontend (care-platform)
   ○ Wire dashboard/snapshot/trends/timeline to clinician-app
   ○ Encounter list in patient detail
   ○ CORS config
-  ○ Auth / JWT
+  ✓ Auth / JWT (Spring Security resource server, HS256, ADMIN / CLINICIAN / FRONT_DESK)
 
 Phase 5 — Clinical Dashboard Backend
   ✓ 11 FHIR resource types (Patient, Encounter, Observation + 8 new)

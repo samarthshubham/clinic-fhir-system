@@ -166,14 +166,16 @@
         <ng-container matColumnDef="actions" stickyEnd>
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let p" class="roster__cell-end">
-            <button
-              class="roster__chev"
-              [attr.aria-label]="'View ' + p.name"
-              (click)="viewPatient(p.id); $event.stopPropagation()"
-              [matTooltip]="'View ' + p.name"
-            >
-              <mat-icon aria-hidden="true">chevron_right</mat-icon>
-            </button>
+            @if (canOpenChart()) {
+              <button
+                class="roster__chev"
+                [attr.aria-label]="'View ' + p.name"
+                (click)="viewPatient(p.id); $event.stopPropagation()"
+                [matTooltip]="'View ' + p.name"
+              >
+                <mat-icon aria-hidden="true">chevron_right</mat-icon>
+              </button>
+            }
           </td>
         </ng-container>
 
@@ -187,7 +189,8 @@
           mat-row
           *matRowDef="let row; columns: displayedColumns"
           class="roster__row"
-          tabindex="0"
+          [class.roster__row--static]="!canOpenChart()"
+          [attr.tabindex]="canOpenChart() ? 0 : null"
           role="row"
           [attr.aria-label]="'Patient: ' + row.name"
           (click)="viewPatient(row.id)"

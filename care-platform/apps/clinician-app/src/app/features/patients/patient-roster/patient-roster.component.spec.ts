@@ -4,6 +4,30 @@ import { Subject } from 'rxjs';
 import { PatientRosterComponent } from './patient-roster.component';
 import { PatientService } from '@features/patients/services/patient.service';
 import { PatientListItem } from '@features/patients/models/patient-list-item.model';
+import { computed, signal } from '@angular/core';
+import { AuthService } from '@core/auth.service';
+import { AuthUser, Role } from '@core/auth.models';
+
+function fakeAuth(...roles: Role[]) {
+  const user = signal<AuthUser | null>(
+    roles.length
+      ? {
+          username: 'clinician',
+          name: 'Anika Patel',
+          title: 'Internal Medicine',
+          practitionerId: 'user-clinician',
+          roles,
+        }
+      : null,
+  );
+  return {
+    user,
+    isAuthenticated: computed(() => user() !== null),
+    hasRole: (...wanted: Role[]) =>
+      wanted.some((role) => user()?.roles.includes(role) ?? false),
+    logout: vi.fn(),
+  };
+}
 
 const patients: PatientListItem[] = [
   {
@@ -33,14 +57,17 @@ const patients: PatientListItem[] = [
 describe('PatientRosterComponent', () => {
   let calls: Subject<PatientListItem[]>[];
   let navigate: ReturnType<typeof vi.fn>;
+  let auth: ReturnType<typeof fakeAuth>;
 
   beforeEach(async () => {
     vi.useFakeTimers();
     calls = [];
+    auth = fakeAuth('CLINICIAN');
     await TestBed.configureTestingModule({
       imports: [PatientRosterComponent],
       providers: [
         provideRouter([]),
+        { provide: AuthService, useValue: auth },
         {
           provide: PatientService,
           useValue: {
@@ -239,6 +266,26 @@ describe('PatientRosterComponent', () => {
 
     expect(navigate).toHaveBeenCalledTimes(1);
     expect(navigate).toHaveBeenCalledWith(['/patients', 'p3']);
+  });
+
+  it('should not open charts for the front desk', async () => {
+    auth.user.set({
+      username: 'frontdesk',
+      name: 'Jordan Lee',
+      title: null,
+      practitionerId: null,
+      roles: ['FRONT_DESK'],
+    });
+    const fixture = await loaded();
+    const row: HTMLElement =
+      fixture.nativeElement.querySelector('.roster__row');
+
+    row.click();
+
+    expect(fixture.nativeElement.querySelector('.roster__chev')).toBeNull();
+    expect(row.classList).toContain('roster__row--static');
+    expect(row.hasAttribute('tabindex')).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('should do nothing yet for the new patient button', async () => {

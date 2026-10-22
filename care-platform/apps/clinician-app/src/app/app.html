@@ -1,7 +1,9 @@
 <a href="#main-content" class="cp-skip-link">Skip to main content</a>
 
 <div class="app-container">
+  @if (auth.isAuthenticated()) {
   <cp-topbar />
+  }
 
   <main id="main-content" class="app-main" tabindex="-1">
     <router-outlet />

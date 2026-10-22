@@ -10,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.actuate.observability.AutoCon
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
@@ -46,6 +47,7 @@ class ActuatorEndpointsTest {
   }
 
   @Test
+  @WithMockUser
   void unlistedEndpointsAreNotExposed() {
     assertThat(mvc.get().uri("/actuator/env")).hasStatus(HttpStatus.NOT_FOUND);
   }

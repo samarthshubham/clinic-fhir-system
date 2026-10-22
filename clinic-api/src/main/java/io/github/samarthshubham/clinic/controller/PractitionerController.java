@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +25,7 @@ public class PractitionerController {
     this.practitionerService = practitionerService;
   }
 
+  @PreAuthorize("hasAuthority('practitioner:write')")
   @PostMapping
   public ResponseEntity<PractitionerResponse> createPractitioner(
       @Valid @RequestBody PractitionerRequest request) {
@@ -31,6 +33,7 @@ public class PractitionerController {
         .body(practitionerService.createPractitioner(request));
   }
 
+  @PreAuthorize("hasAuthority('practitioner:read')")
   @GetMapping("/{id}")
   public ResponseEntity<PractitionerResponse> getPractitioner(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(practitionerService.getPractitioner(id));

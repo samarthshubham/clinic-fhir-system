@@ -65,4 +65,20 @@ class PractitionerMapperTest {
     assertThat(mapper.toResponse(practitioner))
         .isEqualTo(new PractitionerResponse("dr1", null, null, null, null, null));
   }
+
+  @Test
+  void staffPractitionerCarriesFixedIdAndUsernameIdentifier() {
+    Practitioner practitioner =
+        mapper.toStaffFhir(
+            "user-clinician",
+            "clinician",
+            new PractitionerRequest("Anika", "Patel", "Internal Medicine", null, null));
+
+    assertThat(practitioner.getIdElement().getIdPart()).isEqualTo("user-clinician");
+    Identifier username = practitioner.getIdentifierFirstRep();
+    assertThat(username.getSystem()).isEqualTo(PractitionerMapper.USERNAME_SYSTEM);
+    assertThat(username.getValue()).isEqualTo("clinician");
+    assertThat(practitioner.getQualificationFirstRep().getCode().getText())
+        .isEqualTo("Internal Medicine");
+  }
 }

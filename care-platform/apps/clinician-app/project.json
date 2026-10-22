@@ -36,7 +36,13 @@
               "maximumError": "12kb"
             }
           ],
-          "outputHashing": "all"
+          "outputHashing": "all",
+          "fileReplacements": [
+            {
+              "replace": "apps/clinician-app/src/app/features/login/demo-accounts.ts",
+              "with": "apps/clinician-app/src/app/features/login/demo-accounts.prod.ts"
+            }
+          ]
         },
         "development": {
           "optimization": false,

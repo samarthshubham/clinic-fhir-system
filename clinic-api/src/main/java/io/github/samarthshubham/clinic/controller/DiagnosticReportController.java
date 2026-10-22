@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +26,7 @@ public class DiagnosticReportController {
     this.diagnosticReportService = diagnosticReportService;
   }
 
+  @PreAuthorize("hasAuthority('order:write')")
   @PostMapping
   public ResponseEntity<DiagnosticReportResponse> createDiagnosticReport(
       @Valid @RequestBody DiagnosticReportRequest request) {
@@ -32,6 +34,7 @@ public class DiagnosticReportController {
         .body(diagnosticReportService.createDiagnosticReport(request));
   }
 
+  @PreAuthorize("hasAuthority('clinical:read')")
   @GetMapping
   public ResponseEntity<PageResponse<DiagnosticReportResponse>> getDiagnosticReportsForPatient(
       @RequestParam @NotBlank String patientId) {

@@ -36,26 +36,28 @@
         (keydown.space)="placeholder('Schedule'); $event.preventDefault()"
         >Schedule</a
       >
-      <a
-        class="cp-topbar__nav-item"
-        role="button"
-        tabindex="0"
-        (click)="placeholder('Orders')"
-        (keydown.enter)="placeholder('Orders')"
-        (keydown.space)="placeholder('Orders'); $event.preventDefault()"
-        >Orders</a
-      >
-      <a
-        class="cp-topbar__nav-item"
-        role="button"
-        tabindex="0"
-        (click)="placeholder('Inbox')"
-        (keydown.enter)="placeholder('Inbox')"
-        (keydown.space)="placeholder('Inbox'); $event.preventDefault()"
-      >
-        Inbox
-        <span class="cp-topbar__nav-badge">3</span>
-      </a>
+      @if (canSeeClinical()) {
+        <a
+          class="cp-topbar__nav-item"
+          role="button"
+          tabindex="0"
+          (click)="placeholder('Orders')"
+          (keydown.enter)="placeholder('Orders')"
+          (keydown.space)="placeholder('Orders'); $event.preventDefault()"
+          >Orders</a
+        >
+        <a
+          class="cp-topbar__nav-item"
+          role="button"
+          tabindex="0"
+          (click)="placeholder('Inbox')"
+          (keydown.enter)="placeholder('Inbox')"
+          (keydown.space)="placeholder('Inbox'); $event.preventDefault()"
+        >
+          Inbox
+          <span class="cp-topbar__nav-badge">3</span>
+        </a>
+      }
     </nav>
   </div>
 
@@ -76,12 +78,26 @@
       <mat-icon>notifications</mat-icon>
       <span class="cp-topbar__dot" aria-hidden="true"></span>
     </button>
-    <div class="cp-topbar__user">
-      <div class="cp-topbar__user-avatar" aria-hidden="true">AP</div>
-      <div class="cp-topbar__user-meta">
-        <span class="cp-topbar__user-name">Dr. A. Patel</span>
-        <span class="cp-topbar__user-role">Internal Medicine</span>
+    @if (auth.user(); as user) {
+      <div class="cp-topbar__user">
+        <div class="cp-topbar__user-avatar" aria-hidden="true">
+          {{ initials() }}
+        </div>
+        <div class="cp-topbar__user-meta">
+          <span class="cp-topbar__user-name">{{ user.name }}</span>
+          <span class="cp-topbar__user-role"
+            >{{ roleLabel() }}{{ user.title ? ' · ' + user.title : '' }}</span
+          >
+        </div>
       </div>
-    </div>
+      <button
+        class="cp-topbar__iconbtn"
+        (click)="auth.logout()"
+        title="Sign out"
+        aria-label="Sign out"
+      >
+        <mat-icon>logout</mat-icon>
+      </button>
+    }
   </div>
 </header>

@@ -1,0 +1,64 @@
+// Login page — layout only. Colors via --px-* tokens.
+
+:host {
+  display: block;
+  height: 100%;
+}
+
+.login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: 24px 16px;
+  background: var(--px-bg);
+}
+
+.login__card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+  padding: 32px 24px;
+  background: var(--px-surface);
+  border: 1px solid var(--px-border);
+  border-radius: var(--px-radius);
+  box-shadow: var(--px-shadow);
+}
+
+.login__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.login__brand-name {
+  color: var(--px-text-strong);
+}
+
+.login__brand-sub,
+.login__demo-label {
+  color: var(--px-text-muted);
+}
+
+.login__error {
+  margin: 0 0 8px;
+  color: var(--px-crit);
+}
+
+.login__demo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--px-divider);
+}
+
+.login__demo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

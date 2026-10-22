@@ -8,11 +8,14 @@ import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException;
 import ca.uhn.fhir.rest.server.exceptions.ForbiddenOperationException;
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
+import io.github.samarthshubham.clinic.config.SecurityConfig;
 import io.github.samarthshubham.clinic.controller.PatientController;
+import io.github.samarthshubham.clinic.security.Role;
 import io.github.samarthshubham.clinic.service.PatientService;
 import io.github.samarthshubham.clinic.service.SnapshotService;
 import io.github.samarthshubham.clinic.service.TimelineService;
 import io.github.samarthshubham.clinic.service.TrendsService;
+import io.github.samarthshubham.clinic.support.WithRole;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -21,6 +24,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -28,6 +32,8 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 @WebMvcTest(PatientController.class)
+@Import(SecurityConfig.class)
+@WithRole(Role.ADMIN)
 class GlobalExceptionHandlerTest {
 
   @Autowired private MockMvcTester mvc;

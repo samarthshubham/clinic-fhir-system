@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { TitleCasePipe, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
+import { AuthService } from '@core/auth.service';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
@@ -56,6 +57,10 @@ import { PatientListItem } from '@features/patients/models/patient-list-item.mod
 export class PatientRosterComponent implements AfterViewInit {
   private readonly svc = inject(PatientService);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
+  protected readonly canOpenChart = computed(() =>
+    this.auth.hasRole('ADMIN', 'CLINICIAN'),
+  );
   private readonly destroyRef = inject(DestroyRef);
 
   readonly displayedColumns = [
@@ -152,6 +157,7 @@ export class PatientRosterComponent implements AfterViewInit {
   }
 
   viewPatient(id: string): void {
+    if (!this.canOpenChart()) return;
     this.router.navigate(['/patients', id]);
   }
 

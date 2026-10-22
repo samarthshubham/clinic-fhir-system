@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,12 +26,14 @@ public class CarePlanController {
     this.carePlanService = carePlanService;
   }
 
+  @PreAuthorize("hasAuthority('careplan:write')")
   @PostMapping
   public ResponseEntity<CarePlanResponse> createCarePlan(
       @Valid @RequestBody CarePlanRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(carePlanService.createCarePlan(request));
   }
 
+  @PreAuthorize("hasAuthority('clinical:read')")
   @GetMapping
   public ResponseEntity<PageResponse<CarePlanResponse>> getCarePlansForPatient(
       @RequestParam @NotBlank String patientId) {

@@ -3,20 +3,26 @@ package io.github.samarthshubham.clinic.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import io.github.samarthshubham.clinic.config.SecurityConfig;
 import io.github.samarthshubham.clinic.dto.DashboardResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
+import io.github.samarthshubham.clinic.security.Role;
 import io.github.samarthshubham.clinic.service.DashboardService;
+import io.github.samarthshubham.clinic.support.WithRole;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 @WebMvcTest(DashboardController.class)
+@Import(SecurityConfig.class)
+@WithRole(Role.ADMIN)
 class DashboardControllerTest {
 
   @Autowired private MockMvcTester mvc;

@@ -58,24 +58,52 @@ Project rules, from `CLAUDE.md`:
 
 **Everywhere:** correctness, null handling, error handling that does not swallow failures, injection, and auth bypasses.
 
-## 4. Post inline findings (CI only)
+## 4. Be explicit about depth
 
-For each finding, call `mcp__github_inline_comment__create_inline_comment` on the changed line. Start with a severity tag (`**Bug**`, `**Security**`, `**Rule**`), then say what goes wrong and how to fix it, in two to four sentences.
+A short review of a large range is only useful if it says what it skipped. While reviewing, keep track of:
+- files you **read closely**
+- files you only **skimmed** or **skipped**, and why (generated, lockfiles, Postman JSON, very large diffs)
+- what you **could not verify** (tests not run, behaviour that needs a running stack)
 
-## 5. Write the summary (CI only)
+For ranges over ~1,500 changed lines, put security-sensitive and logic-heavy files first: auth, controllers, services, mappers, interceptors and guards. Then tests, then docs.
+
+## 5. Post inline findings (CI only, optional)
+
+For findings tied to one line, also call `mcp__github_inline_comment__create_inline_comment` on that line. Start with the same severity tag and keep it to two to four sentences. The summary is the main output; inline comments only add to it.
+
+## 6. Write the summary (CI only)
 
 Write `review-summary.md` in the repository root. The workflow posts it as the single sticky PR comment and adds the "last reviewed" marker itself, so **do not** add any `<!-- … -->` markers.
 
 ```markdown
-## Claude review: <incremental (N new commits) | full>
+## Claude review: <incremental (N new commits) | full (N commits)>
 
-Reviewed `<base short>..<head short>`: <commit subjects, one per line>
+Reviewed `<base short>..<head short>`.
+
+**Scope.** Read closely: <files or areas>. Skimmed: <files>, because <reason>. Not reviewed: <files>, because <reason>.
 
 ### Findings
-- **Bug**: `path/File.java:42`: <one line>   (or "No new findings.")
+1. **<Bug | Security | Rule>: <one-line claim>.** `path/File.java:42`
+   <Concrete scenario: the input or state, then what goes wrong.> <The fix.>
+2. …
+
+(If there are none, write: "No new findings in the reviewed range.")
+
+### Security & patient data
+<Only when auth, tokens, permissions, PHI, logging or external calls changed. Say what you checked and the result, including what is fine.>
+
+### CLAUDE.md rules
+- FHIR types out of controllers/DTOs: <ok | violation at …>
+- `@Valid` and `{status, message}` errors: <ok | …>
+- `@PreAuthorize` + `AuthorizationMatrixTest` row for new endpoints: <ok | n/a | …>
+- Frontend RxJS-first and `--px-*` tokens: <ok | n/a | …>
+- Tests updated with behaviour: <ok | …>
 
 ### Resolved since last review
-- <earlier finding> (fixed in `<sha>`)   (omit the section if none)
+- <earlier finding>: fixed in `<sha>`. (Omit the section on a first review.)
+
+### Not verified
+- <e.g. tests not run here; behaviour that needs the running stack>
 ```
 
-If the range has nothing worth reporting, still write the file and say so. The job fails without it.
+Number the findings and order them by severity. Each one names a file and line, a concrete failure and a fix. If the range has nothing to report, still write the file with the Scope, Rules and Not verified sections. The job fails without it.

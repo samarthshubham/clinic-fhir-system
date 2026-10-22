@@ -2,6 +2,7 @@ import { APP_INITIALIZER, FactoryProvider } from '@angular/core';
 import { MatIconRegistry } from '@angular/material/icon';
 import { appConfig } from './app.config';
 import { ThemeService } from '@core/theme.service';
+import { AuthService } from '@core/auth.service';
 
 describe('appConfig', () => {
   const initializers = appConfig.providers.filter(
@@ -27,5 +28,14 @@ describe('appConfig', () => {
     expect(registry.setDefaultFontSetClass).toHaveBeenCalledWith(
       'material-symbols-outlined',
     );
+  });
+
+  it('should try to restore the session on startup', () => {
+    const auth = { restoreSession: vi.fn() };
+    const factory = initializers.find((p) => p.deps?.[0] === AuthService);
+
+    factory?.useFactory(auth)();
+
+    expect(auth.restoreSession).toHaveBeenCalled();
   });
 });

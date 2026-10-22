@@ -9,6 +9,7 @@ import io.github.samarthshubham.clinic.dto.PractitionerResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.PractitionerMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
+import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Practitioner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,5 +66,40 @@ class PractitionerServiceTest {
 
     assertThatThrownBy(() -> service.getPractitioner("x"))
         .isInstanceOf(InternalErrorException.class);
+  }
+
+  @Test
+  void upsertStaffPractitionerUpdatesUnderDeterministicId() {
+    service.upsertStaffPractitioner(
+        "frontdesk", new PractitionerRequest("Jordan", "Lee", "Front desk", null, null));
+
+    assertThat(fhir.updated())
+        .singleElement()
+        .satisfies(
+            resource ->
+                assertThat(resource.getIdElement().getIdPart()).isEqualTo("user-frontdesk"));
+  }
+
+  @Test
+  void findByUsernameSearchesTheUsernameIdentifier() {
+    Practitioner stored = new Practitioner();
+    stored.setId("user-clinician");
+    stored.addName().setFamily("Patel").addGiven("Anika");
+    Bundle bundle = new Bundle();
+    bundle.addEntry().setResource(stored);
+    fhir.givenSearchResultWhen(
+        Practitioner.class,
+        bundle,
+        "identifier=" + PractitionerMapper.USERNAME_SYSTEM + "|clinician");
+
+    assertThat(service.findByUsername("clinician"))
+        .hasValue(new PractitionerResponse("user-clinician", "Anika", "Patel", null, null, null));
+  }
+
+  @Test
+  void findByUsernameIsEmptyWhenNoPractitionerMatches() {
+    fhir.givenSearchResult(Practitioner.class, new Bundle());
+
+    assertThat(service.findByUsername("ghost")).isEmpty();
   }
 }

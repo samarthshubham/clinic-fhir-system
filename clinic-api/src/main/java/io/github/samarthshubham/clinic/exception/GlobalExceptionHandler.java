@@ -5,6 +5,7 @@ import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -15,8 +16,6 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-  record ErrorResponse(int status, String message) {}
 
   @ExceptionHandler(ResourceNotFoundException.class)
   public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
@@ -32,6 +31,12 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(UnauthorizedWebhookException.class)
   public ResponseEntity<ErrorResponse> handleUnauthorizedWebhook(UnauthorizedWebhookException ex) {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        .body(new ErrorResponse(401, ex.getMessage()));
+  }
+
+  @ExceptionHandler(AuthenticationException.class)
+  public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex) {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
         .body(new ErrorResponse(401, ex.getMessage()));
   }

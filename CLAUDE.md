@@ -29,19 +29,21 @@ PostgreSQL 15  (owned entirely by HAPI — Spring Boot never queries it directly
 ```
 clinic-api/         Spring Boot backend (Maven)
   src/main/java/io/github/samarthshubham/clinic/
-    config/         FhirConfig, ClinicalThresholds
+    config/         FhirConfig, ClinicalThresholds, SecurityConfig, JwtConfig, AuthProperties
+    security/       Role, Permission, RolePermissions, JsonSecurityErrorHandler
     controller/     PatientController, EncounterController, VitalsController,
                     PractitionerController, ConditionController, MedicationController,
                     AppointmentController, ServiceRequestController,
                     DiagnosticReportController, CarePlanController, GoalController,
-                    DashboardController, AlertController
+                    DashboardController, AlertController, AuthController
     service/        PatientService, EncounterService, VitalsService,
                     PractitionerService, ConditionService, MedicationService,
                     AppointmentService, ServiceRequestService, DiagnosticReportService,
                     CarePlanService, GoalService,
                     SnapshotService, TrendsService, TimelineService,
                     DashboardService, ConditionEvaluationService,
-                    HighBpAlertService, Notifier, LoggingSmsNotifier
+                    HighBpAlertService, Notifier, LoggingSmsNotifier,
+                    AuthService, TokenService, StaffAccountBootstrap
     mapper/         PatientMapper, EncounterMapper, ObservationMapper,
                     PractitionerMapper, ConditionMapper, MedicationMapper,
                     AppointmentMapper, ServiceRequestMapper, DiagnosticReportMapper,
@@ -58,7 +60,7 @@ clinic-api/         Spring Boot backend (Maven)
                     AlertItem, VitalReading, LatestVitals, GoalProgress,
                     DataPoint, BpSeries, SimpleSeries, ClinicianAlert  (all Java records)
     exception/      ResourceNotFoundException, ReferenceValidationException,
-                    GlobalExceptionHandler
+                    GlobalExceptionHandler, ErrorResponse
   seed-data/        13 Synthea FHIR R4 patient bundles + load.sh
   integration-tests/ Postman collection
 
@@ -90,6 +92,7 @@ docs/
   07-best-practices.md  Spring + FHIR patterns
   08-design-system.md   Angular Material M3 design system spec
   09-bp-alerts-demo.md  High BP subscription alerts + scripted demo
+  10-auth.md            JWT authentication + role → permission RBAC
 ```
 
 ---
@@ -348,6 +351,15 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 
 Base URL: `http://localhost:9090`
 
+### Auth (public)
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/auth/login` | `{username, password}` → `TokenResponse` (access 15 min + refresh 7 days) |
+| `POST` | `/api/auth/refresh` | `{refreshToken}` → new `TokenResponse` |
+
+Every other `/api/**` endpoint needs `Authorization: Bearer <accessToken>` (except the alert webhook). Each controller method has `@PreAuthorize("hasAuthority('<permission>')")`; `RolePermissions` maps roles to permissions — see `docs/10-auth.md`. New endpoints must get a `@PreAuthorize` and a row in `AuthorizationMatrixTest`. `@WebMvcTest` controller tests use `@Import(SecurityConfig.class)` + `@WithRole(Role.ADMIN)`.
+
 ### CRUD — return response DTOs (`application/json`)
 
 | Method | Path | Description |
@@ -561,7 +573,7 @@ color: #334155;
 - `GoalProgress`: add `baselineValue`
 - `LatestVitals`: add `heartRate`, `temperature` (non-blocking, tiles show "–" until added)
 
-**Post-revamp:** CORS config, auth/JWT, remove ApexCharts from `package.json`
+**Post-revamp:** CORS config, remove ApexCharts from `package.json`
 
 ---
 

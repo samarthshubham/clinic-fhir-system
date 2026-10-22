@@ -18,9 +18,21 @@
       "script": {
         "type": "text/javascript",
         "exec": [
+          "const useToken = (token) => pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + token });",
           "const token = pm.environment.get('BEARER_TOKEN');",
           "if (token) {",
-          "  pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + token });",
+          "  useToken(token);",
+          "} else {",
+          "  pm.sendRequest({",
+          "    url: pm.environment.get('baseUrl') + '/api/auth/login',",
+          "    method: 'POST',",
+          "    header: { 'Content-Type': 'application/json' },",
+          "    body: { mode: 'raw', raw: JSON.stringify({ username: pm.environment.get('username'), password: pm.environment.get('password') }) },",
+          "  }, (err, res) => {",
+          "    if (err || res.code !== 200) throw new Error('Login failed: ' + (err || res.code));",
+          "    pm.environment.set('BEARER_TOKEN', res.json().accessToken);",
+          "    useToken(res.json().accessToken);",
+          "  });",
           "}"
         ]
       }

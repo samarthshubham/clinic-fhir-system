@@ -25,7 +25,7 @@ Collections are independent — they share no state and can run in any order.
 11-goal.postman_collection.json             GoalController
 12-dashboard.postman_collection.json        DashboardController (full patient setup)
 
-clinic-local.postman_environment.json       Environment — baseUrl + fhirUrl
+clinic-local.postman_environment.json       Environment — baseUrl, fhirUrl, dev login
 ```
 
 ## Prerequisites
@@ -67,7 +67,7 @@ done
 
 ## Authentication
 
-The `BEARER_TOKEN` environment variable is included as a placeholder for future JWT support. Leave it empty — all collections inject an `Authorization: Bearer {{BEARER_TOKEN}}` header only when the variable is non-empty.
+Every collection's pre-request script sends `Authorization: Bearer {{BEARER_TOKEN}}`. When `BEARER_TOKEN` is empty it first logs in with the environment's `username` / `password` (dev `admin` account, which can also create practitioners) and stores the access token. Access tokens last 15 minutes; clear `BEARER_TOKEN` to force a fresh login. To check role restrictions by hand, switch `username` / `password` to `frontdesk` / `FrontDesk#2026` and watch the clinical requests return 403.
 
 ## Key Side Effects to Verify
 

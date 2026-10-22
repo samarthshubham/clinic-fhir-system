@@ -58,6 +58,8 @@ docker compose -f infra/docker-compose.yml up -d
 npx nx run seed-demo-data:seed
 ```
 
+The Spring Boot API requires a JWT, so a Cucumber `BeforeAll` hook (`src/support/hooks.ts`) logs in once before any scenario runs. It uses the dev `clinician` account by default; override it with `SEED_USERNAME` / `SEED_PASSWORD`. The account needs clinical write permissions (`CLINICIAN` or `ADMIN`). Calls that go straight to HAPI FHIR (patients, practitioners, organizations, cascade deletes) are not affected.
+
 Expected output on success:
 ```
 5 scenarios (5 passed)

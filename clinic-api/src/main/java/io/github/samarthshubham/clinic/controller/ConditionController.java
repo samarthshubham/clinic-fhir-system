@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +27,7 @@ public class ConditionController {
     this.conditionService = conditionService;
   }
 
+  @PreAuthorize("hasAuthority('condition:write')")
   @PostMapping
   public ResponseEntity<ConditionResponse> createCondition(
       @Valid @RequestBody ConditionRequest request) {
@@ -33,11 +35,13 @@ public class ConditionController {
         .body(conditionService.createCondition(request));
   }
 
+  @PreAuthorize("hasAuthority('clinical:read')")
   @GetMapping("/{id}")
   public ResponseEntity<ConditionResponse> getCondition(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(conditionService.getCondition(id));
   }
 
+  @PreAuthorize("hasAuthority('clinical:read')")
   @GetMapping
   public ResponseEntity<PageResponse<ConditionResponse>> getConditionsForPatient(
       @RequestParam @NotBlank String patientId) {
