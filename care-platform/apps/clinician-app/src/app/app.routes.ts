@@ -1,5 +1,5 @@
 import { Route } from '@angular/router';
-import { authGuard, guestGuard, roleGuard } from '@core/auth.guard';
+import { authGuard, guestGuard, roleGuard } from '@care-platform/auth';
 
 export const appRoutes: Route[] = [
   {
@@ -15,7 +15,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'patients',
-    canActivate: [authGuard],
+    canActivate: [authGuard, roleGuard('ADMIN', 'CLINICIAN', 'FRONT_DESK')],
     loadComponent: () =>
       import(
         './features/patients/patient-roster/patient-roster.component'

@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { TitleCasePipe, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { AuthService } from '@core/auth.service';
+import { AuthService } from '@care-platform/auth';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';

@@ -2,7 +2,7 @@ import { APP_INITIALIZER, FactoryProvider } from '@angular/core';
 import { MatIconRegistry } from '@angular/material/icon';
 import { appConfig } from './app.config';
 import { ThemeService } from '@core/theme.service';
-import { AuthService } from '@core/auth.service';
+import { AuthService } from '@care-platform/auth';
 
 describe('appConfig', () => {
   const initializers = appConfig.providers.filter(

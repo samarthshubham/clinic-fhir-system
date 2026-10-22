@@ -1,10 +1,11 @@
-export type Role = 'ADMIN' | 'CLINICIAN' | 'FRONT_DESK';
+export type Role = 'ADMIN' | 'CLINICIAN' | 'FRONT_DESK' | 'PATIENT';
 
 export interface AuthUser {
   username: string;
   name: string;
   title: string | null;
   practitionerId: string | null;
+  patientId: string | null;
   roles: Role[];
 }
 
