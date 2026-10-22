@@ -1,5 +1,7 @@
 package io.github.samarthshubham.clinic.security;
 
+import static io.github.samarthshubham.clinic.security.Permission.ALERT_READ;
+import static io.github.samarthshubham.clinic.security.Permission.ALERT_WRITE;
 import static io.github.samarthshubham.clinic.security.Permission.APPOINTMENT_READ;
 import static io.github.samarthshubham.clinic.security.Permission.APPOINTMENT_WRITE;
 import static io.github.samarthshubham.clinic.security.Permission.CAREPLAN_WRITE;
@@ -40,7 +42,9 @@ public final class RolePermissions {
           CONDITION_WRITE,
           MEDICATION_WRITE,
           ORDER_WRITE,
-          CAREPLAN_WRITE);
+          CAREPLAN_WRITE,
+          ALERT_READ,
+          ALERT_WRITE);
 
   private static final Map<Role, Set<Permission>> PERMISSIONS =
       Map.of(

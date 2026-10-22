@@ -53,7 +53,7 @@ class HighBpAlertServiceTest {
     fhir = new FhirClientStub();
     service =
         new HighBpAlertService(
-            fhir.client(), THRESHOLDS, notifier, WEBHOOK_URL, SECRET, FIRST_LOOKBACK);
+            fhir.client(), THRESHOLDS, List.of(notifier), WEBHOOK_URL, SECRET, FIRST_LOOKBACK);
   }
 
   @Test
@@ -95,7 +95,8 @@ class HighBpAlertServiceTest {
   @Test
   void subscriptionCriteriaFollowConfiguredCriticalThreshold() {
     ClinicalThresholds stricter = new ClinicalThresholds(140, 170, 90, 120, 95.0, 90.0);
-    new HighBpAlertService(fhir.client(), stricter, notifier, WEBHOOK_URL, SECRET, FIRST_LOOKBACK)
+    new HighBpAlertService(
+            fhir.client(), stricter, List.of(notifier), WEBHOOK_URL, SECRET, FIRST_LOOKBACK)
         .registerSubscription();
 
     assertThat(fhir.stored(Subscription.class, HighBpAlertService.SUBSCRIPTION_ID).getCriteria())
@@ -115,7 +116,7 @@ class HighBpAlertServiceTest {
     when(unreachable.update()).thenThrow(new FhirClientConnectionException("connection refused"));
     HighBpAlertService offline =
         new HighBpAlertService(
-            unreachable, THRESHOLDS, notifier, WEBHOOK_URL, SECRET, FIRST_LOOKBACK);
+            unreachable, THRESHOLDS, List.of(notifier), WEBHOOK_URL, SECRET, FIRST_LOOKBACK);
 
     offline.registerSubscriptionOnStartup();
 
@@ -180,7 +181,12 @@ class HighBpAlertServiceTest {
   void firstNotificationLookbackIsConfigurable() {
     HighBpAlertService shortLookback =
         new HighBpAlertService(
-            fhir.client(), THRESHOLDS, notifier, WEBHOOK_URL, SECRET, Duration.ofMinutes(5));
+            fhir.client(),
+            THRESHOLDS,
+            List.of(notifier),
+            WEBHOOK_URL,
+            SECRET,
+            Duration.ofMinutes(5));
     long before = System.currentTimeMillis();
 
     shortLookback.handleNotification();
@@ -262,9 +268,34 @@ class HighBpAlertServiceTest {
     assertThat(sentAlerts())
         .extracting(ClinicianAlert::observationReference)
         .containsExactly("Observation/obs-1", "Observation/obs-2", "Observation/obs-3");
-    assertThat(output)
-        .contains(
-            "Clinician alert failed for Patient/p2 (Observation/obs-2): IllegalStateException");
+    assertThat(output).contains("failed for Patient/p2 (Observation/obs-2): IllegalStateException");
+  }
+
+  @Test
+  void everyNotifierGetsTheAlertEvenWhenAnEarlierOneFails() {
+    Notifier failing =
+        alert -> {
+          throw new IllegalStateException("store down");
+        };
+    HighBpAlertService fanOut =
+        new HighBpAlertService(
+            fhir.client(),
+            THRESHOLDS,
+            List.of(failing, notifier),
+            WEBHOOK_URL,
+            SECRET,
+            FIRST_LOOKBACK);
+    fhir.givenSearchResult(
+        Observation.class, bundleOf(reading("obs-1", "Patient/p1", 1_000)), new Bundle());
+
+    fanOut.handleNotification();
+    fanOut.handleNotification();
+
+    assertThat(sentAlerts())
+        .extracting(ClinicianAlert::observationReference)
+        .containsExactly("Observation/obs-1");
+    assertThat(lastUpdatedLowerBound(fhir.lastSearchCriteria(Observation.class)))
+        .isNotEqualTo(new Date(1_000));
   }
 
   @Test

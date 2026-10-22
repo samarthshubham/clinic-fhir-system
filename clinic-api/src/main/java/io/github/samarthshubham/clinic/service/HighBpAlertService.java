@@ -12,6 +12,7 @@ import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Observation;
@@ -34,7 +35,7 @@ public class HighBpAlertService {
 
   private final IGenericClient fhirClient;
   private final ClinicalThresholds thresholds;
-  private final Notifier notifier;
+  private final List<Notifier> notifiers;
   private final String webhookUrl;
   private final String webhookSecret;
   private final Duration firstLookback;
@@ -43,13 +44,13 @@ public class HighBpAlertService {
   public HighBpAlertService(
       IGenericClient fhirClient,
       ClinicalThresholds thresholds,
-      Notifier notifier,
+      List<Notifier> notifiers,
       @Value("${clinic.alerts.webhook-url}") String webhookUrl,
       @Value("${clinic.alerts.webhook-secret}") String webhookSecret,
       @Value("${clinic.alerts.first-lookback}") Duration firstLookback) {
     this.fhirClient = fhirClient;
     this.thresholds = thresholds;
-    this.notifier = notifier;
+    this.notifiers = List.copyOf(notifiers);
     this.webhookUrl = webhookUrl;
     this.webhookSecret = webhookSecret;
     this.firstLookback = firstLookback;
@@ -122,17 +123,21 @@ public class HighBpAlertService {
             reading.getSubject().getReference(),
             "Observation/" + reading.getIdElement().getIdPart(),
             criticalReason());
-    try {
-      notifier.send(alert);
-      return true;
-    } catch (RuntimeException e) {
-      log.error(
-          "Clinician alert failed for {} ({}): {}",
-          alert.patientReference(),
-          alert.observationReference(),
-          e.getClass().getSimpleName());
-      return false;
+    boolean allSent = true;
+    for (Notifier notifier : notifiers) {
+      try {
+        notifier.send(alert);
+      } catch (RuntimeException e) {
+        log.error(
+            "Clinician alert via {} failed for {} ({}): {}",
+            notifier.getClass().getSimpleName(),
+            alert.patientReference(),
+            alert.observationReference(),
+            e.getClass().getSimpleName());
+        allSent = false;
+      }
     }
+    return allSent;
   }
 
   private Bundle criticalSystolicReadingsAfter(Date updatedAfter) {
