@@ -17,6 +17,8 @@ public class FlagMapper {
   public static final String HIGH_SYSTOLIC_BP = "high-systolic-bp";
   public static final String ALERT_IDENTIFIER_SYSTEM =
       "http://praxis.clinic/fhir/identifier/bp-alert";
+  public static final String ALERT_STATUS_TAG_SYSTEM =
+      "http://praxis.clinic/fhir/CodeSystem/alert-status";
   static final String FLAG_DETAIL_URL = "http://hl7.org/fhir/StructureDefinition/flag-detail";
   private static final String FLAG_CATEGORY_SYSTEM =
       "http://terminology.hl7.org/CodeSystem/flag-category";
@@ -24,7 +26,7 @@ public class FlagMapper {
   public Flag toFhir(ClinicianAlert alert, Instant raisedAt) {
     Flag flag = new Flag();
     flag.addIdentifier().setSystem(ALERT_IDENTIFIER_SYSTEM).setValue(alertKey(alert));
-    flag.setStatus(Flag.FlagStatus.ACTIVE);
+    setStatus(flag, Flag.FlagStatus.ACTIVE);
     flag.addCategory()
         .addCoding()
         .setSystem(FLAG_CATEGORY_SYSTEM)
@@ -36,6 +38,12 @@ public class FlagMapper {
     flag.getPeriod().setStart(Date.from(raisedAt));
     flag.addExtension(FLAG_DETAIL_URL, new Reference(alert.observationReference()));
     return flag;
+  }
+
+  public void setStatus(Flag flag, Flag.FlagStatus status) {
+    flag.setStatus(status);
+    flag.getMeta().getTag().removeIf(tag -> ALERT_STATUS_TAG_SYSTEM.equals(tag.getSystem()));
+    flag.getMeta().addTag(ALERT_STATUS_TAG_SYSTEM, status.toCode(), null);
   }
 
   public String alertKey(ClinicianAlert alert) {

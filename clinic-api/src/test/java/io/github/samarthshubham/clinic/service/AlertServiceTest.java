@@ -69,8 +69,8 @@ class AlertServiceTest {
     assertThat(page.items()).extracting(AlertResponse::id).containsExactly("f1");
     assertThat(fhir.lastSearchCriteria(Flag.class))
         .containsExactly(
-            "code=" + FlagMapper.ALERT_TYPE_SYSTEM + "|" + FlagMapper.HIGH_SYSTOLIC_BP,
-            "status=active",
+            "identifier=" + FlagMapper.ALERT_IDENTIFIER_SYSTEM + "|",
+            "_tag=" + FlagMapper.ALERT_STATUS_TAG_SYSTEM + "|active",
             "_sort=-date");
   }
 
@@ -80,7 +80,7 @@ class AlertServiceTest {
 
     service.getAlerts(null);
 
-    assertThat(fhir.lastSearchCriteria(Flag.class)).noneMatch(c -> c.startsWith("status="));
+    assertThat(fhir.lastSearchCriteria(Flag.class)).noneMatch(c -> c.startsWith("_tag="));
   }
 
   @Test
@@ -97,6 +97,9 @@ class AlertServiceTest {
             Flag.class,
             flag -> {
               assertThat(flag.getStatus()).isEqualTo(Flag.FlagStatus.INACTIVE);
+              assertThat(flag.getMeta().getTag())
+                  .singleElement()
+                  .satisfies(tag -> assertThat(tag.getCode()).isEqualTo("inactive"));
               assertThat(flag.getPeriod().hasEnd()).isTrue();
             });
   }
@@ -108,6 +111,20 @@ class AlertServiceTest {
     assertThat(service.acknowledge("f1").status()).isEqualTo("inactive");
 
     assertThat(fhir.updated()).isEmpty();
+    assertThat(fhir.deletedTags()).isEmpty();
+  }
+
+  @Test
+  void acknowledgeClearsALeftoverActiveTagOnAnInactiveFlag() {
+    Flag stale = acknowledgedFlag();
+    stale.getMeta().addTag(FlagMapper.ALERT_STATUS_TAG_SYSTEM, "active", null);
+    fhir.givenStored(stale, "f1");
+
+    service.acknowledge("f1");
+
+    assertThat(fhir.updated()).isEmpty();
+    assertThat(fhir.deletedTags())
+        .containsExactly("Flag/f1 " + FlagMapper.ALERT_STATUS_TAG_SYSTEM + "|active");
   }
 
   @Test
@@ -119,7 +136,7 @@ class AlertServiceTest {
 
   private Flag acknowledgedFlag() {
     Flag flag = mapper.toFhir(ALERT, Instant.parse("2026-10-22T10:00:00Z"));
-    flag.setStatus(Flag.FlagStatus.INACTIVE);
+    mapper.setStatus(flag, Flag.FlagStatus.INACTIVE);
     return flag;
   }
 }

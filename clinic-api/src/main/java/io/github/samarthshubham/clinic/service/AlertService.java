@@ -12,6 +12,8 @@ import java.time.Instant;
 import java.util.Date;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Flag;
+import org.hl7.fhir.r4.model.IdType;
+import org.hl7.fhir.r4.model.Meta;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -49,11 +51,14 @@ public class AlertService {
             .search()
             .forResource(Flag.class)
             .where(
-                new TokenClientParam("code")
-                    .exactly()
-                    .systemAndCode(FlagMapper.ALERT_TYPE_SYSTEM, FlagMapper.HIGH_SYSTOLIC_BP));
+                new TokenClientParam("identifier")
+                    .hasSystemWithAnyCode(FlagMapper.ALERT_IDENTIFIER_SYSTEM));
     if (status != null) {
-      query = query.and(new TokenClientParam("status").exactly().code(status));
+      query =
+          query.and(
+              new TokenClientParam("_tag")
+                  .exactly()
+                  .systemAndCode(FlagMapper.ALERT_STATUS_TAG_SYSTEM, status));
     }
     Bundle bundle = query.sort().descending("date").returnBundle(Bundle.class).execute();
     return PageMapper.toPage(bundle, Flag.class, flagMapper::toResponse);
@@ -66,10 +71,21 @@ public class AlertService {
     } catch (ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException e) {
       throw new ResourceNotFoundException("Flag", id);
     }
+    String active = Flag.FlagStatus.ACTIVE.toCode();
+    boolean taggedActive =
+        flag.getMeta().getTag(FlagMapper.ALERT_STATUS_TAG_SYSTEM, active) != null;
     if (flag.getStatus() != Flag.FlagStatus.INACTIVE) {
-      flag.setStatus(Flag.FlagStatus.INACTIVE);
+      flagMapper.setStatus(flag, Flag.FlagStatus.INACTIVE);
       flag.getPeriod().setEnd(Date.from(Instant.now()));
       fhirClient.update().resource(flag).execute();
+    }
+    if (taggedActive) {
+      fhirClient
+          .meta()
+          .delete()
+          .onResource(new IdType("Flag", flag.getIdElement().getIdPart()))
+          .meta(new Meta().addTag(FlagMapper.ALERT_STATUS_TAG_SYSTEM, active, null))
+          .execute();
     }
     return flagMapper.toResponse(flag);
   }

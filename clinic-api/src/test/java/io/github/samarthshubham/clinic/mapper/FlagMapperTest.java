@@ -36,6 +36,27 @@ class FlagMapperTest {
     assertThat(flag.getCode().getText()).isEqualTo("Systolic BP above 180 mmHg");
     assertThat(flag.getCategoryFirstRep().getCodingFirstRep().getCode()).isEqualTo("clinical");
     assertThat(flag.getPeriod().getStart().toInstant()).isEqualTo(RAISED_AT);
+    assertThat(flag.getMeta().getTag())
+        .singleElement()
+        .satisfies(
+            tag -> {
+              assertThat(tag.getSystem()).isEqualTo(FlagMapper.ALERT_STATUS_TAG_SYSTEM);
+              assertThat(tag.getCode()).isEqualTo("active");
+            });
+  }
+
+  @Test
+  void changingStatusReplacesTheSearchableStatusTag() {
+    Flag flag = mapper.toFhir(ALERT, RAISED_AT);
+    flag.getMeta().addTag("http://other.example/tags", "keep", null);
+
+    mapper.setStatus(flag, Flag.FlagStatus.INACTIVE);
+
+    assertThat(flag.getStatus()).isEqualTo(Flag.FlagStatus.INACTIVE);
+    assertThat(flag.getMeta().getTag())
+        .extracting(tag -> tag.getSystem() + "|" + tag.getCode())
+        .containsExactlyInAnyOrder(
+            "http://other.example/tags|keep", FlagMapper.ALERT_STATUS_TAG_SYSTEM + "|inactive");
   }
 
   @Test
