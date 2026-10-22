@@ -3,6 +3,7 @@ package io.github.samarthshubham.clinic.service;
 import static io.github.samarthshubham.clinic.support.FhirClientStub.bundleOf;
 import static io.github.samarthshubham.clinic.support.FhirClientStub.quantityObservation;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -15,11 +16,15 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import io.github.samarthshubham.clinic.dto.ObservationResponse;
 import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.dto.VitalsRequest;
+import io.github.samarthshubham.clinic.exception.ReferenceValidationException;
+import io.github.samarthshubham.clinic.mapper.EncounterMapper;
 import io.github.samarthshubham.clinic.mapper.ObservationMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
 import java.time.LocalDate;
 import java.util.List;
+import org.hl7.fhir.r4.model.Encounter;
 import org.hl7.fhir.r4.model.Observation;
+import org.hl7.fhir.r4.model.Reference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,7 +47,15 @@ class VitalsServiceTest {
   @BeforeEach
   void setUp() {
     fhir = new FhirClientStub();
-    service = new VitalsService(fhir.client(), new ObservationMapper(), conditionEvaluationService);
+    service =
+        new VitalsService(
+            fhir.client(),
+            new ObservationMapper(),
+            conditionEvaluationService,
+            new EncounterService(fhir.client(), new EncounterMapper()));
+    Encounter visit = new Encounter();
+    visit.setSubject(new Reference("Patient/" + PATIENT_ID));
+    fhir.givenStored(visit, "e1");
   }
 
   @Test
@@ -155,5 +168,32 @@ class VitalsServiceTest {
 
   private static VitalsRequest fullPanel() {
     return new VitalsRequest(PATIENT_ID, null, TODAY, 150, 95, 80.5, 93.0, 72, 37.1);
+  }
+
+  @Test
+  void rejectsAnEncounterOfAnotherPatient() {
+    Encounter otherVisit = new Encounter();
+    otherVisit.setSubject(new Reference("Patient/someone-else"));
+    fhir.givenStored(otherVisit, "e9");
+
+    assertThatThrownBy(
+            () ->
+                service.recordVitals(
+                    new VitalsRequest(PATIENT_ID, "e9", TODAY, 150, null, null, null, null, null)))
+        .isInstanceOf(ReferenceValidationException.class)
+        .hasMessage(
+            "Referenced Encounter with id 'e9' does not belong to Patient '" + PATIENT_ID + "'");
+    assertThat(fhir.created()).isEmpty();
+  }
+
+  @Test
+  void rejectsAnUnknownEncounter() {
+    assertThatThrownBy(
+            () ->
+                service.recordVitals(
+                    new VitalsRequest(
+                        PATIENT_ID, "nope", TODAY, 150, null, null, null, null, null)))
+        .isInstanceOf(ReferenceValidationException.class)
+        .hasMessage("Referenced Encounter with id 'nope' does not exist");
   }
 }
