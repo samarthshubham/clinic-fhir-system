@@ -1,10 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  isDevMode,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   FormControl,
@@ -18,6 +13,7 @@ import { MatInputModule } from '@angular/material/input';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, exhaustMap, map, of, startWith, Subject, tap } from 'rxjs';
 import { AuthService } from '@core/auth.service';
+import { DEMO_ACCOUNTS } from './demo-accounts';
 
 interface Credentials {
   username: string;
@@ -29,12 +25,6 @@ type LoginState =
   | { status: 'submitting' }
   | { status: 'success' }
   | { status: 'error'; message: string };
-
-export const DEMO_ACCOUNTS: (Credentials & { label: string })[] = [
-  { label: 'Admin', username: 'admin', password: 'Admin#2026' },
-  { label: 'Clinician', username: 'clinician', password: 'Clinician#2026' },
-  { label: 'Front desk', username: 'frontdesk', password: 'FrontDesk#2026' },
-];
 
 @Component({
   selector: 'cp-login',
@@ -54,7 +44,7 @@ export class LoginComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly submit$ = new Subject<Credentials>();
 
-  protected readonly demoAccounts = isDevMode() ? DEMO_ACCOUNTS : [];
+  protected readonly demoAccounts = DEMO_ACCOUNTS;
 
   protected readonly form = new FormGroup({
     username: new FormControl('', {
