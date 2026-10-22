@@ -5,15 +5,18 @@ import io.github.samarthshubham.clinic.security.JsonSecurityErrorHandler;
 import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
+@Import(JwtConfig.class)
 public class SecurityConfig {
 
   @Bean
@@ -22,7 +25,10 @@ public class SecurityConfig {
   }
 
   @Bean
-  SecurityFilterChain securityFilterChain(HttpSecurity http, JsonSecurityErrorHandler errorHandler)
+  SecurityFilterChain securityFilterChain(
+      HttpSecurity http,
+      JsonSecurityErrorHandler errorHandler,
+      JwtAuthenticationConverter jwtAuthenticationConverter)
       throws Exception {
     http.csrf(AbstractHttpConfigurer::disable)
         .httpBasic(AbstractHttpConfigurer::disable)
@@ -42,6 +48,11 @@ public class SecurityConfig {
                     .permitAll()
                     .anyRequest()
                     .authenticated())
+        .oauth2ResourceServer(
+            resourceServer ->
+                resourceServer
+                    .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
+                    .authenticationEntryPoint(errorHandler))
         .exceptionHandling(
             exceptions ->
                 exceptions

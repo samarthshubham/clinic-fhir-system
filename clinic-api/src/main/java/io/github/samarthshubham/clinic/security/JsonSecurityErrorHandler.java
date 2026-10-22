@@ -5,10 +5,12 @@ import io.github.samarthshubham.clinic.exception.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 
@@ -26,7 +28,12 @@ public class JsonSecurityErrorHandler implements AuthenticationEntryPoint, Acces
       HttpServletResponse response,
       AuthenticationException authException)
       throws IOException {
-    write(response, HttpStatus.UNAUTHORIZED, "Authentication required");
+    response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
+    String message =
+        authException instanceof OAuth2AuthenticationException
+            ? "Invalid or expired token"
+            : "Authentication required";
+    write(response, HttpStatus.UNAUTHORIZED, message);
   }
 
   @Override
