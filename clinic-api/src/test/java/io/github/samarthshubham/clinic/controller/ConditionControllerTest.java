@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.github.samarthshubham.clinic.config.SecurityConfig;
 import io.github.samarthshubham.clinic.dto.ConditionRequest;
 import io.github.samarthshubham.clinic.dto.ConditionResponse;
 import io.github.samarthshubham.clinic.dto.PageResponse;
@@ -16,12 +17,16 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 @WebMvcTest(ConditionController.class)
+@Import(SecurityConfig.class)
+@WithMockUser(roles = "ADMIN")
 class ConditionControllerTest {
 
   private static final ConditionResponse HYPERTENSION =
