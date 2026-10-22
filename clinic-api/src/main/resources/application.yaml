@@ -25,29 +25,10 @@ clinic:
     webhook-secret: ${CLINIC_ALERTS_WEBHOOK_SECRET:dev-only-alert-secret}
     first-lookback: 24h
   auth:
-    jwt-secret: ${CLINIC_JWT_SECRET:dev-only-jwt-secret-change-me-in-prod-0123456789}
+    jwt-secret: ${CLINIC_JWT_SECRET:}
     issuer: clinic-api
     access-token-ttl: 15m
     refresh-token-ttl: 7d
-    users:
-      - username: admin
-        password-hash: $2a$10$XNEJn.LngnNkEc3x870ZSeo9Wd66lnbKx.8yHuCxv8MC.Sf/TRsSK
-        role: ADMIN
-        first-name: Alex
-        last-name: Morgan
-        title: Clinic administrator
-      - username: clinician
-        password-hash: $2a$10$wBKnQtPS0VbGmcAWzNlyH.0Q4nmV4j7JOQqPzUdSTLYkKtZjdQ8Ze
-        role: CLINICIAN
-        first-name: Anika
-        last-name: Patel
-        title: Internal Medicine
-      - username: frontdesk
-        password-hash: $2a$10$ae4pXkgrLDkZTzlTyz49GeCOtsjnv7pw2th3ZWnIEFKaKLgK8mrf6
-        role: FRONT_DESK
-        first-name: Jordan
-        last-name: Lee
-        title: Front desk
 
 logging:
   level:

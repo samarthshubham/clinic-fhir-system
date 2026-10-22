@@ -73,7 +73,7 @@ Grafana loads the **Clinic → clinic-api** dashboard (request rate, p50/p95/p99
 
 ### Demo logins (dev only)
 
-The API and clinician-app require a login. These accounts are defined in `clinic-api/src/main/resources/application.yaml` for local development; in dev builds the login page has one-click buttons for each.
+The API and clinician-app require a login. These accounts live in the `dev` Spring profile (`clinic-api/src/main/resources/application-dev.yaml`), which `./mvnw spring-boot:run` and `dev.sh` turn on automatically. In development builds of clinician-app, the login page has a one-click button for each account.
 
 | Username | Password | Role | Can |
 |---|---|---|---|
@@ -81,7 +81,7 @@ The API and clinician-app require a login. These accounts are defined in `clinic
 | `clinician` | `Clinician#2026` | `CLINICIAN` | all clinical reads and writes |
 | `frontdesk` | `FrontDesk#2026` | `FRONT_DESK` | register patients, book appointments; no clinical data |
 
-Never deploy these: override `clinic.auth.users` and set `CLINIC_JWT_SECRET` outside local dev. In Swagger UI, call `POST /api/auth/login`, then click **Authorize** and paste the `accessToken`. See [docs/10-auth.md](./docs/10-auth.md).
+A packaged jar (`java -jar`) does not use the `dev` profile, so it has no demo users and refuses to start until `CLINIC_JWT_SECRET` (at least 32 bytes) is set; provide real users through `clinic.auth.users`. Production builds of clinician-app swap the quick-login accounts for an empty list (`fileReplacements`), so the passwords never reach the bundle. In Swagger UI, call `POST /api/auth/login`, then click **Authorize** and paste the `accessToken`. See [docs/10-auth.md](./docs/10-auth.md).
 
 > **First boot:** HAPI FHIR takes up to ~5 minutes to initialize on a fresh volume. Subsequent starts are much faster.
 

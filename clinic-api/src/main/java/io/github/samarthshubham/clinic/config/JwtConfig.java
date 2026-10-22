@@ -38,7 +38,9 @@ public class JwtConfig {
     byte[] secret = authProperties.jwtSecret().getBytes(StandardCharsets.UTF_8);
     if (secret.length < MIN_HS256_KEY_BYTES) {
       throw new IllegalStateException(
-          "clinic.auth.jwt-secret must be at least " + MIN_HS256_KEY_BYTES + " bytes for HS256");
+          "clinic.auth.jwt-secret (env CLINIC_JWT_SECRET) must be set to at least "
+              + MIN_HS256_KEY_BYTES
+              + " bytes for HS256");
     }
     return new SecretKeySpec(secret, "HmacSHA256");
   }

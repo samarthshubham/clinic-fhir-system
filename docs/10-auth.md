@@ -93,7 +93,7 @@ clinician-app                         clinic-api                              HA
 
 | What | Where | Why |
 |---|---|---|
-| Username, **BCrypt hash**, **role** | `clinic.auth.users` in `application.yaml` | config is trusted: only whoever deploys the app can change it |
+| Username, **BCrypt hash**, **role** | `clinic.auth.users`: demo users in `application-dev.yaml` (the `dev` profile only) | config is trusted: only whoever deploys the app can change it |
 | Display name, title, `practitionerId` | FHIR `Practitioner/user-<username>` with identifier `http://praxis.clinic/fhir/identifier/username` | staff are real clinic people, so they belong in the clinical record |
 
 Roles are kept out of HAPI on purpose. HAPI has no authentication of its own, so anyone who can reach port 8080 could promote themselves. `StaffAccountBootstrap` upserts the Practitioners at startup. If HAPI is down, login still works and falls back to the name in config.
@@ -127,7 +127,7 @@ The full matrix is in [02-api-design.md](./02-api-design.md#permissions), and `A
 | `AuthService` | `core/auth.service.ts` | login / refresh / logout; `user()` and `hasRole()` signals |
 | `authInterceptor` | `core/auth.interceptor.ts` | adds `Authorization` to `/api/*` (not `/api/auth/*`); on `401` refreshes once and retries |
 | `authGuard`, `roleGuard`, `guestGuard` | `core/auth.guard.ts` | send signed-out users to `/login?returnUrl=…`; keep the front desk out of `/patients/:id` |
-| `LoginComponent` | `features/login/` | the form, plus dev-only quick-login buttons |
+| `LoginComponent` | `features/login/` | the form, plus quick-login buttons from `demo-accounts.ts`; production builds replace that file with `demo-accounts.prod.ts` (an empty list) |
 
 - **Token storage.** The access token is kept **in memory** (a signal), so XSS can't read it from storage and it disappears when the tab closes. The refresh token is kept in `localStorage` so a page reload can restore the session through an `APP_INITIALIZER` refresh. The trade-off: script running on the page through XSS could still read `localStorage`. The stronger option is an `HttpOnly; Secure; SameSite=Strict` cookie for the refresh token, which JavaScript can't read. That brings CSRF back for the refresh endpoint, though.
 - **The refresh race.** When the access token expires, several requests can get `401` at the same moment. `AuthService.refresh()` shares one in-flight call (`shareReplay`), so they all wait for a single refresh instead of firing five.
@@ -139,7 +139,7 @@ The full matrix is in [02-api-design.md](./02-api-design.md#permissions), and `A
 |---|---|
 | Stateless JWT, logout only discards tokens client-side | keep a deny-list or rotating refresh tokens stored server-side, so you can revoke immediately |
 | HS256 with a shared secret | use RS256/ES256: an auth server signs with a private key, APIs verify with a public key from a JWKS URL (`spring.security.oauth2.resourceserver.jwt.jwk-set-uri`), or use a real IdP (Keycloak, Auth0, Entra) |
-| Demo users and a dev secret default in `application.yaml` | supply `clinic.auth.users` and `CLINIC_JWT_SECRET` from a secret store; delete the defaults |
+| Demo users and a dev secret default exist only in the `dev` profile; without it the app fails to start until `CLINIC_JWT_SECRET` is set | supply `clinic.auth.users` and `CLINIC_JWT_SECRET` from a secret store |
 | No login rate limiting or lockout | throttle `/api/auth/login` per IP and per user |
 | Refresh token in `localStorage` | an `HttpOnly` cookie plus CSRF protection on `/api/auth/refresh` |
 | Coarse `clinical:read` | finer permissions, or patient-level checks (e.g. only patients on your care team) |

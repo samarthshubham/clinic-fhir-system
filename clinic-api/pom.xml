@@ -105,6 +105,9 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
 					<jvmArguments>-Djava.net.preferIPv4Stack=true</jvmArguments>
+					<profiles>
+						<profile>dev</profile>
+					</profiles>
 					<excludes>
 						<exclude>
 							<groupId>org.projectlombok</groupId>
@@ -133,6 +136,9 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<argLine>@{argLine} -Duser.timezone=America/New_York</argLine>
+					<environmentVariables>
+						<CLINIC_JWT_SECRET>test-only-jwt-secret-0123456789abcdef</CLINIC_JWT_SECRET>
+					</environmentVariables>
 				</configuration>
 			</plugin>
 			<plugin>
