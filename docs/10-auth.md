@@ -120,14 +120,36 @@ authorities = ROLE_FRONT_DESK, patient:read, patient:write,
 
 The full matrix is in [02-api-design.md](./02-api-design.md#permissions), and `AuthorizationMatrixTest` checks every endpoint for every role.
 
-## 7. The browser side (clinician-app)
+## 6b. Patients: roles say *what*, ownership says *whose*
+
+RBAC alone can't express "a patient may read **their own** snapshot". The question has two parts:
+
+| Question | Answered by | Example |
+|---|---|---|
+| May this kind of user read snapshots at all? | **role / permission** (RBAC) | clinicians: yes, via `clinical:read` |
+| Whose snapshot? | **ownership**: an attribute of the request compared with an attribute of the user | Tony: only `seed-tony-stark` |
+
+How it works:
+- Demo patient accounts (`tony`, `priya`) live in the dev profile, like the staff accounts. Each one carries a `patient-id` that links it to a FHIR Patient.
+- Their access token gets a `patient_id` claim, and `PATIENT` maps to **no permissions** in `RolePermissions`.
+- Endpoints that patient-app needs say, for example:
+  ```java
+  @PreAuthorize("hasAuthority('clinical:read') or @patientAccess.isSelf(#id)")
+  ```
+  `PatientAccess.isSelf` is true only for a JWT with `ROLE_PATIENT` whose `patient_id` equals the id in the path, query or body.
+- `GET /api/patients` (the list) stays staff-only, so a patient can't discover other patients.
+- The Angular guards don't enforce this; the server does. Tony asking for `/api/patients/seed-priya-nair/snapshot` gets `403`.
+
+This is the step from **RBAC** towards **ABAC** (attribute-based access control). Production systems, such as SMART on FHIR, express the same idea with a `patient` launch context and `patient/*.read` scopes, issued by an identity provider.
+
+## 7. The browser side (`@care-platform/auth`)
 
 | Piece | File | Job |
 |---|---|---|
-| `AuthService` | `core/auth.service.ts` | login / refresh / logout; `user()` and `hasRole()` signals |
-| `authInterceptor` | `core/auth.interceptor.ts` | adds `Authorization` to `/api/*` (not `/api/auth/*`); on `401` refreshes once and retries |
-| `authGuard`, `roleGuard`, `guestGuard` | `core/auth.guard.ts` | send signed-out users to `/login?returnUrl=…`; keep the front desk out of `/patients/:id` |
-| `LoginComponent` | `features/login/` | the form, plus quick-login buttons from `demo-accounts.ts`; production builds replace that file with `demo-accounts.prod.ts` (an empty list) |
+| `AuthService` | `libs/auth/src/lib/auth.service.ts` | login / refresh / logout; `user()` and `hasRole()` signals |
+| `authInterceptor` | `libs/auth/src/lib/auth.interceptor.ts` | adds `Authorization` to `/api/*` (not `/api/auth/*`); on `401` refreshes once and retries |
+| `authGuard`, `roleGuard`, `guestGuard` | `libs/auth/src/lib/auth.guard.ts` | send signed-out users to `/login?returnUrl=…`; keep the front desk out of `/patients/:id` |
+| `LoginComponent` | each app's `features/login/` | the form, plus quick-login buttons from `demo-accounts.ts`; production builds replace that file with `demo-accounts.prod.ts` (an empty list) |
 
 - **Token storage.** The access token is kept **in memory** (a signal), so XSS can't read it from storage and it disappears when the tab closes. The refresh token is kept in `localStorage` so a page reload can restore the session through an `APP_INITIALIZER` refresh. The trade-off: script running on the page through XSS could still read `localStorage`. The stronger option is an `HttpOnly; Secure; SameSite=Strict` cookie for the refresh token, which JavaScript can't read. That brings CSRF back for the refresh endpoint, though.
 - **The refresh race.** When the access token expires, several requests can get `401` at the same moment. `AuthService.refresh()` shares one in-flight call (`shareReplay`), so they all wait for a single refresh instead of firing five.

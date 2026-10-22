@@ -73,15 +73,17 @@ Grafana loads the **Clinic → clinic-api** dashboard (request rate, p50/p95/p99
 
 ### Demo logins (dev only)
 
-The API and clinician-app require a login. These accounts live in the `dev` Spring profile (`clinic-api/src/main/resources/application-dev.yaml`), which `./mvnw spring-boot:run` and `dev.sh` turn on automatically. In development builds of clinician-app, the login page has a one-click button for each account.
+The API, clinician-app and patient-app require a login. These accounts live in the `dev` Spring profile (`clinic-api/src/main/resources/application-dev.yaml`), which `./mvnw spring-boot:run` and `dev.sh` turn on automatically. In development builds, each app's login page has one-click buttons for its demo accounts.
 
 | Username | Password | Role | Can |
 |---|---|---|---|
 | `admin` | `Admin#2026` | `ADMIN` | everything, including registering practitioners |
 | `clinician` | `Clinician#2026` | `CLINICIAN` | all clinical reads and writes |
 | `frontdesk` | `FrontDesk#2026` | `FRONT_DESK` | register patients, book appointments; no clinical data |
+| `tony` | `Tony#2026` | `PATIENT` (Tony Stark) | patient-app (`localhost:4201`): only his own record and vitals |
+| `priya` | `Priya#2026` | `PATIENT` (Priya Nair) | patient-app: only her own record and vitals |
 
-A packaged jar (`java -jar`) does not use the `dev` profile, so it has no demo users and refuses to start until `CLINIC_JWT_SECRET` (at least 32 bytes) is set; provide real users through `clinic.auth.users`. Production builds of clinician-app swap the quick-login accounts for an empty list (`fileReplacements`), so the passwords never reach the bundle. In Swagger UI, call `POST /api/auth/login`, then click **Authorize** and paste the `accessToken`. See [docs/10-auth.md](./docs/10-auth.md).
+A packaged jar (`java -jar`) does not use the `dev` profile, so it has no demo users and refuses to start until `CLINIC_JWT_SECRET` (at least 32 bytes) is set; provide real users through `clinic.auth.users`. Production builds of both apps swap the quick-login accounts for an empty list (`fileReplacements`), so the passwords never reach the bundle. In Swagger UI, call `POST /api/auth/login`, then click **Authorize** and paste the `accessToken`. See [docs/10-auth.md](./docs/10-auth.md).
 
 > **First boot:** HAPI FHIR takes up to ~5 minutes to initialize on a fresh volume. Subsequent starts are much faster.
 
