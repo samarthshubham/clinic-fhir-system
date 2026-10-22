@@ -8,7 +8,7 @@ import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, startWith } from 'rxjs';
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { PatientSelectService } from './shared/services/patient-select.service';
+import { AuthService } from '@care-platform/auth';
 
 @Component({
   selector: 'app-root',
@@ -19,7 +19,7 @@ import { PatientSelectService } from './shared/services/patient-select.service';
 })
 export class App {
   private readonly router = inject(Router);
-  private readonly patientSelectSvc = inject(PatientSelectService);
+  private readonly auth = inject(AuthService);
 
   private readonly url = toSignal(
     this.router.events.pipe(
@@ -39,7 +39,11 @@ export class App {
 
   readonly showNav = computed(() => {
     const url = this.url();
-    return !url.startsWith('/select') && !url.startsWith('/vitals/record');
+    return (
+      this.auth.isAuthenticated() &&
+      !url.startsWith('/login') &&
+      !url.startsWith('/vitals/record')
+    );
   });
 
   readonly activeTab = computed(() => {
@@ -50,24 +54,23 @@ export class App {
     return 'home';
   });
 
+  readonly patientName = computed(() => this.auth.user()?.name ?? '');
+
   readonly patientInitials = computed(() => {
-    const id = this.patientSelectSvc.selectedId();
-    if (!id) return '?';
-    const core = id.replace(/^seed-/, '');
-    const parts = core.split('-').filter(Boolean);
-    if (parts.length >= 2) {
-      return (
-        parts[parts.length - 2][0] + parts[parts.length - 1][0]
-      ).toUpperCase();
-    }
-    return core.substring(0, 2).toUpperCase();
+    const parts = this.patientName().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    return parts
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase();
   });
 
   navigate(route: string): void {
     this.router.navigate(['/' + route]);
   }
 
-  goSelectPatient(): void {
-    this.router.navigate(['/select']);
+  signOut(): void {
+    this.auth.logout();
   }
 }

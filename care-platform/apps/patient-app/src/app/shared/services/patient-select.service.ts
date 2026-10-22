@@ -1,17 +1,9 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, inject } from '@angular/core';
+import { AuthService } from '@care-platform/auth';
 
 @Injectable({ providedIn: 'root' })
 export class PatientSelectService {
-  private readonly KEY = 'pa-patient-id';
-  readonly selectedId = signal<string | null>(localStorage.getItem(this.KEY));
+  private readonly auth = inject(AuthService);
 
-  select(id: string): void {
-    localStorage.setItem(this.KEY, id);
-    this.selectedId.set(id);
-  }
-
-  clear(): void {
-    localStorage.removeItem(this.KEY);
-    this.selectedId.set(null);
-  }
+  readonly selectedId = computed(() => this.auth.user()?.patientId ?? null);
 }

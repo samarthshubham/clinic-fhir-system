@@ -8,8 +8,7 @@ import {
 import { Subscription } from 'rxjs';
 import { ALERT_POLL_MS, AlertService } from './alert.service';
 import { AlertPage, AlertResponse } from './alert.models';
-import { AuthService } from './auth.service';
-import { Role } from './auth.models';
+import { AuthService, Role } from '@care-platform/auth';
 
 function alert(id: string): AlertResponse {
   return {

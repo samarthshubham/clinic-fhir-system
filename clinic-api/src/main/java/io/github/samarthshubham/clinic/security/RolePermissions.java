@@ -48,9 +48,14 @@ public final class RolePermissions {
 
   private static final Map<Role, Set<Permission>> PERMISSIONS =
       Map.of(
-          Role.ADMIN, EnumSet.allOf(Permission.class),
-          Role.CLINICIAN, CLINICIAN_PERMISSIONS,
-          Role.FRONT_DESK, FRONT_DESK_PERMISSIONS);
+          Role.ADMIN,
+          EnumSet.allOf(Permission.class),
+          Role.CLINICIAN,
+          CLINICIAN_PERMISSIONS,
+          Role.FRONT_DESK,
+          FRONT_DESK_PERMISSIONS,
+          Role.PATIENT,
+          EnumSet.noneOf(Permission.class));
 
   private RolePermissions() {}
 

@@ -3,7 +3,7 @@ import { PatientRosterComponent } from './features/patients/patient-roster/patie
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { LoginComponent } from './features/login/login.component';
 import { InboxComponent } from './features/inbox/inbox.component';
-import { authGuard, guestGuard } from '@core/auth.guard';
+import { authGuard, guestGuard } from '@care-platform/auth';
 
 describe('appRoutes', () => {
   function route(path: string) {
@@ -37,7 +37,8 @@ describe('appRoutes', () => {
   });
 
   it('should require sign-in for the roster and a clinical role for charts', () => {
-    expect(route('patients').canActivate).toEqual([authGuard]);
+    expect(route('patients').canActivate?.[0]).toBe(authGuard);
+    expect(route('patients').canActivate).toHaveLength(2);
     expect(route('patients/:id').canActivate?.[0]).toBe(authGuard);
     expect(route('patients/:id').canActivate).toHaveLength(2);
   });

@@ -7,22 +7,24 @@ import {
   Router,
 } from '@angular/router';
 import { NEVER, of, throwError } from 'rxjs';
-import { AuthService } from '@core/auth.service';
+import { AuthService } from '@care-platform/auth';
 import { LoginComponent } from './login.component';
 
 describe('LoginComponent', () => {
   let login: ReturnType<typeof vi.fn>;
+  let logout: ReturnType<typeof vi.fn>;
   let navigateByUrl: ReturnType<typeof vi.fn>;
   let returnUrl: string | null;
 
   beforeEach(async () => {
-    login = vi.fn(() => of({}));
+    login = vi.fn(() => of({ roles: ['CLINICIAN'] }));
+    logout = vi.fn();
     returnUrl = null;
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
       providers: [
         provideRouter([]),
-        { provide: AuthService, useValue: { login } },
+        { provide: AuthService, useValue: { login, logout } },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -109,6 +111,21 @@ describe('LoginComponent', () => {
       fixture.nativeElement.querySelector('[role="alert"]').textContent.trim(),
     ).toBe('Invalid username or password');
     expect(navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('should refuse patient accounts and sign them out', async () => {
+    login.mockReturnValue(of({ roles: ['PATIENT'] }));
+    const fixture = await render();
+    type(fixture, 'username', 'tony');
+    type(fixture, 'password', 'pw');
+
+    await submit(fixture);
+
+    expect(logout).toHaveBeenCalled();
+    expect(navigateByUrl).not.toHaveBeenCalled();
+    expect(
+      fixture.nativeElement.querySelector('[role="alert"]').textContent.trim(),
+    ).toBe("This account can't use the clinician app.");
   });
 
   it('should explain an unreachable server', async () => {

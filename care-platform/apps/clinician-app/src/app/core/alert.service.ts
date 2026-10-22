@@ -17,7 +17,7 @@ import {
   timer,
 } from 'rxjs';
 import { AlertPage, AlertResponse } from './alert.models';
-import { AuthService } from './auth.service';
+import { AuthService } from '@care-platform/auth';
 
 export const ALERT_POLL_MS = 30_000;
 

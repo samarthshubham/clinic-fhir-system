@@ -12,6 +12,7 @@
     "emitDecoratorMetadata": false,
     "module": "preserve",
     "paths": {
+      "@care-platform/auth": ["../../libs/auth/src/index.ts"],
       "@core/*": ["./src/app/core/*"],
       "@shared/*": ["./src/app/shared/*"],
       "@features/*": ["./src/app/features/*"]

@@ -8,8 +8,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { ThemeService } from '@core/theme.service';
 import { ToastService } from '@core/toast.service';
-import { AuthService } from '@core/auth.service';
-import { Role } from '@core/auth.models';
+import { AuthService, Role } from '@care-platform/auth';
 import { AlertService } from '@core/alert.service';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
@@ -18,6 +17,7 @@ const ROLE_LABELS: Record<Role, string> = {
   ADMIN: 'Admin',
   CLINICIAN: 'Clinician',
   FRONT_DESK: 'Front desk',
+  PATIENT: 'Patient',
 };
 
 @Component({

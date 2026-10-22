@@ -140,4 +140,24 @@ class ObservationMapperTest {
 
     assertThat(mapper.toResponse(observation).effectiveDateTime()).isNull();
   }
+
+  @Test
+  void patientReportedObservationsNameThePatientAsPerformer() {
+    Observation reported =
+        mapper
+            .toFhirObservations(
+                new VitalsRequest(
+                    "p1", null, LocalDate.of(2026, 10, 22), 185, null, null, null, null, null),
+                true)
+            .get(0);
+    Observation clinicReading =
+        mapper
+            .toFhirObservations(
+                new VitalsRequest(
+                    "p1", null, LocalDate.of(2026, 10, 22), 185, null, null, null, null, null))
+            .get(0);
+
+    assertThat(ObservationMapper.isPatientReported(reported)).isTrue();
+    assertThat(ObservationMapper.isPatientReported(clinicReading)).isFalse();
+  }
 }

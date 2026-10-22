@@ -22,3 +22,15 @@ clinic:
         first-name: Jordan
         last-name: Lee
         title: Front desk
+      - username: tony
+        password-hash: $2a$10$zYFi9Z0R5ZoT2rJ5AXlcBO0wMRMh6RkhojCFQaBCF2LHJVUeeCyue
+        role: PATIENT
+        first-name: Tony
+        last-name: Stark
+        patient-id: seed-tony-stark
+      - username: priya
+        password-hash: $2a$10$kAvvX0uETPgbAAYQXnxUNO237Ka6VUB1DBvTxsQ9d4JnM/FQwY9A.
+        role: PATIENT
+        first-name: Priya
+        last-name: Nair
+        patient-id: seed-priya-nair

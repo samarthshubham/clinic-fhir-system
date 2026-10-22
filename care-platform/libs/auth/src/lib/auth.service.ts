@@ -11,9 +11,8 @@ import {
   tap,
   throwError,
 } from 'rxjs';
+import { AUTH_CONFIG } from './auth.config';
 import { AuthUser, Role, TokenResponse } from './auth.models';
-
-export const REFRESH_TOKEN_KEY = 'praxis.refreshToken';
 
 interface Session {
   accessToken: string;
@@ -24,6 +23,7 @@ interface Session {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly config = inject(AUTH_CONFIG);
   private readonly session = signal<Session | null>(null);
   private refreshInFlight$: Observable<string> | null = null;
 
@@ -49,7 +49,7 @@ export class AuthService {
   }
 
   refresh(): Observable<string> {
-    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    const refreshToken = localStorage.getItem(this.config.refreshTokenKey);
     if (!refreshToken) {
       return throwError(() => new Error('No refresh token'));
     }
@@ -69,7 +69,7 @@ export class AuthService {
   }
 
   restoreSession(): Observable<unknown> {
-    if (!localStorage.getItem(REFRESH_TOKEN_KEY)) {
+    if (!localStorage.getItem(this.config.refreshTokenKey)) {
       return of(null);
     }
     return this.refresh().pipe(catchError(() => of(null)));
@@ -77,16 +77,16 @@ export class AuthService {
 
   logout(): void {
     this.clear();
-    this.router.navigate(['/login']);
+    this.router.navigateByUrl(this.config.loginPath);
   }
 
   private store(tokens: TokenResponse): void {
-    localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
+    localStorage.setItem(this.config.refreshTokenKey, tokens.refreshToken);
     this.session.set({ accessToken: tokens.accessToken, user: tokens.user });
   }
 
   private clear(): void {
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(this.config.refreshTokenKey);
     this.session.set(null);
   }
 }

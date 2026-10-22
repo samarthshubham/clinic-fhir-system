@@ -1,8 +1,11 @@
 package io.github.samarthshubham.clinic.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.github.samarthshubham.clinic.security.Role;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
@@ -26,13 +29,34 @@ class AuthProfilesTest {
   }
 
   @Test
-  void devProfileProvidesOneDemoUserPerRole() {
+  void devProfileProvidesOneStaffUserPerRoleAndTwoLinkedPatients() {
     runner
         .withPropertyValues("spring.profiles.active=dev")
         .run(
             context ->
                 assertThat(context.getBean(AuthProperties.class).users())
-                    .extracting(AuthProperties.User::role)
-                    .containsExactlyInAnyOrder(Role.ADMIN, Role.CLINICIAN, Role.FRONT_DESK));
+                    .extracting(AuthProperties.User::role, AuthProperties.User::patientId)
+                    .containsExactlyInAnyOrder(
+                        tuple(Role.ADMIN, null),
+                        tuple(Role.CLINICIAN, null),
+                        tuple(Role.FRONT_DESK, null),
+                        tuple(Role.PATIENT, "seed-tony-stark"),
+                        tuple(Role.PATIENT, "seed-priya-nair")));
+  }
+
+  @Test
+  void patientAccountWithoutPatientIdIsRejected() {
+    assertThatThrownBy(
+            () ->
+                new AuthProperties(
+                    "secret",
+                    "clinic-api",
+                    null,
+                    null,
+                    List.of(
+                        new AuthProperties.User(
+                            "ghost", "hash", Role.PATIENT, "G", "H", null, " "))))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("PATIENT account 'ghost' needs a patient-id");
   }
 }

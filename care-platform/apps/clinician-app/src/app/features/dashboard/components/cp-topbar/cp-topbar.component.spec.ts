@@ -7,8 +7,7 @@ import { AlertService } from '@core/alert.service';
 import { AlertPage } from '@core/alert.models';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { computed, signal } from '@angular/core';
-import { AuthService } from '@core/auth.service';
-import { AuthUser, Role } from '@core/auth.models';
+import { AuthService, AuthUser, Role } from '@care-platform/auth';
 
 function fakeAuth(...roles: Role[]) {
   const user = signal<AuthUser | null>(
@@ -18,6 +17,7 @@ function fakeAuth(...roles: Role[]) {
           name: 'Anika Patel',
           title: 'Internal Medicine',
           practitionerId: 'user-clinician',
+          patientId: null,
           roles,
         }
       : null,
@@ -149,6 +149,7 @@ describe('CpTopbarComponent', () => {
       name: 'Jordan Lee',
       title: null,
       practitionerId: null,
+      patientId: null,
       roles: ['FRONT_DESK'],
     });
     const fixture = TestBed.createComponent(CpTopbarComponent);

@@ -30,7 +30,7 @@ PostgreSQL 15  (owned entirely by HAPI — Spring Boot never queries it directly
 clinic-api/         Spring Boot backend (Maven)
   src/main/java/io/github/samarthshubham/clinic/
     config/         FhirConfig, ClinicalThresholds, SecurityConfig, JwtConfig, AuthProperties
-    security/       Role, Permission, RolePermissions, JsonSecurityErrorHandler
+    security/       Role, Permission, RolePermissions, PatientAccess, JsonSecurityErrorHandler
     controller/     PatientController, EncounterController, VitalsController,
                     PractitionerController, ConditionController, MedicationController,
                     AppointmentController, ServiceRequestController,
@@ -74,6 +74,7 @@ care-platform/      Angular 21 Nx monorepo
     src/step-definitions/  background.steps.ts, patient.steps.ts, encounter.steps.ts,
                            vitals.steps.ts, clinical.steps.ts
     src/support/        api-client.ts, world.ts, date-helpers.ts
+  libs/auth/            @care-platform/auth: shared login, token interceptor, guards (provideAuth per app)
   libs/design-system/   SCSS tokens + palette + global utilities (planned)
   libs/ui/              Shared Angular components (planned)
   libs/shared/          ThemeService, FHIR model types (planned)
@@ -358,7 +359,7 @@ Base URL: `http://localhost:9090`
 | `POST` | `/api/auth/login` | `{username, password}` → `TokenResponse` (access 15 min + refresh 7 days) |
 | `POST` | `/api/auth/refresh` | `{refreshToken}` → new `TokenResponse` |
 
-Every other `/api/**` endpoint needs `Authorization: Bearer <accessToken>` (except the alert webhook). Each controller method has `@PreAuthorize("hasAuthority('<permission>')")`; `RolePermissions` maps roles to permissions — see `docs/10-auth.md`. New endpoints must get a `@PreAuthorize` and a row in `AuthorizationMatrixTest`. `@WebMvcTest` controller tests use `@Import(SecurityConfig.class)` + `@WithRole(Role.ADMIN)`.
+Every other `/api/**` endpoint needs `Authorization: Bearer <accessToken>` (except the alert webhook). Each controller method has `@PreAuthorize("hasAuthority('<permission>')")`; `RolePermissions` maps roles to permissions — see `docs/10-auth.md`. New endpoints must get a `@PreAuthorize` and a row in `AuthorizationMatrixTest`. `@WebMvcTest` controller tests use `@Import(SecurityConfig.class)` + `@WithRole(Role.ADMIN)`. Endpoints a patient may use for **their own** record add `or @patientAccess.isSelf(#id)` (`security/PatientAccess`, `patient_id` claim); `PATIENT` has no permissions of its own. Frontend auth (service, interceptor, guards) lives in `care-platform/libs/auth` (`@care-platform/auth`), configured per app with `provideAuth({...})`.
 
 ### CRUD — return response DTOs (`application/json`)
 

@@ -36,7 +36,13 @@
               "maximumError": "8kb"
             }
           ],
-          "outputHashing": "all"
+          "outputHashing": "all",
+          "fileReplacements": [
+            {
+              "replace": "apps/patient-app/src/app/features/login/demo-accounts.ts",
+              "with": "apps/patient-app/src/app/features/login/demo-accounts.prod.ts"
+            }
+          ]
         },
         "development": {
           "optimization": false,

@@ -8,6 +8,7 @@ import {
 } from '@angular/router';
 import { authGuard, guestGuard, roleGuard } from './auth.guard';
 import { AuthService } from './auth.service';
+import { provideAuth } from './auth.config';
 import { Role } from './auth.models';
 
 describe('auth guards', () => {
@@ -20,6 +21,11 @@ describe('auth guards', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        provideAuth({
+          loginPath: '/login',
+          homePath: '/patients',
+          refreshTokenKey: 'unused',
+        }),
         {
           provide: AuthService,
           useValue: {

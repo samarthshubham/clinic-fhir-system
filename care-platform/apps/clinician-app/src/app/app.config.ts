@@ -13,13 +13,21 @@ import {
 import { MatIconRegistry } from '@angular/material/icon';
 import { appRoutes } from './app.routes';
 import { ThemeService } from '@core/theme.service';
-import { AuthService } from '@core/auth.service';
-import { authInterceptor } from '@core/auth.interceptor';
+import {
+  AuthService,
+  authInterceptor,
+  provideAuth,
+} from '@care-platform/auth';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(appRoutes),
+    provideAuth({
+      loginPath: '/login',
+      homePath: '/patients',
+      refreshTokenKey: 'praxis.refreshToken',
+    }),
     provideAnimationsAsync(),
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     {

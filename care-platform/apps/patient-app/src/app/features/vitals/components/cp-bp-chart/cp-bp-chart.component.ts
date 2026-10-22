@@ -6,6 +6,9 @@ import {
 } from '@angular/core';
 import { DataPoint } from '../../../../shared/models/patient-app.models';
 
+const DEFAULT_MIN = 60;
+const DEFAULT_MAX = 170;
+
 interface ChartPt {
   x: number;
   y: number;
@@ -13,7 +16,7 @@ interface ChartPt {
 }
 
 @Component({
-  selector: 'cp-bp-chart',
+  selector: 'app-bp-chart',
   templateUrl: './cp-bp-chart.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -40,8 +43,25 @@ export class CpBpChartComponent {
   private sx(i: number, len: number): number {
     return this.padL + (i / (len - 1)) * this.plotW;
   }
-  private sy(v: number, yMin = 60, yMax = 170): number {
-    return this.padT + this.plotH - ((v - yMin) / (yMax - yMin)) * this.plotH;
+  readonly range = computed(() => {
+    const values = [...this.systolic(), ...this.diastolic()].map(
+      (p) => p.value,
+    );
+    return {
+      min: Math.min(
+        DEFAULT_MIN,
+        Math.floor((Math.min(...values) - 10) / 10) * 10,
+      ),
+      max: Math.max(
+        DEFAULT_MAX,
+        Math.ceil((Math.max(...values) + 10) / 10) * 10,
+      ),
+    };
+  });
+
+  private sy(v: number): number {
+    const { min, max } = this.range();
+    return this.padT + this.plotH - ((v - min) / (max - min)) * this.plotH;
   }
 
   readonly bands = computed(() => {
@@ -58,30 +78,35 @@ export class CpBpChartComponent {
         x: padL,
         y: this.padT,
         w: plotW,
-        h: yNT - this.padT,
-        fill: 'color-mix(in srgb, var(--px-ok), transparent 90%)',
-      },
-      {
-        x: padL,
-        y: yNT,
-        w: plotW,
-        h: yET - yNT,
-        fill: 'color-mix(in srgb, var(--px-warn), transparent 92%)',
+        h: yET - this.padT,
+        fill: 'color-mix(in srgb, var(--px-crit), transparent 92%)',
       },
       {
         x: padL,
         y: yET,
         w: plotW,
-        h: plotBottom - yET,
-        fill: 'color-mix(in srgb, var(--px-crit), transparent 92%)',
+        h: yNT - yET,
+        fill: 'color-mix(in srgb, var(--px-warn), transparent 92%)',
+      },
+      {
+        x: padL,
+        y: yNT,
+        w: plotW,
+        h: plotBottom - yNT,
+        fill: 'color-mix(in srgb, var(--px-ok), transparent 90%)',
       },
     ];
   });
 
   readonly targetY = computed(() => this.sy(130));
-  readonly gridLineY = computed(() =>
-    [80, 100, 120, 140, 160].map((t) => ({ t, y: this.sy(t) })),
-  );
+  readonly gridLineY = computed(() => {
+    const { min, max } = this.range();
+    const ticks: number[] = [];
+    for (let t = Math.floor(min / 20) * 20 + 20; t < max; t += 20) {
+      ticks.push(t);
+    }
+    return ticks.map((t) => ({ t, y: this.sy(t) }));
+  });
 
   readonly xLabels = computed(() => {
     const sys = this.systolic();

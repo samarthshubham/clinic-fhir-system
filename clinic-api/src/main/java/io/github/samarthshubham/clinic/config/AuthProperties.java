@@ -16,6 +16,12 @@ public record AuthProperties(
 
   public AuthProperties {
     users = users == null ? List.of() : List.copyOf(users);
+    for (User user : users) {
+      if (user.role() == Role.PATIENT && (user.patientId() == null || user.patientId().isBlank())) {
+        throw new IllegalArgumentException(
+            "clinic.auth.users: PATIENT account '" + user.username() + "' needs a patient-id");
+      }
+    }
   }
 
   public Optional<User> findUser(String username) {
@@ -28,5 +34,6 @@ public record AuthProperties(
       Role role,
       String firstName,
       String lastName,
-      String title) {}
+      String title,
+      String patientId) {}
 }

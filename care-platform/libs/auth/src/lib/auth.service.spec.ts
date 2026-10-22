@@ -5,7 +5,10 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
-import { AuthService, REFRESH_TOKEN_KEY } from './auth.service';
+import { AuthService } from './auth.service';
+import { provideAuth } from './auth.config';
+
+const REFRESH_TOKEN_KEY = 'test.refreshToken';
 import { TokenResponse } from './auth.models';
 
 function tokens(overrides: Partial<TokenResponse> = {}): TokenResponse {
@@ -19,6 +22,7 @@ function tokens(overrides: Partial<TokenResponse> = {}): TokenResponse {
       name: 'Anika Patel',
       title: 'Internal Medicine',
       practitionerId: 'user-clinician',
+      patientId: null,
       roles: ['CLINICIAN'],
     },
     ...overrides,
@@ -34,6 +38,11 @@ describe('AuthService', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        provideAuth({
+          loginPath: '/sign-in',
+          homePath: '/home',
+          refreshTokenKey: REFRESH_TOKEN_KEY,
+        }),
         provideHttpClient(),
         provideHttpClientTesting(),
       ],
@@ -139,7 +148,7 @@ describe('AuthService', () => {
 
   it('should forget everything and go to login on logout', () => {
     const navigate = vi
-      .spyOn(TestBed.inject(Router), 'navigate')
+      .spyOn(TestBed.inject(Router), 'navigateByUrl')
       .mockResolvedValue(true);
     auth.login('clinician', 'pw').subscribe();
     http.expectOne('/api/auth/login').flush(tokens());
@@ -148,6 +157,6 @@ describe('AuthService', () => {
 
     expect(auth.isAuthenticated()).toBe(false);
     expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBeNull();
-    expect(navigate).toHaveBeenCalledWith(['/login']);
+    expect(navigate).toHaveBeenCalledWith('/sign-in');
   });
 });

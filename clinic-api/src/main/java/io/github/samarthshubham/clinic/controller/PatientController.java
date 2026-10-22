@@ -51,7 +51,7 @@ public class PatientController {
     return ResponseEntity.status(HttpStatus.CREATED).body(patientService.createPatient(request));
   }
 
-  @PreAuthorize("hasAuthority('patient:read')")
+  @PreAuthorize("hasAuthority('patient:read') or @patientAccess.isSelf(#id)")
   @GetMapping("/{id}")
   public ResponseEntity<PatientResponse> getPatient(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(patientService.getPatient(id));
@@ -64,13 +64,13 @@ public class PatientController {
     return ResponseEntity.ok(patientService.searchPatients(name, dob));
   }
 
-  @PreAuthorize("hasAuthority('clinical:read')")
+  @PreAuthorize("hasAuthority('clinical:read') or @patientAccess.isSelf(#id)")
   @GetMapping("/{id}/snapshot")
   public ResponseEntity<SnapshotResponse> getSnapshot(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(snapshotService.getSnapshot(id));
   }
 
-  @PreAuthorize("hasAuthority('clinical:read')")
+  @PreAuthorize("hasAuthority('clinical:read') or @patientAccess.isSelf(#id)")
   @GetMapping("/{id}/trends")
   public ResponseEntity<TrendsResponse> getTrends(
       @PathVariable @NotBlank String id,
@@ -79,7 +79,7 @@ public class PatientController {
     return ResponseEntity.ok(trendsService.getTrends(id, type, period));
   }
 
-  @PreAuthorize("hasAuthority('clinical:read')")
+  @PreAuthorize("hasAuthority('clinical:read') or @patientAccess.isSelf(#id)")
   @GetMapping("/{id}/timeline")
   public ResponseEntity<List<TimelineEvent>> getTimeline(
       @PathVariable @NotBlank String id,

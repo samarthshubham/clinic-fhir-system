@@ -42,11 +42,22 @@ class TokenServiceTest {
 
   @Test
   void accessTokenOmitsPractitionerIdWhenUnknown() {
-    AuthUser user = new AuthUser("ghost", "Ghost", null, null, List.of(Role.FRONT_DESK));
+    AuthUser user = new AuthUser("ghost", "Ghost", null, null, null, List.of(Role.FRONT_DESK));
 
     Jwt jwt = TestAuth.accessTokenDecoder().decode(tokenService.issueTokens(user).accessToken());
 
     assertThat(jwt.hasClaim("practitioner_id")).isFalse();
+    assertThat(jwt.hasClaim("patient_id")).isFalse();
+  }
+
+  @Test
+  void patientTokenCarriesTheirPatientId() {
+    Jwt jwt =
+        TestAuth.accessTokenDecoder()
+            .decode(tokenService.issueTokens(TestAuth.user(Role.PATIENT)).accessToken());
+
+    assertThat(jwt.getClaimAsString("patient_id")).isEqualTo(TestAuth.OWN_PATIENT_ID);
+    assertThat(jwt.getClaimAsStringList("roles")).containsExactly("PATIENT");
   }
 
   @Test

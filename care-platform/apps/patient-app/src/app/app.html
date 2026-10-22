@@ -106,15 +106,11 @@
       </button>
     </nav>
 
-    <button
-      class="pa-side-patient"
-      (click)="goSelectPatient()"
-      aria-label="Switch profile"
-    >
+    <button class="pa-side-patient" (click)="signOut()" aria-label="Sign out">
       <div class="pa-side-avatar">{{ patientInitials() }}</div>
       <div class="pa-side-patient-info">
-        <div class="pa-side-patient-nm">Switch profile</div>
-        <div class="pa-side-patient-mt">Tap to change</div>
+        <div class="pa-side-patient-nm">{{ patientName() }}</div>
+        <div class="pa-side-patient-mt">Sign out</div>
       </div>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
         <path
