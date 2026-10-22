@@ -112,4 +112,13 @@ describe('PatientService', () => {
       expect(load({ items: [], total: 0 })).toEqual([]);
     });
   });
+
+  it('should fetch one patient by id', () => {
+    let result: PatientResponse | undefined;
+    service.getPatient('p1').subscribe((p) => (result = p));
+
+    http.expectOne('/api/patients/p1').flush(patient());
+
+    expect(result?.lastName).toBe('Doe');
+  });
 });

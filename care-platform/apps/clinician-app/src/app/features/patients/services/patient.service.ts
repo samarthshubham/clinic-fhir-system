@@ -17,6 +17,10 @@ export class PatientService {
       .pipe(map((page) => page.items.map((p) => this.mapPatient(p))));
   }
 
+  getPatient(id: string): Observable<PatientResponse> {
+    return this.http.get<PatientResponse>(`/api/patients/${id}`);
+  }
+
   private mapPatient(p: PatientResponse): PatientListItem {
     const name = [p.firstName, p.lastName].filter(Boolean).join(' ');
     return {

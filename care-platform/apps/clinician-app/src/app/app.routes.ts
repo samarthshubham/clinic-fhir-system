@@ -29,4 +29,10 @@ export const appRoutes: Route[] = [
         (m) => m.DashboardComponent,
       ),
   },
+  {
+    path: 'inbox',
+    canActivate: [authGuard, roleGuard('ADMIN', 'CLINICIAN')],
+    loadComponent: () =>
+      import('./features/inbox/inbox.component').then((m) => m.InboxComponent),
+  },
 ];

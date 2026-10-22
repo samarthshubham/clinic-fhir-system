@@ -2,6 +2,7 @@ import { appRoutes } from './app.routes';
 import { PatientRosterComponent } from './features/patients/patient-roster/patient-roster.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { LoginComponent } from './features/login/login.component';
+import { InboxComponent } from './features/inbox/inbox.component';
 import { authGuard, guestGuard } from '@core/auth.guard';
 
 describe('appRoutes', () => {
@@ -39,5 +40,11 @@ describe('appRoutes', () => {
     expect(route('patients').canActivate).toEqual([authGuard]);
     expect(route('patients/:id').canActivate?.[0]).toBe(authGuard);
     expect(route('patients/:id').canActivate).toHaveLength(2);
+  });
+
+  it('should lazy load the inbox for clinical roles', async () => {
+    expect(route('inbox').canActivate?.[0]).toBe(authGuard);
+    expect(route('inbox').canActivate).toHaveLength(2);
+    expect(await route('inbox').loadComponent?.()).toBe(InboxComponent);
   });
 });

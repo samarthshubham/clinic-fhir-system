@@ -1,0 +1,46 @@
+<section class="inbox" aria-labelledby="inbox-title">
+  <h1 id="inbox-title" class="inbox__title">Inbox</h1>
+
+  @if (rows() === undefined) {
+    <p class="inbox__state" role="status">Loading alerts…</p>
+  } @else if (rows() === null) {
+    <p class="inbox__state" role="alert">
+      Could not load alerts. They will refresh automatically.
+    </p>
+  } @else if (rows()!.length === 0) {
+    <p class="inbox__state">No active alerts.</p>
+  } @else {
+    <ul class="inbox__list">
+      @for (row of rows(); track row.alert.id) {
+        <li class="inbox__item">
+          <span class="cp-status-badge--critical">High BP</span>
+          <div class="inbox__body">
+            @if (row.alert.patientId) {
+              <a
+                class="inbox__patient"
+                [routerLink]="['/patients', row.alert.patientId]"
+                >{{ row.patientName }}</a
+              >
+            } @else {
+              <span class="inbox__patient">{{ row.patientName }}</span>
+            }
+            <span class="inbox__reason">{{ row.alert.reason }}</span>
+          </div>
+          <time
+            class="inbox__time cp-font-mono"
+            [attr.datetime]="row.alert.raisedAt"
+            >{{ row.alert.raisedAt | date: 'MMM d, h:mm a' }}</time
+          >
+          <button
+            mat-stroked-button
+            type="button"
+            [attr.aria-label]="'Acknowledge alert for ' + row.patientName"
+            (click)="acknowledge(row.alert.id)"
+          >
+            Acknowledge
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</section>
