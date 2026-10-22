@@ -200,5 +200,5 @@ Prints the payload. It's readable by anyone, which is why it holds no secrets.
 | `TokenServiceTest` | claims, expiry, tampering, access vs refresh separation |
 | `JwtConfigTest`, `RolePermissionsTest` | short secrets rejected; roles → authorities; the permission map |
 | `AuthServiceTest`, `AuthControllerTest` | BCrypt login, same error for unknown user and wrong password, refresh, removed accounts |
-| `AuthorizationMatrixTest` | 25 endpoints × (anonymous + 3 roles): 401 / 403 / 2xx |
+| `AuthorizationMatrixTest` | every protected endpoint × (anonymous + 3 roles): 401 / 403 / 2xx |
 | `auth.service.spec.ts`, `auth.interceptor.spec.ts`, `auth.guard.spec.ts`, `login.component.spec.ts` | storage, shared refresh, retry on 401, guards, login form |

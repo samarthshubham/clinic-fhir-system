@@ -3,6 +3,9 @@ import { provideRouter } from '@angular/router';
 import { CpTopbarComponent } from './cp-topbar.component';
 import { ThemeService } from '@core/theme.service';
 import { ToastService } from '@core/toast.service';
+import { AlertService } from '@core/alert.service';
+import { AlertPage } from '@core/alert.models';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { computed, signal } from '@angular/core';
 import { AuthService, AuthUser, Role } from '@care-platform/auth';
 
@@ -30,13 +33,27 @@ function fakeAuth(...roles: Role[]) {
 
 describe('CpTopbarComponent', () => {
   let auth: ReturnType<typeof fakeAuth>;
+  let activeAlerts: BehaviorSubject<AlertPage | null>;
+  let newAlertCount: Subject<number>;
 
   beforeEach(async () => {
     localStorage.clear();
     auth = fakeAuth('CLINICIAN');
+    activeAlerts = new BehaviorSubject<AlertPage | null>(null);
+    newAlertCount = new Subject<number>();
     await TestBed.configureTestingModule({
       imports: [CpTopbarComponent],
-      providers: [provideRouter([]), { provide: AuthService, useValue: auth }],
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: auth },
+        {
+          provide: AlertService,
+          useValue: {
+            activeAlerts$: activeAlerts,
+            newAlertCount$: newAlertCount,
+          },
+        },
+      ],
     }).compileComponents();
   });
 
@@ -81,7 +98,6 @@ describe('CpTopbarComponent', () => {
     expect(show.mock.calls.map((c) => c[0])).toEqual([
       'Schedule is a placeholder in this prototype',
       'Orders is a placeholder in this prototype',
-      'Inbox is a placeholder in this prototype',
     ]);
   });
 
@@ -156,5 +172,47 @@ describe('CpTopbarComponent', () => {
     await fixture.whenStable();
 
     expect(fixture.nativeElement.querySelector('.cp-topbar__user')).toBeNull();
+  });
+
+  it('should link the Inbox and show the active alert count', async () => {
+    activeAlerts.next({ items: [], total: 2 });
+    const fixture = TestBed.createComponent(CpTopbarComponent);
+    await fixture.whenStable();
+    const inbox: HTMLAnchorElement =
+      fixture.nativeElement.querySelector('a[href="/inbox"]');
+
+    expect(
+      inbox.querySelector('.cp-topbar__nav-badge')?.textContent?.trim(),
+    ).toBe('2');
+    expect(inbox.getAttribute('aria-label')).toBe('Inbox, 2 active alerts');
+
+    activeAlerts.next({ items: [], total: 0 });
+    await fixture.whenStable();
+
+    expect(inbox.querySelector('.cp-topbar__nav-badge')).toBeNull();
+    expect(inbox.getAttribute('aria-label')).toBe('Inbox');
+  });
+
+  it('should hide the badge when alerts could not be loaded', async () => {
+    const fixture = TestBed.createComponent(CpTopbarComponent);
+    await fixture.whenStable();
+
+    expect(
+      fixture.nativeElement.querySelector('.cp-topbar__nav-badge'),
+    ).toBeNull();
+  });
+
+  it('should toast when new alerts arrive', async () => {
+    const show = vi.spyOn(TestBed.inject(ToastService), 'show');
+    const fixture = TestBed.createComponent(CpTopbarComponent);
+    await fixture.whenStable();
+
+    newAlertCount.next(1);
+    newAlertCount.next(3);
+
+    expect(show.mock.calls.map((c) => c[0])).toEqual([
+      'New high BP alert',
+      '3 new high BP alerts',
+    ]);
   });
 });

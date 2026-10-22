@@ -9,6 +9,7 @@ import io.github.samarthshubham.clinic.controller.PatientController;
 import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.dto.TokenResponse;
 import io.github.samarthshubham.clinic.security.Role;
+import io.github.samarthshubham.clinic.service.AlertService;
 import io.github.samarthshubham.clinic.service.HighBpAlertService;
 import io.github.samarthshubham.clinic.service.PatientService;
 import io.github.samarthshubham.clinic.service.SnapshotService;
@@ -42,6 +43,7 @@ class SecurityConfigTest {
   @MockitoBean private TrendsService trendsService;
   @MockitoBean private TimelineService timelineService;
   @MockitoBean private HighBpAlertService highBpAlertService;
+  @MockitoBean private AlertService alertService;
 
   @Test
   void apiRequestWithoutCredentialsReturnsJson401() {

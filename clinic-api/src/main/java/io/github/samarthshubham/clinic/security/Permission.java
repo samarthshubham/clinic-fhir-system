@@ -15,7 +15,9 @@ public enum Permission implements GrantedAuthority {
   CONDITION_WRITE("condition:write"),
   MEDICATION_WRITE("medication:write"),
   ORDER_WRITE("order:write"),
-  CAREPLAN_WRITE("careplan:write");
+  CAREPLAN_WRITE("careplan:write"),
+  ALERT_READ("alert:read"),
+  ALERT_WRITE("alert:write");
 
   private final String authority;
 

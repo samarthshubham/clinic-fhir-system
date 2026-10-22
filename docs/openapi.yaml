@@ -981,6 +981,56 @@ paths:
 
   # ── Alerts ────────────────────────────────────────────────────────────────
 
+  /api/alerts:
+    get:
+      tags: [Alerts]
+      summary: List stored high-BP alerts, newest first
+      description: |
+        Requires the `alert:read` permission (ADMIN, CLINICIAN).
+        Alerts are FHIR `Flag` resources that hold references only (no names, no reading values).
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [active, inactive]
+          example: active
+      responses:
+        '200':
+          description: Page of alerts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertPage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/alerts/{id}/acknowledge:
+    post:
+      tags: [Alerts]
+      summary: Acknowledge an alert (marks the Flag inactive)
+      description: Requires the `alert:write` permission (ADMIN, CLINICIAN). Acknowledging an already inactive alert changes nothing.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: The acknowledged alert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/alerts/bp-subscription:
     post:
       tags: [Alerts]
@@ -1530,6 +1580,41 @@ components:
     # ── Page wrappers ({ items, total }) ───────────────────────────────────
     # items is only the first page of HAPI search results and total is HAPI's total match count;
     # there is no paging yet (no limit/offset, no next link).
+
+    AlertResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "301"
+        patientId:
+          type: string
+          example: "54"
+        observationId:
+          type: string
+          example: "55"
+        reason:
+          type: string
+          example: "Systolic BP above 180 mmHg"
+        raisedAt:
+          type: string
+          format: date-time
+          example: "2026-10-22T16:41:07Z"
+        status:
+          type: string
+          enum: [active, inactive]
+
+    AlertPage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlertResponse'
+        total:
+          type: integer
+          example: 1
 
     PatientPage:
       type: object

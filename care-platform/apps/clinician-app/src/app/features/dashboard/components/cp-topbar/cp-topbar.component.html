@@ -48,14 +48,20 @@
         >
         <a
           class="cp-topbar__nav-item"
-          role="button"
-          tabindex="0"
-          (click)="placeholder('Inbox')"
-          (keydown.enter)="placeholder('Inbox')"
-          (keydown.space)="placeholder('Inbox'); $event.preventDefault()"
+          routerLink="/inbox"
+          routerLinkActive="cp-topbar__nav-item--active"
+          [attr.aria-label]="
+            activeAlertCount()
+              ? 'Inbox, ' + activeAlertCount() + ' active alerts'
+              : 'Inbox'
+          "
         >
           Inbox
-          <span class="cp-topbar__nav-badge">3</span>
+          @if (activeAlertCount()) {
+            <span class="cp-topbar__nav-badge" aria-hidden="true">{{
+              activeAlertCount()
+            }}</span>
+          }
         </a>
       }
     </nav>

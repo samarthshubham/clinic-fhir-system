@@ -10,12 +10,16 @@ import static org.mockito.Mockito.withSettings;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.api.MethodOutcome;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
+import ca.uhn.fhir.rest.gclient.IClientExecutable;
 import ca.uhn.fhir.rest.gclient.ICreate;
 import ca.uhn.fhir.rest.gclient.ICreateTyped;
 import ca.uhn.fhir.rest.gclient.ICriterion;
 import ca.uhn.fhir.rest.gclient.ICriterionInternal;
 import ca.uhn.fhir.rest.gclient.IGetPage;
 import ca.uhn.fhir.rest.gclient.IGetPageTyped;
+import ca.uhn.fhir.rest.gclient.IMeta;
+import ca.uhn.fhir.rest.gclient.IMetaAddOrDeleteSourced;
+import ca.uhn.fhir.rest.gclient.IMetaAddOrDeleteUnsourced;
 import ca.uhn.fhir.rest.gclient.IQuery;
 import ca.uhn.fhir.rest.gclient.IRead;
 import ca.uhn.fhir.rest.gclient.IReadExecutable;
@@ -35,9 +39,11 @@ import java.util.List;
 import java.util.Map;
 import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseResource;
+import org.hl7.fhir.instance.model.api.IIdType;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.IdType;
+import org.hl7.fhir.r4.model.Meta;
 import org.hl7.fhir.r4.model.Observation;
 import org.hl7.fhir.r4.model.Quantity;
 import org.hl7.fhir.r4.model.Resource;
@@ -56,6 +62,7 @@ public final class FhirClientStub {
   private final Map<Class<?>, List<List<String>>> executedSearches = new HashMap<>();
   private final List<IBaseResource> created = new ArrayList<>();
   private final List<IBaseResource> updated = new ArrayList<>();
+  private final List<String> deletedTags = new ArrayList<>();
   private final Map<String, Bundle> pages = new HashMap<>();
   private final List<String> loadedPages = new ArrayList<>();
   private int nextId = 1;
@@ -85,6 +92,16 @@ public final class FhirClientStub {
         .doAnswer(inv -> updateTyped(inv.getArgument(0)))
         .when(update)
         .resource(any(IBaseResource.class));
+
+    IMeta meta = lenientMock(IMeta.class, Answers.RETURNS_DEFAULTS);
+    lenient().doReturn(meta).when(client).meta();
+    IMetaAddOrDeleteUnsourced metaDelete =
+        lenientMock(IMetaAddOrDeleteUnsourced.class, Answers.RETURNS_DEFAULTS);
+    lenient().doReturn(metaDelete).when(meta).delete();
+    lenient()
+        .doAnswer(inv -> metaDeleteOn(inv.getArgument(0)))
+        .when(metaDelete)
+        .onResource(any(IIdType.class));
 
     IGetPage getPage = lenientMock(IGetPage.class, Answers.RETURNS_DEFAULTS);
     lenient().doReturn(getPage).when(client).loadPage();
@@ -159,6 +176,10 @@ public final class FhirClientStub {
 
   public List<IBaseResource> updated() {
     return updated;
+  }
+
+  public List<String> deletedTags() {
+    return List.copyOf(deletedTags);
   }
 
   public static Observation quantityObservation(double value) {
@@ -284,6 +305,39 @@ public final class FhirClientStub {
         .when(createTyped)
         .execute();
     return createTyped;
+  }
+
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private IMetaAddOrDeleteSourced metaDeleteOn(IIdType id) {
+    IMetaAddOrDeleteSourced sourced =
+        lenientMock(IMetaAddOrDeleteSourced.class, Answers.RETURNS_DEFAULTS);
+    lenient()
+        .doAnswer(
+            inv -> {
+              Meta meta = inv.getArgument(0);
+              IClientExecutable executable =
+                  lenientMock(IClientExecutable.class, Answers.RETURNS_DEFAULTS);
+              lenient()
+                  .doAnswer(
+                      run -> {
+                        meta.getTag()
+                            .forEach(
+                                tag ->
+                                    deletedTags.add(
+                                        id.getValue()
+                                            + " "
+                                            + tag.getSystem()
+                                            + "|"
+                                            + tag.getCode()));
+                        return meta;
+                      })
+                  .when(executable)
+                  .execute();
+              return executable;
+            })
+        .when(sourced)
+        .meta(any(Meta.class));
+    return sourced;
   }
 
   private IUpdateTyped updateTyped(IBaseResource resource) {

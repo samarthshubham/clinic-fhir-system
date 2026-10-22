@@ -70,6 +70,7 @@ Tokens carry **roles**; on each request the server expands them into **permissio
 | `encounter:write`, `condition:write`, `medication:write` | matching `POST` | | ✓ | ✓ | |
 | `order:write` | `POST /api/service-requests`, `POST /api/diagnostic-reports` | | ✓ | ✓ | |
 | `careplan:write` | `POST /api/care-plans`, `POST /api/goals` | | ✓ | ✓ | |
+| `alert:read` / `alert:write` | `GET /api/alerts` / `POST /api/alerts/{id}/acknowledge` | | ✓ | ✓ | |
 
 **own**: a `PATIENT` has no permissions of its own. These endpoints add `or @patientAccess.isSelf(#id)`, which is true only when the token's `patient_id` claim matches the patient in the request. Tony can read his own snapshot, but gets `403` for Priya's and for the patient list
 
@@ -425,13 +426,48 @@ Unified chronological event feed. Supports cursor pagination (`before` = ISO dat
 
 ### POST /api/alerts/bp-subscription
 
-Webhook called by HAPI FHIR's rest-hook Subscription `Subscription/clinic-high-systolic-bp` (registered by clinic-api at startup) whenever a systolic BP Observation (LOINC `8480-6`) above `clinical.thresholds.systolic-critical` is stored. The notification has an empty body, so no PHI crosses the wire. It must carry the `X-Alert-Secret` header matching `clinic.alerts.webhook-secret`, otherwise clinic-api returns `401`. clinic-api then searches for the new critical readings and sends one alert per reading through the `Notifier` (default: mock SMS written to the log) with only resource references:
+Webhook called by HAPI FHIR's rest-hook Subscription `Subscription/clinic-high-systolic-bp` (registered by clinic-api at startup) whenever a systolic BP Observation (LOINC `8480-6`) above `clinical.thresholds.systolic-critical` is stored. The notification has an empty body, so no PHI crosses the wire. It must carry the `X-Alert-Secret` header matching `clinic.alerts.webhook-secret`, otherwise clinic-api returns `401`. clinic-api then searches for the new critical readings and sends one alert per reading through the `Notifier` (default: mock SMS written to the log) with only resource references. Two notifiers run: `LoggingSmsNotifier` writes a mock SMS to the log, and `FlagNotifier` stores the alert as a FHIR `Flag` so it shows up in the clinician-app Inbox:
 
 ```
 [mock-sms] Clinician alert: Systolic BP above 180 mmHg for Patient/54 (Observation/55)
 ```
 
 **Response `204 No Content`**, or `401` with `{ "status": 401, "message": "Missing or invalid webhook secret" }`. See [09-bp-alerts-demo.md](./09-bp-alerts-demo.md) for a scripted demo.
+
+### GET /api/alerts?status=active
+Requires `alert:read`. Lists stored high-BP alerts, newest first. `status` is optional (`active` or `inactive`); any other value → `400`.
+
+**Response `200 OK`**: `PageResponse<AlertResponse>`
+```json
+{
+  "items": [
+    {
+      "id": "301",
+      "patientId": "54",
+      "observationId": "55",
+      "reason": "Systolic BP above 180 mmHg",
+      "raisedAt": "2026-10-22T16:41:07Z",
+      "status": "active"
+    }
+  ],
+  "total": 1
+}
+```
+
+Each alert is a FHIR `Flag`:
+- `subject`: the Patient
+- the `flag-detail` extension: the Observation
+- `code.text`: the threshold reason
+- `period.start`: when it was raised
+- an identifier keyed by the Observation id
+- a `meta.tag` (`http://praxis.clinic/fhir/CodeSystem/alert-status|active` or `inactive`)
+
+R4 `Flag` can't be searched by `code` or `status`, so the list endpoint searches by the identifier system and the status tag. HAPI keeps old tags when a resource is updated, so acknowledging also removes the `active` tag with `$meta-delete`.
+
+It holds **references only**: no names and no reading values. A reading is stored at most once (`FlagNotifier` checks the identifier first), so re-processing the lookback window after a restart never duplicates or re-opens an alert.
+
+### POST /api/alerts/{id}/acknowledge
+Requires `alert:write`. Sets the Flag to `inactive` and closes `period.end`. Returns the updated `AlertResponse`. Acknowledging an already inactive alert changes nothing. An unknown id → `404`.
 
 ---
 

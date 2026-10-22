@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.samarthshubham.clinic.config.AuthProperties;
 import io.github.samarthshubham.clinic.config.SecurityConfig;
+import io.github.samarthshubham.clinic.service.AlertService;
 import io.github.samarthshubham.clinic.service.AppointmentService;
 import io.github.samarthshubham.clinic.service.AuthService;
 import io.github.samarthshubham.clinic.service.CarePlanService;
@@ -126,7 +127,9 @@ class AuthorizationMatrixTest {
               """
               {"patientId":"p2","encounterId":"e1","effectiveDate":"2024-05-01","systolicBp":142}
               """,
-              CLINICAL_STAFF));
+              CLINICAL_STAFF),
+          get("/api/alerts?status=active", CLINICAL_STAFF),
+          post("/api/alerts/f1/acknowledge", null, CLINICAL_STAFF));
 
   @Autowired private MockMvcTester mvc;
   @Autowired private JwtEncoder jwtEncoder;
@@ -149,6 +152,7 @@ class AuthorizationMatrixTest {
   @MockitoBean private CarePlanService carePlanService;
   @MockitoBean private GoalService goalService;
   @MockitoBean private HighBpAlertService highBpAlertService;
+  @MockitoBean private AlertService alertService;
   @MockitoBean private AuthService authService;
 
   static Stream<Arguments> endpoints() {
