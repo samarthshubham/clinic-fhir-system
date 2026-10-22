@@ -454,6 +454,9 @@ Each alert is a FHIR `Flag`:
 - `code.text`: the threshold reason
 - `period.start`: when it was raised
 - an identifier keyed by the Observation id
+- a `meta.tag` (`http://praxis.clinic/fhir/CodeSystem/alert-status|active` or `inactive`)
+
+R4 `Flag` can't be searched by `code` or `status`, so the list endpoint searches by the identifier system and the status tag. HAPI keeps old tags when a resource is updated, so acknowledging also removes the `active` tag with `$meta-delete`.
 
 It holds **references only**: no names and no reading values. A reading is stored at most once (`FlagNotifier` checks the identifier first), so re-processing the lookback window after a restart never duplicates or re-opens an alert.
 
