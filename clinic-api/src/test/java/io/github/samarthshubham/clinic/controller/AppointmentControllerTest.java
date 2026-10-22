@@ -10,7 +10,9 @@ import io.github.samarthshubham.clinic.config.SecurityConfig;
 import io.github.samarthshubham.clinic.dto.AppointmentRequest;
 import io.github.samarthshubham.clinic.dto.AppointmentResponse;
 import io.github.samarthshubham.clinic.dto.PageResponse;
+import io.github.samarthshubham.clinic.security.Role;
 import io.github.samarthshubham.clinic.service.AppointmentService;
+import io.github.samarthshubham.clinic.support.WithRole;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -20,13 +22,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 @WebMvcTest(AppointmentController.class)
 @Import(SecurityConfig.class)
-@WithMockUser(roles = "ADMIN")
+@WithRole(Role.ADMIN)
 class AppointmentControllerTest {
 
   private static final AppointmentResponse FOLLOW_UP =

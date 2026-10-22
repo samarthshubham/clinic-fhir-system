@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +26,7 @@ public class AppointmentController {
     this.appointmentService = appointmentService;
   }
 
+  @PreAuthorize("hasAuthority('appointment:write')")
   @PostMapping
   public ResponseEntity<AppointmentResponse> createAppointment(
       @Valid @RequestBody AppointmentRequest request) {
@@ -32,6 +34,7 @@ public class AppointmentController {
         .body(appointmentService.createAppointment(request));
   }
 
+  @PreAuthorize("hasAuthority('appointment:read')")
   @GetMapping
   public ResponseEntity<PageResponse<AppointmentResponse>> getAppointmentsForPatient(
       @RequestParam @NotBlank String patientId) {

@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +27,7 @@ public class ServiceRequestController {
     this.serviceRequestService = serviceRequestService;
   }
 
+  @PreAuthorize("hasAuthority('order:write')")
   @PostMapping
   public ResponseEntity<ServiceRequestResponse> createServiceRequest(
       @Valid @RequestBody ServiceRequestRequest request) {
@@ -33,12 +35,14 @@ public class ServiceRequestController {
         .body(serviceRequestService.createServiceRequest(request));
   }
 
+  @PreAuthorize("hasAuthority('clinical:read')")
   @GetMapping("/{id}")
   public ResponseEntity<ServiceRequestResponse> getServiceRequest(
       @PathVariable @NotBlank String id) {
     return ResponseEntity.ok(serviceRequestService.getServiceRequest(id));
   }
 
+  @PreAuthorize("hasAuthority('clinical:read')")
   @GetMapping
   public ResponseEntity<PageResponse<ServiceRequestResponse>> getServiceRequestsForPatient(
       @RequestParam @NotBlank String patientId, @RequestParam(required = false) String status) {

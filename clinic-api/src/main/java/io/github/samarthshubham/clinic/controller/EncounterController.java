@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +27,7 @@ public class EncounterController {
     this.encounterService = encounterService;
   }
 
+  @PreAuthorize("hasAuthority('encounter:write')")
   @PostMapping
   public ResponseEntity<EncounterResponse> createEncounter(
       @Valid @RequestBody EncounterRequest request) {
@@ -33,11 +35,13 @@ public class EncounterController {
         .body(encounterService.createEncounter(request));
   }
 
+  @PreAuthorize("hasAuthority('clinical:read')")
   @GetMapping("/{id}")
   public ResponseEntity<EncounterResponse> getEncounter(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(encounterService.getEncounter(id));
   }
 
+  @PreAuthorize("hasAuthority('clinical:read')")
   @GetMapping
   public ResponseEntity<PageResponse<EncounterResponse>> getEncountersForPatient(
       @RequestParam @NotBlank String patientId) {

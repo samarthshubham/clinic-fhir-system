@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,27 +45,32 @@ public class PatientController {
     this.timelineService = timelineService;
   }
 
+  @PreAuthorize("hasAuthority('patient:write')")
   @PostMapping
   public ResponseEntity<PatientResponse> createPatient(@Valid @RequestBody PatientRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(patientService.createPatient(request));
   }
 
+  @PreAuthorize("hasAuthority('patient:read')")
   @GetMapping("/{id}")
   public ResponseEntity<PatientResponse> getPatient(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(patientService.getPatient(id));
   }
 
+  @PreAuthorize("hasAuthority('patient:read')")
   @GetMapping
   public ResponseEntity<PageResponse<PatientResponse>> searchPatients(
       @RequestParam(required = false) String name, @RequestParam(required = false) LocalDate dob) {
     return ResponseEntity.ok(patientService.searchPatients(name, dob));
   }
 
+  @PreAuthorize("hasAuthority('clinical:read')")
   @GetMapping("/{id}/snapshot")
   public ResponseEntity<SnapshotResponse> getSnapshot(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(snapshotService.getSnapshot(id));
   }
 
+  @PreAuthorize("hasAuthority('clinical:read')")
   @GetMapping("/{id}/trends")
   public ResponseEntity<TrendsResponse> getTrends(
       @PathVariable @NotBlank String id,
@@ -73,6 +79,7 @@ public class PatientController {
     return ResponseEntity.ok(trendsService.getTrends(id, type, period));
   }
 
+  @PreAuthorize("hasAuthority('clinical:read')")
   @GetMapping("/{id}/timeline")
   public ResponseEntity<List<TimelineEvent>> getTimeline(
       @PathVariable @NotBlank String id,

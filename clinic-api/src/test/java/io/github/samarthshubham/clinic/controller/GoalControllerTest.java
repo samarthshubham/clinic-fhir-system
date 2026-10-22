@@ -10,7 +10,9 @@ import io.github.samarthshubham.clinic.config.SecurityConfig;
 import io.github.samarthshubham.clinic.dto.GoalRequest;
 import io.github.samarthshubham.clinic.dto.GoalResponse;
 import io.github.samarthshubham.clinic.dto.PageResponse;
+import io.github.samarthshubham.clinic.security.Role;
 import io.github.samarthshubham.clinic.service.GoalService;
+import io.github.samarthshubham.clinic.support.WithRole;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -19,13 +21,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 @WebMvcTest(GoalController.class)
 @Import(SecurityConfig.class)
-@WithMockUser(roles = "ADMIN")
+@WithRole(Role.ADMIN)
 class GoalControllerTest {
 
   private static final GoalResponse BP_GOAL =
