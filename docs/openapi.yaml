@@ -7,6 +7,16 @@ info:
     Every endpoint returns `application/json`. FHIR R4 is the storage format behind the API, not the contract.
     **CRUD endpoints** return flat response DTOs; list endpoints wrap them in `{ items, total }`, where `items` is the first page of HAPI results and `total` is HAPI's total (no paging yet).
     **Experience API endpoints** (`/snapshot`, `/trends`, `/timeline`, `/dashboard`) return aggregated DTOs.
+
+    **Authentication.** Every endpoint except `/api/auth/*`, the alert webhook and the public actuator endpoints needs
+    `Authorization: Bearer <accessToken>`. Get a token from `POST /api/auth/login`, then click **Authorize** and paste
+    the `accessToken`. Access tokens last 15 minutes; exchange the refresh token at `POST /api/auth/refresh` for a new pair.
+    No token, or an invalid/expired one, returns `401`. A valid token without the required permission returns `403`.
+
+    **Roles → permissions.** Tokens carry roles; the server expands them into permissions on each request.
+    `FRONT_DESK`: patient and appointment read/write, practitioner read.
+    `CLINICIAN`: everything except `practitioner:write`.
+    `ADMIN`: everything.
   version: 1.0.0
   contact:
     name: samarthshubham
@@ -16,7 +26,12 @@ servers:
   - url: http://localhost:9090
     description: Local development
 
+security:
+  - bearerAuth: []
+
 tags:
+  - name: Auth
+    description: Login and token refresh
   - name: Patients
     description: Patient registration and search
   - name: Encounters
@@ -46,12 +61,78 @@ tags:
 
 paths:
 
+  # ── Auth ──────────────────────────────────────────────────────────────────
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in and receive an access + refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              username: "clinician"
+              password: "Clinician#2026"
+      responses:
+        '200':
+          description: Tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: 401
+                message: "Invalid username or password"
+
+  /api/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Exchange a refresh token for a new token pair
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          description: Refresh token invalid, expired, or used as an access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: 401
+                message: "Invalid or expired refresh token"
+
   # ── Patients ──────────────────────────────────────────────────────────────
 
   /api/patients:
     post:
       tags: [Patients]
       summary: Register a new patient
+      description: Requires the `patient:write` permission (all roles).
       requestBody:
         required: true
         content:
@@ -66,6 +147,10 @@ paths:
               phone: "555-0101"
               email: "marcus.webb@example.com"
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '201':
           description: Patient created
           content:
@@ -78,6 +163,7 @@ paths:
     get:
       tags: [Patients]
       summary: Search patients
+      description: Requires the `patient:read` permission (all roles).
       parameters:
         - name: name
           in: query
@@ -93,6 +179,10 @@ paths:
           description: Date of birth (ISO 8601)
           example: "1978-04-15"
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Page of Patient responses
           content:
@@ -104,9 +194,14 @@ paths:
     get:
       tags: [Patients]
       summary: Get patient by ID
+      description: Requires the `patient:read` permission (all roles).
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Patient found
           content:
@@ -120,9 +215,14 @@ paths:
     get:
       tags: [Experience APIs]
       summary: At-a-glance snapshot — active conditions, meds, latest vitals, alerts
+      description: Requires the `clinical:read` permission (ADMIN, CLINICIAN).
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Snapshot data
           content:
@@ -136,6 +236,7 @@ paths:
     get:
       tags: [Experience APIs]
       summary: Chart-ready vitals time series
+      description: Requires the `clinical:read` permission (ADMIN, CLINICIAN).
       parameters:
         - $ref: '#/components/parameters/ResourceId'
         - name: type
@@ -151,6 +252,10 @@ paths:
           description: "Lookback period, e.g. 30d, 90d, 1y"
           example: "30d"
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Trends series
           content:
@@ -164,6 +269,7 @@ paths:
     get:
       tags: [Experience APIs]
       summary: Unified chronological event feed with cursor pagination
+      description: Requires the `clinical:read` permission (ADMIN, CLINICIAN).
       parameters:
         - $ref: '#/components/parameters/ResourceId'
         - name: limit
@@ -186,6 +292,10 @@ paths:
           description: "Comma-separated event types: encounter, report, vital, condition"
           example: "encounter,report"
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: List of timeline events
           content:
@@ -203,6 +313,7 @@ paths:
     post:
       tags: [Encounters]
       summary: Record a clinical visit
+      description: Requires the `encounter:write` permission (ADMIN, CLINICIAN).
       requestBody:
         required: true
         content:
@@ -216,6 +327,10 @@ paths:
               status: "finished"
               practitionerId: "prac456"
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '201':
           description: Encounter created
           content:
@@ -230,6 +345,7 @@ paths:
     get:
       tags: [Encounters]
       summary: List encounters for a patient
+      description: Requires the `clinical:read` permission (ADMIN, CLINICIAN).
       parameters:
         - name: patientId
           in: query
@@ -238,6 +354,10 @@ paths:
             type: string
           example: "abc123"
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Page of Encounter responses
           content:
@@ -249,9 +369,14 @@ paths:
     get:
       tags: [Encounters]
       summary: Get encounter by ID
+      description: Requires the `clinical:read` permission (ADMIN, CLINICIAN).
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Encounter found
           content:
@@ -267,6 +392,7 @@ paths:
     post:
       tags: [Vitals]
       summary: Record vital signs (auto-evaluates conditions on creation)
+      description: Requires the `vitals:write` permission (ADMIN, CLINICIAN).
       requestBody:
         required: true
         content:
@@ -283,6 +409,10 @@ paths:
               heartRateBpm: 72
               temperatureCelsius: 36.8
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '201':
           description: Created observations, one per recorded vital
           content:
@@ -297,6 +427,7 @@ paths:
     get:
       tags: [Vitals]
       summary: Get vitals for a patient
+      description: Requires the `clinical:read` permission (ADMIN, CLINICIAN).
       parameters:
         - name: patientId
           in: query
@@ -311,6 +442,10 @@ paths:
             enum: [systolic, diastolic, weight, spo2, heartRate, temperature]
           description: Filter by vital type
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Page of Observation responses
           content:
@@ -324,6 +459,7 @@ paths:
     post:
       tags: [Practitioners]
       summary: Register a practitioner
+      description: Requires the `practitioner:write` permission (ADMIN).
       requestBody:
         required: true
         content:
@@ -337,6 +473,10 @@ paths:
               npi: "1234567890"
               email: "s.chen@clinic.example"
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '201':
           description: Practitioner created
           content:
@@ -350,9 +490,14 @@ paths:
     get:
       tags: [Practitioners]
       summary: Get practitioner by ID
+      description: Requires the `practitioner:read` permission (all roles).
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Practitioner found
           content:
@@ -368,6 +513,7 @@ paths:
     post:
       tags: [Conditions]
       summary: Record a diagnosis
+      description: Requires the `condition:write` permission (ADMIN, CLINICIAN).
       requestBody:
         required: true
         content:
@@ -381,6 +527,10 @@ paths:
               clinicalStatus: "active"
               onsetDate: "2020-01-10"
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '201':
           description: Condition created
           content:
@@ -393,6 +543,7 @@ paths:
     get:
       tags: [Conditions]
       summary: List conditions for a patient
+      description: Requires the `clinical:read` permission (ADMIN, CLINICIAN).
       parameters:
         - name: patientId
           in: query
@@ -400,6 +551,10 @@ paths:
           schema:
             type: string
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Page of Condition responses
           content:
@@ -411,9 +566,14 @@ paths:
     get:
       tags: [Conditions]
       summary: Get condition by ID
+      description: Requires the `clinical:read` permission (ADMIN, CLINICIAN).
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Condition found
           content:
@@ -429,6 +589,7 @@ paths:
     post:
       tags: [Medications]
       summary: Record a medication statement
+      description: Requires the `medication:write` permission (ADMIN, CLINICIAN).
       requestBody:
         required: true
         content:
@@ -442,6 +603,10 @@ paths:
               dosageText: "1 tablet twice daily with meals"
               startDate: "2020-02-01"
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '201':
           description: Medication created
           content:
@@ -454,6 +619,7 @@ paths:
     get:
       tags: [Medications]
       summary: List medications for a patient
+      description: Requires the `clinical:read` permission (ADMIN, CLINICIAN).
       parameters:
         - name: patientId
           in: query
@@ -461,6 +627,10 @@ paths:
           schema:
             type: string
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Page of Medication responses
           content:
@@ -474,6 +644,7 @@ paths:
     post:
       tags: [Appointments]
       summary: Schedule an appointment
+      description: Requires the `appointment:write` permission (all roles).
       requestBody:
         required: true
         content:
@@ -488,6 +659,10 @@ paths:
               description: "Follow-up — diabetes management"
               status: "booked"
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '201':
           description: Appointment created
           content:
@@ -500,6 +675,7 @@ paths:
     get:
       tags: [Appointments]
       summary: List appointments for a patient
+      description: Requires the `appointment:read` permission (all roles).
       parameters:
         - name: patientId
           in: query
@@ -507,6 +683,10 @@ paths:
           schema:
             type: string
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Page of Appointment responses
           content:
@@ -520,6 +700,7 @@ paths:
     post:
       tags: [Service Requests]
       summary: Place a lab or imaging order
+      description: Requires the `order:write` permission (ADMIN, CLINICIAN).
       requestBody:
         required: true
         content:
@@ -534,6 +715,10 @@ paths:
               priority: "routine"
               authoredOn: "2026-05-15"
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '201':
           description: Order created
           content:
@@ -546,6 +731,7 @@ paths:
     get:
       tags: [Service Requests]
       summary: List orders for a patient
+      description: Requires the `clinical:read` permission (ADMIN, CLINICIAN).
       parameters:
         - name: patientId
           in: query
@@ -559,6 +745,10 @@ paths:
             enum: [active, completed, revoked]
           description: Optional status filter
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Page of ServiceRequest responses
           content:
@@ -570,9 +760,14 @@ paths:
     get:
       tags: [Service Requests]
       summary: Get order by ID
+      description: Requires the `clinical:read` permission (ADMIN, CLINICIAN).
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Order found
           content:
@@ -588,6 +783,7 @@ paths:
     post:
       tags: [Diagnostic Reports]
       summary: Create a report (auto-marks linked ServiceRequest as completed)
+      description: Requires the `order:write` permission (ADMIN, CLINICIAN).
       requestBody:
         required: true
         content:
@@ -602,6 +798,10 @@ paths:
               issued: "2026-05-16"
               conclusion: "HbA1c 7.2% — well-controlled"
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '201':
           description: Report created
           content:
@@ -614,6 +814,7 @@ paths:
     get:
       tags: [Diagnostic Reports]
       summary: List reports for a patient
+      description: Requires the `clinical:read` permission (ADMIN, CLINICIAN).
       parameters:
         - name: patientId
           in: query
@@ -621,6 +822,10 @@ paths:
           schema:
             type: string
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Page of DiagnosticReport responses
           content:
@@ -634,6 +839,7 @@ paths:
     post:
       tags: [Care Plans]
       summary: Create a care plan
+      description: Requires the `careplan:write` permission (ADMIN, CLINICIAN).
       requestBody:
         required: true
         content:
@@ -648,6 +854,10 @@ paths:
               periodStart: "2026-01-01"
               goalIds: ["goal001"]
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '201':
           description: Care plan created
           content:
@@ -660,6 +870,7 @@ paths:
     get:
       tags: [Care Plans]
       summary: List care plans for a patient
+      description: Requires the `clinical:read` permission (ADMIN, CLINICIAN).
       parameters:
         - name: patientId
           in: query
@@ -667,6 +878,10 @@ paths:
           schema:
             type: string
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Page of CarePlan responses
           content:
@@ -680,6 +895,7 @@ paths:
     post:
       tags: [Goals]
       summary: Create a clinical goal
+      description: Requires the `careplan:write` permission (ADMIN, CLINICIAN).
       requestBody:
         required: true
         content:
@@ -696,6 +912,10 @@ paths:
               targetUnit: "%"
               targetDate: "2026-12-31"
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '201':
           description: Goal created
           content:
@@ -708,6 +928,7 @@ paths:
     get:
       tags: [Goals]
       summary: List goals for a patient
+      description: Requires the `clinical:read` permission (ADMIN, CLINICIAN).
       parameters:
         - name: patientId
           in: query
@@ -715,6 +936,10 @@ paths:
           schema:
             type: string
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Page of Goal responses
           content:
@@ -729,6 +954,8 @@ paths:
       tags: [Experience APIs]
       summary: Full clinical dashboard — partial-failure safe
       description: |
+        Requires the `clinical:read` permission (ADMIN, CLINICIAN).
+
         Aggregates all clinical data for a patient into a single response.
         If a section fails to load, it is omitted and a warning is added to `_warnings[]`.
       parameters:
@@ -739,6 +966,10 @@ paths:
             type: string
           example: "abc123"
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Dashboard data (may include warnings for degraded sections)
           content:
@@ -754,6 +985,7 @@ paths:
     post:
       tags: [Alerts]
       summary: FHIR Subscription webhook for critical systolic BP
+      security: []
       description: |
         Called by HAPI FHIR (rest-hook, empty payload) when a systolic BP Observation above
         `clinical.thresholds.systolic-critical` is stored. The request carries no body; clinic-api
@@ -775,6 +1007,13 @@ paths:
 
 components:
 
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from `POST /api/auth/login` (HS256, 15 minutes)
+
   parameters:
     ResourceId:
       name: id
@@ -786,6 +1025,26 @@ components:
       example: "abc123"
 
   responses:
+    Unauthorized:
+      description: Missing, invalid or expired access token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 401
+            message: "Authentication required"
+
+    Forbidden:
+      description: Authenticated, but the role lacks the required permission
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 403
+            message: "Access denied"
+
     ValidationError:
       description: Request body failed validation
       content:
@@ -819,6 +1078,69 @@ components:
         message:
           type: string
           example: "Patient abc123 not found"
+
+    # ── Auth ───────────────────────────────────────────────────────────────
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: "clinician"
+        password:
+          type: string
+          format: password
+
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    AuthUser:
+      type: object
+      properties:
+        username:
+          type: string
+          example: "clinician"
+        name:
+          type: string
+          example: "Anika Patel"
+        title:
+          type: string
+          nullable: true
+          example: "Internal Medicine"
+        practitionerId:
+          type: string
+          nullable: true
+          description: FHIR Practitioner linked by the username identifier
+          example: "user-clinician"
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [ADMIN, CLINICIAN, FRONT_DESK]
+
+    TokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: "JWT sent as `Authorization: Bearer …`"
+        refreshToken:
+          type: string
+          description: JWT accepted only by `/api/auth/refresh`
+        tokenType:
+          type: string
+          example: "Bearer"
+        expiresIn:
+          type: integer
+          description: Access token lifetime in seconds
+          example: 900
+        user:
+          $ref: '#/components/schemas/AuthUser'
 
     # ── Response DTOs ──────────────────────────────────────────────────────
     # Fields missing from the stored FHIR resource are null.

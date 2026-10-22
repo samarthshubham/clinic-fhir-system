@@ -10,6 +10,67 @@ All responses are plain JSON with `Content-Type: application/json`. FHIR R4 is h
 
 ---
 
+## Authentication & roles
+
+Every endpoint needs `Authorization: Bearer <accessToken>` except `POST /api/auth/login`, `POST /api/auth/refresh`, the alert webhook (which has its own `X-Alert-Secret`) and `/actuator/health`, `/actuator/info`, `/actuator/prometheus`. See [10-auth.md](./10-auth.md) for how it works.
+
+### POST /api/auth/login
+```json
+{ "username": "clinician", "password": "Clinician#2026" }
+```
+**Response `200 OK`**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "tokenType": "Bearer",
+  "expiresIn": 900,
+  "user": {
+    "username": "clinician",
+    "name": "Anika Patel",
+    "title": "Internal Medicine",
+    "practitionerId": "user-clinician",
+    "roles": ["CLINICIAN"]
+  }
+}
+```
+Wrong username or password → `401 { "status": 401, "message": "Invalid username or password" }` (the same message either way, so callers can't probe which usernames exist).
+
+### POST /api/auth/refresh
+```json
+{ "refreshToken": "eyJhbGciOiJIUzI1NiJ9..." }
+```
+Returns a new token pair in the same shape as login. An expired refresh token, or an access token sent here, → `401`.
+
+### Tokens
+| | Access token | Refresh token |
+|---|---|---|
+| Lifetime | 15 min (`clinic.auth.access-token-ttl`) | 7 days (`clinic.auth.refresh-token-ttl`) |
+| `token_type` claim | `access` | `refresh` |
+| Accepted by | every protected endpoint | only `/api/auth/refresh` |
+| Other claims | `sub`, `iss`, `iat`, `exp`, `roles`, `name`, `practitioner_id` | `sub`, `iss`, `iat`, `exp` |
+
+Both are HS256 JWTs signed with `clinic.auth.jwt-secret` (env `CLINIC_JWT_SECRET`, at least 32 bytes).
+
+### Permissions
+Tokens carry **roles**; on each request the server expands them into **permissions** (`RolePermissions`), and each endpoint checks one permission with `@PreAuthorize("hasAuthority('…')")`.
+
+| Permission | Endpoints | FRONT_DESK | CLINICIAN | ADMIN |
+|---|---|:-:|:-:|:-:|
+| `patient:read` | `GET /api/patients`, `GET /api/patients/{id}` | ✓ | ✓ | ✓ |
+| `patient:write` | `POST /api/patients` | ✓ | ✓ | ✓ |
+| `appointment:read` / `appointment:write` | `GET` / `POST /api/appointments` | ✓ | ✓ | ✓ |
+| `practitioner:read` | `GET /api/practitioners/{id}` | ✓ | ✓ | ✓ |
+| `practitioner:write` | `POST /api/practitioners` | | | ✓ |
+| `clinical:read` | every other `GET`: encounters, vitals, conditions, medications, service-requests, diagnostic-reports, care-plans, goals, snapshot, trends, timeline, dashboard | | ✓ | ✓ |
+| `encounter:write`, `vitals:write`, `condition:write`, `medication:write` | matching `POST` | | ✓ | ✓ |
+| `order:write` | `POST /api/service-requests`, `POST /api/diagnostic-reports` | | ✓ | ✓ |
+| `careplan:write` | `POST /api/care-plans`, `POST /api/goals` | | ✓ | ✓ |
+
+Request-body validation (`@Valid`) runs before the permission check, so an invalid body returns `400` even for a role that would get `403`.
+
+---
+
 ## Patient APIs
 
 | Method | Path | Description |
@@ -378,6 +439,8 @@ Errors return plain JSON (not FHIR) with `Content-Type: application/json`:
 | Status | Cause |
 |---|---|
 | `400` | DTO validation failure (`@Valid`) |
+| `401` | Missing, invalid or expired token; wrong login credentials; bad webhook secret |
+| `403` | Valid token, but the role lacks the endpoint's permission |
 | `404` | FHIR resource not found |
 | `422` | Referential integrity failure (e.g. Condition references non-existent Patient) |
 | `503` | HAPI FHIR server unreachable |

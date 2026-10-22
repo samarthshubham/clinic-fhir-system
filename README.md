@@ -71,6 +71,18 @@ Services start in the correct order, each waiting for the previous to be healthy
 
 Grafana loads the **Clinic → clinic-api** dashboard (request rate, p50/p95/p99 latency, 4xx and 5xx rates per endpoint) and a 5xx error rate alert from `infra/grafana/`. Prometheus scrapes `http://localhost:9090/actuator/prometheus` every 5s. The `admin` / `admin` login is for local development only; skip the password change prompt on first login.
 
+### Demo logins (dev only)
+
+The API and clinician-app require a login. These accounts are defined in `clinic-api/src/main/resources/application.yaml` for local development; in dev builds the login page has one-click buttons for each.
+
+| Username | Password | Role | Can |
+|---|---|---|---|
+| `admin` | `Admin#2026` | `ADMIN` | everything, including registering practitioners |
+| `clinician` | `Clinician#2026` | `CLINICIAN` | all clinical reads and writes |
+| `frontdesk` | `FrontDesk#2026` | `FRONT_DESK` | register patients, book appointments; no clinical data |
+
+Never deploy these: override `clinic.auth.users` and set `CLINIC_JWT_SECRET` outside local dev. In Swagger UI, call `POST /api/auth/login`, then click **Authorize** and paste the `accessToken`. See [docs/10-auth.md](./docs/10-auth.md).
+
 > **First boot:** HAPI FHIR takes up to ~5 minutes to initialize on a fresh volume. Subsequent starts are much faster.
 
 Logs are written to `./logs/` in plain text (no ANSI codes). Press **Ctrl+C** in the `dev.sh` terminal to stop all services cleanly — it kills background processes and runs `docker compose down`.
@@ -181,6 +193,7 @@ Claude Code also reviews each pull request once when it is opened or marked read
 - Patient detail page with ApexCharts vitals timeline (`clinician-app`)
 - Cucumber-driven seed data app — 5 idempotent patient profiles with relative dates (`seed-demo-data`)
 - Full FHIR R4 compliance via HAPI FHIR
+- JWT login with role-based access control (`ADMIN`, `CLINICIAN`, `FRONT_DESK`) — see [auth](./docs/10-auth.md)
 - Clinician alerts for critical systolic BP via FHIR Subscriptions (mock SMS in the log) — see [demo](./docs/09-bp-alerts-demo.md)
 
 ## Tech Stack
@@ -209,6 +222,7 @@ See [`docs/`](./docs) for full system design:
 - [Best Practices](./docs/07-best-practices.md)
 - [Design System](./docs/08-design-system.md)
 - [High BP Alerts Demo](./docs/09-bp-alerts-demo.md)
+- [Authentication & RBAC](./docs/10-auth.md)
 
 ---
 
