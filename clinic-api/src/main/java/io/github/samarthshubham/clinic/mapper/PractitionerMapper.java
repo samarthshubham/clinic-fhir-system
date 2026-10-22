@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 public class PractitionerMapper {
 
   private static final String NPI_SYSTEM = "http://hl7.org/fhir/sid/us-npi";
+  public static final String USERNAME_SYSTEM = "http://praxis.clinic/fhir/identifier/username";
 
   public Practitioner toFhir(PractitionerRequest request) {
     Practitioner practitioner = new Practitioner();
@@ -30,6 +31,17 @@ public class PractitionerMapper {
           .setSystem(ContactPoint.ContactPointSystem.EMAIL)
           .setValue(request.email());
     }
+    return practitioner;
+  }
+
+  public Practitioner toStaffFhir(String id, String username, PractitionerRequest request) {
+    Practitioner practitioner = toFhir(request);
+    practitioner.setId(id);
+    practitioner
+        .addIdentifier()
+        .setSystem(USERNAME_SYSTEM)
+        .setValue(username)
+        .setUse(Identifier.IdentifierUse.SECONDARY);
     return practitioner;
   }
 

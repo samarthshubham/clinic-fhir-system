@@ -42,7 +42,7 @@ class TokenServiceTest {
 
   @Test
   void accessTokenOmitsPractitionerIdWhenUnknown() {
-    AuthUser user = new AuthUser("ghost", "Ghost", null, List.of(Role.FRONT_DESK));
+    AuthUser user = new AuthUser("ghost", "Ghost", null, null, List.of(Role.FRONT_DESK));
 
     Jwt jwt = TestAuth.accessTokenDecoder().decode(tokenService.issueTokens(user).accessToken());
 

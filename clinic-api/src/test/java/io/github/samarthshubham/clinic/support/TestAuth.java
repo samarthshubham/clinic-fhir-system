@@ -58,7 +58,8 @@ public final class TestAuth {
   }
 
   public static AuthUser user(Role role) {
-    return new AuthUser(role.name().toLowerCase(), "Test " + role, "user-" + role, List.of(role));
+    return new AuthUser(
+        role.name().toLowerCase(), "Test " + role, "Tester", "user-" + role, List.of(role));
   }
 
   public static String signedToken(String tokenType, Instant issuedAt, Duration ttl) {
