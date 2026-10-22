@@ -15,7 +15,9 @@ POST /api/vitals (systolic 185)
     → clinic-api rejects the call with 401 unless the secret matches
     → clinic-api searches critical systolic readings updated since the last alert,
       following every next page of results
-    → Notifier (default LoggingSmsNotifier) logs one mock SMS per reading
+    → every Notifier gets one alert per reading:
+        LoggingSmsNotifier  logs a mock SMS
+        FlagNotifier        stores a FHIR Flag (references only), shown in the clinician-app Inbox
 ```
 
 - HAPI rest-hook delivery is enabled in `infra/docker-compose.yml`
@@ -59,13 +61,17 @@ In a second terminal, from the repo root:
 grep "High BP subscription" logs/clinic-api.log
 # High BP subscription registered, notifying http://host.docker.internal:9090/api/alerts/bp-subscription
 
-PATIENT_ID=$(curl -s -X POST http://localhost:9090/api/patients \
+TOKEN=$(curl -s -X POST http://localhost:9090/api/auth/login \
   -H 'Content-Type: application/json' \
+  -d '{"username":"clinician","password":"Clinician#2026"}' | jq -r .accessToken)
+
+PATIENT_ID=$(curl -s -X POST http://localhost:9090/api/patients \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"firstName":"Demo","lastName":"Alert","dateOfBirth":"1960-01-01","gender":"male"}' \
   | sed -n 's/^  "id": "\(.*\)",$/\1/p')
 
 curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:9090/api/vitals \
-  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d "{\"patientId\":\"$PATIENT_ID\",\"effectiveDate\":\"$(date +%F)\",\"systolicBp\":185,\"diastolicBp\":110}"
 
 sleep 5
@@ -77,6 +83,14 @@ Expected, within a few seconds of the vitals call:
 ```
 [mock-sms] Clinician alert: Systolic BP above 180 mmHg for Patient/54 (Observation/55)
 ```
+
+The alert is also stored and listed by the API:
+
+```bash
+curl -s "http://localhost:9090/api/alerts?status=active" -H "Authorization: Bearer $TOKEN" | jq '.items[0]'
+```
+
+In clinician-app (`http://localhost:4200`, signed in as `clinician` or `admin`), the topbar **Inbox** badge goes up within 30 seconds, the polling interval. The Inbox lists the alert with the patient's name, links to their dashboard, and **Acknowledge** removes it. The front desk sees no Inbox.
 
 A reading at or below the threshold (for example `"systolicBp":120`) produces no alert.
 

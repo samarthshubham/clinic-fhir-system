@@ -42,12 +42,12 @@ clinic-api/         Spring Boot backend (Maven)
                     CarePlanService, GoalService,
                     SnapshotService, TrendsService, TimelineService,
                     DashboardService, ConditionEvaluationService,
-                    HighBpAlertService, Notifier, LoggingSmsNotifier,
+                    HighBpAlertService, Notifier, LoggingSmsNotifier, FlagNotifier, AlertService,
                     AuthService, TokenService, StaffAccountBootstrap
     mapper/         PatientMapper, EncounterMapper, ObservationMapper,
                     PractitionerMapper, ConditionMapper, MedicationMapper,
                     AppointmentMapper, ServiceRequestMapper, DiagnosticReportMapper,
-                    CarePlanMapper, GoalMapper, PageMapper (search result → PageResponse)
+                    CarePlanMapper, GoalMapper, FlagMapper, PageMapper (search result → PageResponse)
     dto/            PatientRequest, EncounterRequest, VitalsRequest,
                     PractitionerRequest, ConditionRequest, MedicationRequest,
                     AppointmentRequest, ServiceRequestRequest, DiagnosticReportRequest,
@@ -405,7 +405,9 @@ Every other `/api/**` endpoint needs `Authorization: Bearer <accessToken>` (exce
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/alerts/bp-subscription` | HAPI rest-hook webhook (empty body, `X-Alert-Secret` header required) — alerts clinicians via `Notifier` on systolic BP above `systolic-critical`; alerts carry only Patient/Observation references |
+| `POST` | `/api/alerts/bp-subscription` | HAPI rest-hook webhook (empty body, `X-Alert-Secret` header required) — alerts clinicians via every `Notifier` (mock SMS log + `FlagNotifier`) on systolic BP above `systolic-critical`; alerts carry only Patient/Observation references |
+| `GET` | `/api/alerts?status=active` | Stored alerts (FHIR `Flag`) newest first → `PageResponse<AlertResponse>` (`alert:read`) |
+| `POST` | `/api/alerts/{id}/acknowledge` | Mark an alert inactive → `AlertResponse` (`alert:write`) |
 
 ---
 

@@ -194,7 +194,7 @@ Claude Code also reviews each pull request once when it is opened or marked read
 - Cucumber-driven seed data app — 5 idempotent patient profiles with relative dates (`seed-demo-data`)
 - Full FHIR R4 compliance via HAPI FHIR
 - JWT login with role-based access control (`ADMIN`, `CLINICIAN`, `FRONT_DESK`) — see [auth](./docs/10-auth.md)
-- Clinician alerts for critical systolic BP via FHIR Subscriptions (mock SMS in the log) — see [demo](./docs/09-bp-alerts-demo.md)
+- Clinician alerts for critical systolic BP via FHIR Subscriptions: stored as FHIR `Flag`s, shown in the clinician-app Inbox with a live badge, plus a mock SMS in the log — see [demo](./docs/09-bp-alerts-demo.md)
 
 ## Tech Stack
 
