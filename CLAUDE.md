@@ -167,6 +167,8 @@ This is a personal project. Keep commits lightweight.
 - Add a one-line body only if I'd forget *why* in a week. Otherwise skip it.
 - `wip:` prefix is fine for checkpoints.
 
+**PR review:** the `claude-review` check runs the `incremental-review` skill (`.claude/skills/incremental-review/SKILL.md`) on every push. `.github/scripts/review-state.sh` tracks the last reviewed commit in a sticky PR comment, so only new non-merge commits are reviewed. Run it locally with `/incremental-review <pr-number>`.
+
 **Slow down and confirm with me before:**
 - Force-pushing or rewriting history.
 - Destructive changes (migrations, deletions, `rm -rf` in scripts) — commit current state first as a safety net.
