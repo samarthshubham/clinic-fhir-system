@@ -1,5 +1,7 @@
 const SPRING_API = 'http://localhost:9090';
 const HAPI_FHIR = 'http://localhost:8080';
+const DEFAULT_SEED_USERNAME = 'clinician';
+const DEFAULT_SEED_PASSWORD = 'Clinician#2026';
 
 export interface CreatedResource {
   id: string;
@@ -109,6 +111,8 @@ interface FhirSearchBundle {
 }
 
 class ApiClient {
+  private accessToken: string | null = null;
+
   // Node's fetch reuses pooled connections that the server may have already
   // closed, throwing "TypeError: fetch failed". A retry opens a fresh one.
   private async fetchWithRetry(
@@ -130,9 +134,13 @@ class ApiClient {
     body: unknown,
     contentType = 'application/json',
   ): Promise<T> {
+    const headers: Record<string, string> = { 'Content-Type': contentType };
+    if (this.accessToken) {
+      headers['Authorization'] = `Bearer ${this.accessToken}`;
+    }
     const response = await this.fetchWithRetry(url, {
       method: 'POST',
-      headers: { 'Content-Type': contentType },
+      headers,
       body: JSON.stringify(body),
     });
     if (!response.ok) {
@@ -192,6 +200,26 @@ class ApiClient {
         `DELETE /fhir/${resourceType}/${id} failed [${response.status}]`,
       );
     }
+  }
+
+  async login(
+    username = process.env['SEED_USERNAME'] ?? DEFAULT_SEED_USERNAME,
+    password = process.env['SEED_PASSWORD'] ?? DEFAULT_SEED_PASSWORD,
+  ): Promise<void> {
+    const url = `${SPRING_API}/api/auth/login`;
+    const response = await this.fetchWithRetry(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(
+        `Login as ${username} failed [${response.status}]: ${text.slice(0, 300)}`,
+      );
+    }
+    const tokens = (await response.json()) as { accessToken: string };
+    this.accessToken = tokens.accessToken;
   }
 
   async cascadeDeletePatient(id: string): Promise<void> {

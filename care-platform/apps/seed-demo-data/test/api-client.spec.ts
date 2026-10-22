@@ -94,7 +94,65 @@ describe('retry on stale pooled connections', () => {
   });
 });
 
+describe('login', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('logs in as the default clinician account', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ accessToken: 't0' }));
+
+    await apiClient.login();
+
+    expect(calls()).toEqual([
+      {
+        url: `${SPRING}/auth/login`,
+        init: {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: 'clinician',
+            password: 'Clinician#2026',
+          }),
+        },
+      },
+    ]);
+  });
+
+  it('takes credentials from SEED_USERNAME and SEED_PASSWORD', async () => {
+    vi.stubEnv('SEED_USERNAME', 'admin');
+    vi.stubEnv('SEED_PASSWORD', 'Admin#2026');
+    fetchMock.mockResolvedValueOnce(jsonResponse({ accessToken: 't0' }));
+
+    await apiClient.login();
+
+    expect(JSON.parse(String(calls()[0].init?.body))).toEqual({
+      username: 'admin',
+      password: 'Admin#2026',
+    });
+  });
+
+  it('fails with the status and response body when rejected', async () => {
+    fetchMock.mockResolvedValueOnce(
+      textResponse(
+        '{"status":401,"message":"Invalid username or password"}',
+        401,
+      ),
+    );
+
+    await expect(apiClient.login('clinician', 'wrong')).rejects.toThrow(
+      'Login as clinician failed [401]: {"status":401,"message":"Invalid username or password"}',
+    );
+  });
+});
+
 describe('POST to the Spring API', () => {
+  beforeEach(async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ accessToken: 't1' }));
+    await apiClient.login();
+    fetchMock.mockClear();
+  });
+
   const cases = [
     ['createEncounter', 'encounters'],
     ['recordVitals', 'vitals'],
@@ -121,7 +179,10 @@ describe('POST to the Spring API', () => {
         url: `${SPRING}/${path}`,
         init: {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer t1',
+          },
           body: JSON.stringify(body),
         },
       },
