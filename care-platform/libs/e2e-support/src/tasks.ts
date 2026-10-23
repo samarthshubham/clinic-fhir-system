@@ -19,26 +19,41 @@ export interface TestPatient {
   gender: string;
 }
 
-const tracked = { patientIds: new Set<string>(), practitionerIds: new Set<string>() };
+const tracked = {
+  patientIds: new Set<string>(),
+  practitionerIds: new Set<string>(),
+};
 
-async function searchIds(resourceType: string, query: string): Promise<string[]> {
-  const response = await fetch(`${HAPI}/${resourceType}?${query}&_count=100&_elements=id`, {
-    headers: { Accept: 'application/fhir+json' },
-  });
-  if (!response.ok) throw new Error(`GET ${resourceType}?${query} failed [${response.status}]`);
-  const bundle = (await response.json()) as { entry?: Array<{ resource: { id: string } }> };
+async function searchIds(
+  resourceType: string,
+  query: string,
+): Promise<string[]> {
+  const response = await fetch(
+    `${HAPI}/${resourceType}?${query}&_count=100&_elements=id`,
+    {
+      headers: { Accept: 'application/fhir+json' },
+    },
+  );
+  if (!response.ok)
+    throw new Error(`GET ${resourceType}?${query} failed [${response.status}]`);
+  const bundle = (await response.json()) as {
+    entry?: Array<{ resource: { id: string } }>;
+  };
   return bundle.entry?.map((e) => e.resource.id) ?? [];
 }
 
 async function deletePractitioner(id: string): Promise<void> {
-  const response = await fetch(`${HAPI}/Practitioner/${id}`, { method: 'DELETE' });
+  const response = await fetch(`${HAPI}/Practitioner/${id}`, {
+    method: 'DELETE',
+  });
   if (!response.ok && response.status !== 404) {
     throw new Error(`DELETE Practitioner/${id} failed [${response.status}]`);
   }
 }
 
 async function deleteData(data: TrackedData): Promise<void> {
-  for (const id of data.patientIds ?? []) await apiClient.cascadeDeletePatient(id);
+  for (const id of data.patientIds ?? [])
+    await apiClient.cascadeDeletePatient(id);
   for (const id of data.practitionerIds ?? []) await deletePractitioner(id);
 }
 
@@ -47,7 +62,10 @@ async function sweepTestData(): Promise<void> {
     ...LOGIN_PATIENT_IDS,
     ...(await searchIds('Patient', `family=${TEST_FAMILY_PREFIX}`)),
   ];
-  const practitionerIds = await searchIds('Practitioner', `family=${TEST_FAMILY_PREFIX}`);
+  const practitionerIds = await searchIds(
+    'Practitioner',
+    `family=${TEST_FAMILY_PREFIX}`,
+  );
   await deleteData({ patientIds, practitionerIds });
 }
 
@@ -64,7 +82,10 @@ async function waitForUrl(url: string, timeoutMs: number): Promise<void> {
   throw new Error(`${url} did not become healthy within ${timeoutMs / 1000}s`);
 }
 
-export async function waitForUrls(urls: string[], timeoutMs = 180_000): Promise<void> {
+export async function waitForUrls(
+  urls: string[],
+  timeoutMs = 180_000,
+): Promise<void> {
   for (const url of urls) await waitForUrl(url, timeoutMs);
 }
 
@@ -103,7 +124,9 @@ export async function cleanUpAfterSpec(failures: number): Promise<void> {
   tracked.patientIds.clear();
   tracked.practitionerIds.clear();
   if (failures > 0) {
-    console.log(`Kept e2e data for inspection (spec had failures): ${JSON.stringify(data)}`);
+    console.log(
+      `Kept e2e data for inspection (spec had failures): ${JSON.stringify(data)}`,
+    );
     return;
   }
   await deleteData(data);

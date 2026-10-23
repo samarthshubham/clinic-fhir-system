@@ -13,11 +13,13 @@ export const PASSWORDS: Record<string, string> = {
 const TOKEN_TTL_MS = 10 * 60_000;
 const tokenCache = new Map<string, { token: string; at: number }>();
 
-export const apiUrl = (): string => Cypress.env('apiUrl') ?? 'http://localhost:9090';
+export const apiUrl = (): string =>
+  Cypress.env('apiUrl') ?? 'http://localhost:9090';
 
 export function tokenFor(username: string): Cypress.Chainable<string> {
   const cached = tokenCache.get(username);
-  if (cached && Date.now() - cached.at < TOKEN_TTL_MS) return cy.wrap(cached.token, { log: false });
+  if (cached && Date.now() - cached.at < TOKEN_TTL_MS)
+    return cy.wrap(cached.token, { log: false });
   const password = PASSWORDS[username];
   if (!password) throw new Error(`No known password for "${username}"`);
   return cy
@@ -39,7 +41,8 @@ export function apiRequest(
   return cy.request({
     method,
     url: `${apiUrl()}${resolvePlaceholders(path)}`,
-    body: typeof body === 'string' ? JSON.parse(resolvePlaceholders(body)) : body,
+    body:
+      typeof body === 'string' ? JSON.parse(resolvePlaceholders(body)) : body,
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     failOnStatusCode: false,
   });
@@ -51,7 +54,9 @@ export function asStaff<T>(
   path: string,
   body?: unknown,
 ): Cypress.Chainable<Cypress.Response<T>> {
-  return tokenFor(username).then((token) => apiRequest(method, path, body, token));
+  return tokenFor(username).then((token) =>
+    apiRequest(method, path, body, token),
+  );
 }
 
 export function createTestPatient(alias: string): Cypress.Chainable<string> {

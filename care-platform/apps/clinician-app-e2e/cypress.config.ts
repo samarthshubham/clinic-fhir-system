@@ -21,10 +21,13 @@ export default defineConfig({
     ...nxE2EPreset(__filename, {
       cypressDir: 'src',
       webServerCommands: {
-        default: 'npx nx run-many -t serve -p clinician-app patient-app -c e2e --parallel=2',
-        production: 'npx nx run-many -t serve -p clinician-app patient-app -c e2e --parallel=2',
+        default:
+          'npx nx run-many -t serve -p clinician-app patient-app -c e2e --parallel=2',
+        production:
+          'npx nx run-many -t serve -p clinician-app patient-app -c e2e --parallel=2',
       },
-      ciWebServerCommand: 'npx nx run-many -t serve -p clinician-app patient-app -c e2e --parallel=2',
+      ciWebServerCommand:
+        'npx nx run-many -t serve -p clinician-app patient-app -c e2e --parallel=2',
       ciBaseUrl: 'http://localhost:4200',
     }),
     baseUrl: 'http://localhost:4200',

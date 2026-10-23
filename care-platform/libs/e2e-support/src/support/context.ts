@@ -7,7 +7,12 @@ export interface ScenarioContext {
 
 export const runId = Date.now().toString(36);
 
-export const ctx: ScenarioContext = { token: undefined, ids: {}, names: {}, response: undefined };
+export const ctx: ScenarioContext = {
+  token: undefined,
+  ids: {},
+  names: {},
+  response: undefined,
+};
 
 export function resetContext(): void {
   ctx.token = undefined;
@@ -33,5 +38,7 @@ export function resolvePlaceholders(text: string): string {
 }
 
 export function isoDate(offsetDays: number): string {
-  return new Date(Date.now() + offsetDays * 86_400_000).toISOString().split('T')[0];
+  return new Date(Date.now() + offsetDays * 86_400_000)
+    .toISOString()
+    .split('T')[0];
 }
