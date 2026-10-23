@@ -55,14 +55,16 @@ export function asStaff<T>(
 }
 
 export function createTestPatient(alias: string): Cypress.Chainable<string> {
+  const lastName = `E2E-${alias}-${Date.now().toString(36)}`;
   return asStaff<{ id: string }>('clinician', 'POST', '/api/patients', {
     firstName: 'Test',
-    lastName: `E2E-${alias}-${Date.now().toString(36)}`,
+    lastName,
     dateOfBirth: '1980-05-15',
     gender: 'female',
   }).then((response) => {
     expect(response.status, 'create test patient').to.eq(201);
     const id = response.body.id;
+    ctx.names[alias] = lastName;
     return cy.task('trackTestData', { patientIds: [id] }).then(() => id);
   });
 }

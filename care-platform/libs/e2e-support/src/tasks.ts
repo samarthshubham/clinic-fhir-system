@@ -75,6 +75,7 @@ export const e2eTasks = {
     return null;
   },
   async upsertTestPatient(patient: TestPatient): Promise<null> {
+    await apiClient.cascadeDeletePatient(patient.id);
     await apiClient.upsertPatient(patient);
     tracked.patientIds.add(patient.id);
     return null;

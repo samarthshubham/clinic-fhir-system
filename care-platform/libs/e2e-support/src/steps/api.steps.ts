@@ -41,6 +41,7 @@ Given('a test patient {string}', (alias: string) => {
   createTestPatient(alias).then((id) => {
     ctx.ids[alias] = id;
     ctx.ids['patient'] ??= id;
+    ctx.names['patient'] ??= ctx.names[alias];
   });
 });
 
@@ -58,6 +59,7 @@ Given('the e2e login patients exist', () => {
       gender: 'female',
     });
     ctx.ids[alias] = id;
+    ctx.names[alias] = 'E2E-login';
   }
 });
 

@@ -1,16 +1,18 @@
 export interface ScenarioContext {
   token: string | undefined;
   ids: Record<string, string>;
+  names: Record<string, string>;
   response: Cypress.Response<any> | undefined;
 }
 
 export const runId = Date.now().toString(36);
 
-export const ctx: ScenarioContext = { token: undefined, ids: {}, response: undefined };
+export const ctx: ScenarioContext = { token: undefined, ids: {}, names: {}, response: undefined };
 
 export function resetContext(): void {
   ctx.token = undefined;
   ctx.ids = {};
+  ctx.names = {};
   ctx.response = undefined;
 }
 
