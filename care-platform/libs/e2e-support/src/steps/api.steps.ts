@@ -64,7 +64,7 @@ Given('the e2e login patients exist', () => {
 Given('{string} creates {string} with POST {string}:', (username: string, alias: string, path: string, body: string) => {
   asStaff<{ id: string }>(username, 'POST', path, resolvePlaceholders(body)).then((response) => {
     expect(response.status, `POST ${path}`).to.be.oneOf([200, 201]);
-    ctx.ids[alias] = response.body.id;
+    ctx.ids[alias] = (Array.isArray(response.body) ? response.body[0] : response.body).id;
     if (path.startsWith('/api/practitioners')) {
       cy.task('trackTestData', { practitionerIds: [response.body.id] });
     }
@@ -118,6 +118,33 @@ When('I track the response id as the test patient', () => {
   const id = String(valueAt(ctx.response?.body, 'id'));
   ctx.ids['patient'] = id;
   cy.task('trackTestData', { patientIds: [id] });
+});
+
+Given('the test patient has {int} encounters', (count: number) => {
+  const patientId = resolveId('patient');
+  for (let i = 1; i <= count; i++) {
+    asStaff('clinician', 'POST', '/api/encounters', {
+      patientId,
+      visitDate: isoDate(-i),
+      reason: `Visit ${i}`,
+      status: 'finished',
+    }).then((response) => {
+      expect(response.status, `encounter ${i}`).to.eq(201);
+    });
+  }
+});
+
+Given('the FHIR server is stopped', () => {
+  cy.task('stopFhir', null, { timeout: 60_000 });
+});
+
+When('I use the remembered {string} as my bearer token', (alias: string) => {
+  ctx.token = resolveId(alias);
+});
+
+When('I remember the {string} of the last item as {string}', (key: string, alias: string) => {
+  const items = listAt('');
+  ctx.ids[alias] = String(valueAt(items[items.length - 1], key));
 });
 
 When('I remember the response field {string} as {string}', (path: string, alias: string) => {
