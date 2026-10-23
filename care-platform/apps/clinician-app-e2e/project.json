@@ -4,7 +4,7 @@
   "projectType": "application",
   "sourceRoot": "apps/clinician-app-e2e/src",
   "tags": [],
-  "implicitDependencies": ["clinician-app"],
+  "implicitDependencies": ["clinician-app", "patient-app", "e2e-support"],
   "// targets": "to see all targets run: nx show project clinician-app-e2e --web",
   "targets": {}
 }

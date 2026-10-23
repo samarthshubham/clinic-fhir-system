@@ -64,6 +64,10 @@
         },
         "development": {
           "buildTarget": "patient-app:build:development"
+        },
+        "e2e": {
+          "buildTarget": "patient-app:build:development",
+          "port": 4300
         }
       },
       "defaultConfiguration": "development"

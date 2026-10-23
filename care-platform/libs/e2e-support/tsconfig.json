@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "moduleResolution": "node10",
+    "module": "commonjs",
+    "target": "es2020",
+    "types": ["cypress", "node"],
+    "strict": true,
+    "esModuleInterop": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": false
+  },
+  "include": ["src/**/*.ts"]
+}
