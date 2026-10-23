@@ -171,6 +171,29 @@ cd clinic-api && ./mvnw verify                                          # JaCoCo
 cd care-platform && npx nx test clinician-app --coverage --watch=false  # report: care-platform/coverage/clinician-app/
 ```
 
+### End-to-end suite
+
+Cucumber scenarios (Cypress + `@badeball/cypress-cucumber-preprocessor`) run against the real stack: clinic-api, HAPI FHIR and PostgreSQL. They live in `care-platform/apps/clinician-app-e2e` and `care-platform/apps/patient-app-e2e`; shared steps and cleanup tasks are in `care-platform/libs/e2e-support`.
+
+Start the stack (`./dev.sh`, or compose plus `./mvnw spring-boot:run`), then:
+
+```bash
+cd care-platform
+npx nx run-many -t e2e -p clinician-app-e2e patient-app-e2e --parallel=1
+npx nx e2e clinician-app-e2e --env tags=@api       # API scenarios only (@api, @ui or @journey)
+```
+
+Nx serves clinician-app (`:4200`) and patient-app (`:4300`) for the UI scenarios. The HTML report is written to `reports/cucumber-report.html` in each e2e project.
+
+| Layer | Project | Covers |
+|---|---|---|
+| `@api` | clinician-app-e2e | patients, practitioners, encounters, vitals, auto-detected hypertension and hypoxemia, conditions, medications, care plans, goals, service requests, diagnostic reports, appointments, snapshot alerts, dashboard, trends, timeline paging, alerts, login/refresh, 401/403 per role, 503 when HAPI is down |
+| `@api` | patient-app-e2e | a patient reads and records only their own data |
+| `@ui` | both | sign-in, roster, patient chart, role-based navigation, recording vitals in patient-app |
+| `@journey` | clinician-app-e2e | the patient records BP in patient-app and the clinician sees the reading, diagnosis and Inbox alert in clinician-app |
+
+Each scenario creates its own test patients (family name `E2E-...`, or the `e2e-patient` / `e2e-patient-2` dev logins) and a spec's data is deleted when all its scenarios pass; after a failure the data is kept for inspection and swept at the start of the next run. The 503 scenario stops and restarts the `clinic-hapi-fhir` container. A dashboard section failing on its own cannot be triggered from outside the API, so that stays covered by the unit tests. The `e2e` GitHub workflow runs the suite on pull requests that touch `clinic-api` or `care-platform`.
+
 ---
 
 ## Pull Request Checks
