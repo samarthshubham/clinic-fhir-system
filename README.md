@@ -179,8 +179,8 @@ Start the stack (`./dev.sh`, or compose plus `./mvnw spring-boot:run`), then:
 
 ```bash
 cd care-platform
-npx nx run-many -t e2e -p clinician-app-e2e patient-app-e2e --parallel=1
-npx nx e2e clinician-app-e2e --env tags=@api       # API scenarios only (@api, @ui or @journey)
+NX_DAEMON=false npx nx run-many -t e2e -p clinician-app-e2e patient-app-e2e --parallel=1
+NX_DAEMON=false npx nx e2e clinician-app-e2e --env tags=@api       # API scenarios only (@api, @ui or @journey)
 ```
 
 Nx serves clinician-app (`:4200`) and patient-app (`:4300`) for the UI scenarios. The HTML report is written to `reports/cucumber-report.html` in each e2e project.

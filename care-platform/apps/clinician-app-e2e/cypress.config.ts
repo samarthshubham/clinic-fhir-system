@@ -18,24 +18,14 @@ import {
 
 export default defineConfig({
   e2e: {
-    ...nxE2EPreset(__filename, {
-      cypressDir: 'src',
-      webServerCommands: {
-        default:
-          'npx nx run-many -t serve -p clinician-app patient-app -c e2e --parallel=2',
-        production:
-          'npx nx run-many -t serve -p clinician-app patient-app -c e2e --parallel=2',
-      },
-      ciWebServerCommand:
-        'npx nx run-many -t serve -p clinician-app patient-app -c e2e --parallel=2',
-      ciBaseUrl: 'http://localhost:4200',
-    }),
-    baseUrl: 'http://localhost:4200',
+    ...nxE2EPreset(__filename, { cypressDir: 'src' }),
+    baseUrl: null,
     specPattern: 'src/features/**/*.feature',
     supportFile: false,
     video: false,
     env: {
       apiUrl: 'http://localhost:9090',
+      primaryApp: 'clinician',
       clinicianUrl: 'http://localhost:4200',
       patientUrl: 'http://localhost:4300',
     },

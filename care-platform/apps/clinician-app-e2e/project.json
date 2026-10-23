@@ -6,5 +6,12 @@
   "tags": [],
   "implicitDependencies": ["clinician-app", "patient-app", "e2e-support"],
   "// targets": "to see all targets run: nx show project clinician-app-e2e --web",
-  "targets": {}
+  "targets": {
+    "e2e": {
+      "parallelism": true,
+      "dependsOn": [
+        { "projects": ["clinician-app", "patient-app"], "target": "serve-e2e" }
+      ]
+    }
+  }
 }

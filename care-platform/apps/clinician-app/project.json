@@ -62,14 +62,18 @@
         "development": {
           "buildTarget": "clinician-app:build:development",
           "proxyConfig": "apps/clinician-app/proxy.conf.json"
-        },
-        "e2e": {
-          "buildTarget": "clinician-app:build:development",
-          "proxyConfig": "apps/clinician-app/proxy.conf.json",
-          "port": 4200
         }
       },
       "defaultConfiguration": "development"
+    },
+    "serve-e2e": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "options": {
+        "buildTarget": "clinician-app:build:development",
+        "proxyConfig": "apps/clinician-app/proxy.conf.json",
+        "port": 4200
+      }
     },
     "lint": {
       "executor": "@nx/eslint:lint"

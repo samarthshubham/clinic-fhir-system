@@ -5,12 +5,13 @@ const patientUrl = (): string => Cypress.env('patientUrl');
 
 function inPatientApp<A extends Record<string, unknown>>(
   args: A,
-  flow: (args: A) => void,
+  flow: (args: A & { appUrl: string }) => void,
 ): void {
-  if (Cypress.config('baseUrl') === patientUrl()) {
-    flow(args);
+  const withUrl = { ...args, appUrl: patientUrl() };
+  if (Cypress.env('primaryApp') === 'patient') {
+    flow(withUrl);
   } else {
-    cy.origin(patientUrl(), { args }, flow);
+    cy.origin(patientUrl(), { args: withUrl }, flow);
   }
 }
 
@@ -19,8 +20,8 @@ Given(
   'the patient signs in to the patient app as {string}',
   (username: string) => {
     const args = { username, password: PASSWORDS[username] };
-    inPatientApp(args, ({ username: user, password }) => {
-      cy.visit('/login');
+    inPatientApp(args, ({ username: user, password, appUrl }) => {
+      cy.visit(`${appUrl}/login`);
       cy.get('input[formcontrolname="username"]').clear().type(user);
       cy.get('input[formcontrolname="password"]')
         .clear()
@@ -35,7 +36,7 @@ When(
   'the patient records blood pressure {int} over {int} in the patient app',
   (systolic: number, diastolic: number) => {
     inPatientApp({ systolic, diastolic }, (reading) => {
-      cy.visit('/vitals/record');
+      cy.visit(`${reading.appUrl}/vitals/record`);
       cy.get('#systolic').clear().type(String(reading.systolic));
       cy.get('#diastolic').clear().type(String(reading.diastolic));
       cy.contains('button', 'Continue').click();
@@ -51,7 +52,7 @@ Then(
   'the patient sees the blood pressure {string} on the vitals page',
   (reading: string) => {
     inPatientApp({ reading }, (expected) => {
-      cy.visit('/vitals');
+      cy.visit(`${expected.appUrl}/vitals`);
       cy.contains('.pa-chart-latest .v', expected.reading, {
         timeout: 15_000,
       }).should('be.visible');
@@ -71,7 +72,7 @@ When(
   'the patient enters blood pressure {int} over {int} without saving',
   (systolic: number, diastolic: number) => {
     inPatientApp({ systolic, diastolic }, (reading) => {
-      cy.visit('/vitals/record');
+      cy.visit(`${reading.appUrl}/vitals/record`);
       cy.get('#systolic').clear().type(String(reading.systolic));
       cy.get('#diastolic').clear().type(String(reading.diastolic));
     });
