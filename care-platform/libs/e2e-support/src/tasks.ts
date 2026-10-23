@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+// eslint-disable-next-line @nx/enforce-module-boundaries -- reuses the seed app's cascade delete instead of duplicating it
 import { apiClient } from '../../../apps/seed-demo-data/src/support/api-client';
 
 const HAPI = 'http://localhost:8080/fhir';

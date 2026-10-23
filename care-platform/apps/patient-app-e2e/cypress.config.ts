@@ -14,7 +14,7 @@ import {
   e2eTasks,
   sweepBeforeRun,
   waitForUrls,
-} from '../../libs/e2e-support/src';
+} from '@care-platform/e2e-support';
 
 export default defineConfig({
   e2e: {

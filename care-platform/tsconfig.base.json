@@ -14,7 +14,8 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "paths": {
-      "@care-platform/auth": ["./libs/auth/src/index.ts"]
+      "@care-platform/auth": ["./libs/auth/src/index.ts"],
+      "@care-platform/e2e-support": ["./libs/e2e-support/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
