@@ -130,7 +130,7 @@ RBAC alone can't express "a patient may read **their own** snapshot". The questi
 | Whose snapshot? | **ownership**: an attribute of the request compared with an attribute of the user | Tony: only `seed-tony-stark` |
 
 How it works:
-- Demo patient accounts (`tony`, `priya`) live in the dev profile, like the staff accounts. Each one carries a `patient-id` that links it to a FHIR Patient.
+- Demo patient accounts (`tony`, `priya`, plus `e2e-patient` and `e2e-patient-2` for the e2e suite) live in the dev profile, like the staff accounts. Each one carries a `patient-id` that links it to a FHIR Patient.
 - Their access token gets a `patient_id` claim, and `PATIENT` maps to **no permissions** in `RolePermissions`.
 - Endpoints that patient-app needs say, for example:
   ```java

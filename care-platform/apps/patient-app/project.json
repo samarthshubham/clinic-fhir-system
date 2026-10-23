@@ -68,6 +68,15 @@
       },
       "defaultConfiguration": "development"
     },
+    "serve-e2e": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "options": {
+        "buildTarget": "patient-app:build:development",
+        "proxyConfig": "apps/patient-app/proxy.conf.json",
+        "port": 4300
+      }
+    },
     "lint": {
       "executor": "@nx/eslint:lint"
     },

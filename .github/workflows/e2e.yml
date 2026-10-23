@@ -1,0 +1,80 @@
+name: E2E
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'clinic-api/**'
+      - 'care-platform/**'
+      - 'infra/docker-compose.yml'
+      - '.github/workflows/e2e.yml'
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: care-platform/package-lock.json
+
+      - name: Start PostgreSQL and HAPI FHIR
+        run: |
+          docker compose -f infra/docker-compose.yml up -d postgres hapi-fhir
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/fhir/metadata > /dev/null && exit 0
+            sleep 5
+          done
+          docker compose -f infra/docker-compose.yml logs hapi-fhir
+          exit 1
+
+      - name: Start clinic-api
+        working-directory: clinic-api
+        run: |
+          nohup ./mvnw -B spring-boot:run -Dspring.output.ansi.enabled=NEVER > "$RUNNER_TEMP/clinic-api.log" 2>&1 &
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:9090/api/auth/login || true)
+            [ "$code" != "000" ] && exit 0
+            sleep 3
+          done
+          cat "$RUNNER_TEMP/clinic-api.log"
+          exit 1
+
+      - name: Install frontend dependencies
+        working-directory: care-platform
+        run: |
+          npm ci
+          npx cypress install
+
+      - name: Run e2e suites
+        working-directory: care-platform
+        run: npx nx run-many -t e2e -p clinician-app-e2e patient-app-e2e --parallel=1
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-reports
+          path: |
+            care-platform/apps/*-e2e/reports/
+            care-platform/dist/cypress/
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: clinic-api-log
+          path: ${{ runner.temp }}/clinic-api.log

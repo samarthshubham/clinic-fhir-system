@@ -4,7 +4,12 @@
   "projectType": "application",
   "sourceRoot": "apps/patient-app-e2e/src",
   "tags": [],
-  "implicitDependencies": ["patient-app"],
+  "implicitDependencies": ["clinician-app", "patient-app", "e2e-support"],
   "// targets": "to see all targets run: nx show project patient-app-e2e --web",
-  "targets": {}
+  "targets": {
+    "e2e": {
+      "parallelism": true,
+      "dependsOn": [{ "projects": ["patient-app"], "target": "serve-e2e" }]
+    }
+  }
 }
