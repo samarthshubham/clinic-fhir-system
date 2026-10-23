@@ -82,6 +82,8 @@ The API, clinician-app and patient-app require a login. These accounts live in t
 | `frontdesk` | `FrontDesk#2026` | `FRONT_DESK` | register patients, book appointments; no clinical data |
 | `tony` | `Tony#2026` | `PATIENT` (Tony Stark) | patient-app (`localhost:4201`): only his own record and vitals |
 | `priya` | `Priya#2026` | `PATIENT` (Priya Nair) | patient-app: only her own record and vitals |
+| `e2e-patient` | `E2ePatient#2026` | `PATIENT` (`e2e-patient-1`) | e2e suite only: its patient is created and deleted by the tests |
+| `e2e-patient-2` | `E2ePatient#2026` | `PATIENT` (`e2e-patient-2`) | e2e suite only: used to check one patient cannot read another |
 
 A packaged jar (`java -jar`) does not use the `dev` profile, so it has no demo users and refuses to start until `CLINIC_JWT_SECRET` (at least 32 bytes) is set; provide real users through `clinic.auth.users`. Production builds of both apps swap the quick-login accounts for an empty list (`fileReplacements`), so the passwords never reach the bundle. In Swagger UI, call `POST /api/auth/login`, then click **Authorize** and paste the `accessToken`. See [docs/10-auth.md](./docs/10-auth.md).
 

@@ -29,7 +29,7 @@ class AuthProfilesTest {
   }
 
   @Test
-  void devProfileProvidesOneStaffUserPerRoleAndTwoLinkedPatients() {
+  void devProfileProvidesOneStaffUserPerRoleAndLinkedPatients() {
     runner
         .withPropertyValues("spring.profiles.active=dev")
         .run(
@@ -41,7 +41,9 @@ class AuthProfilesTest {
                         tuple(Role.CLINICIAN, null),
                         tuple(Role.FRONT_DESK, null),
                         tuple(Role.PATIENT, "seed-tony-stark"),
-                        tuple(Role.PATIENT, "seed-priya-nair")));
+                        tuple(Role.PATIENT, "seed-priya-nair"),
+                        tuple(Role.PATIENT, "e2e-patient-1"),
+                        tuple(Role.PATIENT, "e2e-patient-2")));
   }
 
   @Test

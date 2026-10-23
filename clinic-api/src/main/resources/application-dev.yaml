@@ -34,3 +34,15 @@ clinic:
         first-name: Priya
         last-name: Nair
         patient-id: seed-priya-nair
+      - username: e2e-patient
+        password-hash: $2a$10$pBL9qoygtYSGTC3n0NLUgeh2jadX3a8yE038bAg83DYUBMuv51klq
+        role: PATIENT
+        first-name: Eve
+        last-name: E2E
+        patient-id: e2e-patient-1
+      - username: e2e-patient-2
+        password-hash: $2a$10$VIxZF7fzRofkh8AS1QR5K.8NxRVe1xo8abKhXBxk42xeqc8si314a
+        role: PATIENT
+        first-name: Evan
+        last-name: E2E
+        patient-id: e2e-patient-2
