@@ -25,7 +25,7 @@ PostgreSQL 15  (managed entirely by HAPI)
 | Folder | Stack | Purpose |
 |---|---|---|
 | `clinic-api/` | Java 21, Spring Boot 3.5 | Backend REST API + FHIR integration |
-| `care-platform/` | Angular 21, Nx monorepo | `clinician-app` (active) · `patient-app` (scaffolded) |
+| `care-platform/` | Angular 21, Nx monorepo | `clinician-app` · `patient-app` · `seed-demo-data` · e2e suites (`*-e2e`) · libs `auth`, `e2e-support` |
 | `infra/` | Docker Compose | HAPI FHIR JPA Server + PostgreSQL 15 + Prometheus + Grafana |
 | `docs/` | Markdown | Architecture, API reference, design docs |
 
@@ -65,6 +65,7 @@ Services start in the correct order, each waiting for the previous to be healthy
 | HAPI FHIR JPA Server | `http://localhost:8080/fhir` |
 | clinic-api (Spring Boot) | `http://localhost:9090` |
 | clinician-app (Angular) | `http://localhost:4200` |
+| patient-app (Angular) | `http://localhost:4201` |
 | Swagger UI | `http://localhost:8081` |
 | Prometheus | `http://localhost:9091` |
 | Grafana | `http://localhost:3000` (login `admin` / `admin`) |
@@ -108,12 +109,10 @@ tail -f logs/clinic-api.log
 tail -f logs/clinician-app.log
 ```
 
-<!--
-**Terminal 4 — Angular patient app** (uncomment in dev.sh first)
+**Terminal 4 — Angular patient app**
 ```bash
 tail -f logs/patient-app.log
 ```
--->
 
 ---
 
@@ -139,7 +138,7 @@ cd clinic-api && ./mvnw spring-boot:run
 ```bash
 cd care-platform
 npx nx serve clinician-app --port=4200
-# npx nx serve patient-app --port=4201
+npx nx serve patient-app --port=4201   # in a second terminal
 ```
 
 **Stop infrastructure:**
@@ -169,7 +168,11 @@ npx nx run clinician-app:lint --fix
 ```bash
 cd clinic-api && ./mvnw verify                                          # JaCoCo report: clinic-api/target/site/jacoco/index.html
 cd care-platform && npx nx test clinician-app --coverage --watch=false  # report: care-platform/coverage/clinician-app/
+cd care-platform && npx nx test seed-demo-data --coverage
+cd care-platform && npx nx test auth --coverage --watch=false
 ```
+
+`./mvnw verify` fails if backend line coverage drops below 90% (JaCoCo) or if a FHIR type leaks into a controller or DTO (`ArchitectureTest`, ArchUnit).
 
 ### End-to-end suite
 
@@ -200,10 +203,11 @@ Each scenario creates its own test patients (family name `E2E-...`, or the `e2e-
 
 A pull request can be merged into `main` only when:
 
-- **CI passes**: formatting, backend tests, frontend tests and build, and lint on changed frontend files.
-- **Changed lines are at least 70% covered by tests** (`coverage-gate`, using [diff-cover](https://github.com/Bachmann1234/diff_cover)). The job summary lists any uncovered new lines.
+- **CI passes**: formatting, backend tests with a 90% overall line-coverage floor, frontend tests (clinician-app, seed-demo-data, auth) and build, lint of all of clinician-app and `auth`, and lint of changed files in the other apps.
+- **Changed lines are at least 70% covered by tests** (`coverage-gate`, using [diff-cover](https://github.com/Bachmann1234/diff_cover)), for backend and frontend. The job summary lists any uncovered new lines.
+- **The e2e suite passes** (`e2e` workflow) when the PR touches `clinic-api` or `care-platform`.
 
-Claude Code also reviews each pull request once when it is opened or marked ready for review, and leaves inline comments on any issues it finds. The review is advisory: address the comments, then merge. Draft PRs and PRs with `WIP` in the title are skipped.
+Claude Code also reviews pull requests on every push and leaves inline comments on any issues it finds. Each run reviews only the non-merge commits added since the last review (tracked in a sticky PR comment by `.github/scripts/review-state.sh`). The review is advisory: address the comments, then merge. Draft PRs and PRs with `WIP` in the title are skipped.
 
 - Mention `@claude` in a PR or issue comment to ask a question or request a change.
 - Comment `@claude review` to request another review after new commits.
@@ -212,26 +216,28 @@ Claude Code also reviews each pull request once when it is opened or marked read
 
 ## Features
 
-- Register and manage patients (FHIR `Patient`)
-- Record patient visits / encounters (FHIR `Encounter`)
-- Store vitals — Blood Pressure, Weight, SpO2 (FHIR `Observation` with LOINC codes)
-- Patient summary aggregation endpoint
-- Patient roster UI with search (`clinician-app`)
-- Patient detail page with ApexCharts vitals timeline (`clinician-app`)
-- Cucumber-driven seed data app — 5 idempotent patient profiles with relative dates (`seed-demo-data`)
-- Full FHIR R4 compliance via HAPI FHIR
-- JWT login with role-based access control (`ADMIN`, `CLINICIAN`, `FRONT_DESK`) — see [auth](./docs/10-auth.md)
+- Patients, practitioners, encounters, conditions, medications, appointments, lab/imaging orders and reports, care plans and goals (FHIR R4 resources via HAPI FHIR)
+- Vitals — blood pressure, weight, SpO2, heart rate, temperature (FHIR `Observation` with LOINC codes); hypertension and hypoxemia are diagnosed automatically from new readings
+- Experience APIs for the UI: partial-failure-safe dashboard, snapshot, chart-ready trends and a paged timeline
+- `clinician-app`: patient roster with search, a 3-panel patient dashboard (snapshot, timeline, care plan with trend charts) and an alerts Inbox
+- `patient-app`: patients sign in to see their own vitals and charts, record readings and manage their profile
+- JWT login with role-based access control (`ADMIN`, `CLINICIAN`, `FRONT_DESK`, `PATIENT` limited to their own record) — see [auth](./docs/10-auth.md)
 - Clinician alerts for critical systolic BP via FHIR Subscriptions: stored as FHIR `Flag`s, shown in the clinician-app Inbox with a live badge, plus a mock SMS in the log — see [demo](./docs/09-bp-alerts-demo.md)
+- Prometheus metrics and Grafana dashboards for clinic-api
+- Cucumber-driven seed data app — 8 idempotent patient profiles with relative dates (`seed-demo-data`)
+- Cucumber end-to-end suite covering the API and both apps
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Backend | Java 21, Spring Boot 3.5, HAPI FHIR Client 7.4 |
+| Backend | Java 21, Spring Boot 3.5, Spring Security (JWT), HAPI FHIR Client 7.4 |
 | FHIR Server | HAPI FHIR JPA Server v7.4.0 (R4) |
 | Database | PostgreSQL 15 (owned by HAPI) |
 | Frontend | Angular 21, Angular Material M3, Nx monorepo |
-| Infra | Docker Compose |
+| Observability | Micrometer, Prometheus, Grafana |
+| Testing | JUnit 5, ArchUnit, JaCoCo, Vitest, Cypress + Cucumber |
+| Infra | Docker Compose, GitHub Actions |
 
 ---
 
@@ -250,6 +256,7 @@ See [`docs/`](./docs) for full system design:
 - [Design System](./docs/08-design-system.md)
 - [High BP Alerts Demo](./docs/09-bp-alerts-demo.md)
 - [Authentication & RBAC](./docs/10-auth.md)
+- [OpenAPI spec](./docs/openapi.yaml) (served by Swagger UI)
 
 ---
 
