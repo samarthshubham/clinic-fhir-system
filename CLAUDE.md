@@ -47,7 +47,8 @@ clinic-api/         Spring Boot backend (Maven)
     mapper/         PatientMapper, EncounterMapper, ObservationMapper,
                     PractitionerMapper, ConditionMapper, MedicationMapper,
                     AppointmentMapper, ServiceRequestMapper, DiagnosticReportMapper,
-                    CarePlanMapper, GoalMapper, FlagMapper, PageMapper (search result → PageResponse)
+                    CarePlanMapper, GoalMapper, FlagMapper, PageMapper (search result → PageResponse),
+                    FhirValues
     dto/            PatientRequest, EncounterRequest, VitalsRequest,
                     PractitionerRequest, ConditionRequest, MedicationRequest,
                     AppointmentRequest, ServiceRequestRequest, DiagnosticReportRequest,
@@ -58,29 +59,32 @@ clinic-api/         Spring Boot backend (Maven)
                     CarePlanResponse, GoalResponse, PageResponse<T>,
                     SnapshotResponse, TrendsResponse, TimelineEvent, DashboardResponse,
                     AlertItem, VitalReading, LatestVitals, GoalProgress,
-                    DataPoint, BpSeries, SimpleSeries, ClinicianAlert  (all Java records)
+                    DataPoint, BpSeries, SimpleSeries, ClinicianAlert, AlertResponse,
+                    GroupedObservation, PatientSummary,
+                    LoginRequest, RefreshRequest, TokenResponse, AuthUser  (all Java records)
     exception/      ResourceNotFoundException, ReferenceValidationException,
-                    GlobalExceptionHandler, ErrorResponse
+                    UnauthorizedWebhookException, GlobalExceptionHandler, ErrorResponse
   seed-data/        13 Synthea FHIR R4 patient bundles + load.sh
-  integration-tests/ Postman collection
+  integration-tests/ Postman collections (one per resource)
 
 care-platform/      Angular 21 Nx monorepo
-  apps/clinician-app/   Clinician-facing UI (active development)
-  apps/patient-app/     Patient-facing UI (scaffolded, empty)
+  apps/clinician-app/   Clinician-facing UI: login, patient roster, 3-panel dashboard, Inbox
+  apps/patient-app/     Patient-facing UI: login, home, vitals (charts + recording), messages, profile
+  apps/clinician-app-e2e/, apps/patient-app-e2e/  Cypress + Cucumber e2e suites (@api, @ui, @journey)
   apps/seed-demo-data/  Cucumber-driven idempotent seed data (8 patient profiles)
-    src/features/       marcus-webb.feature, priya-nair.feature, gerald-horton.feature,
+    src/features/       patients.feature, marcus-webb.feature, priya-nair.feature, gerald-horton.feature,
                         sandra-okafor.feature, ramon-castillo.feature, aisha-chen.feature,
                         robert-osei.feature, tony-stark.feature
     src/step-definitions/  background.steps.ts, patient.steps.ts, encounter.steps.ts,
                            vitals.steps.ts, clinical.steps.ts
     src/support/        api-client.ts, world.ts, date-helpers.ts
   libs/auth/            @care-platform/auth: shared login, token interceptor, guards (provideAuth per app)
-  libs/design-system/   SCSS tokens + palette + global utilities (planned)
-  libs/ui/              Shared Angular components (planned)
-  libs/shared/          ThemeService, FHIR model types (planned)
+  libs/e2e-support/     Shared Cucumber steps and cleanup tasks for the e2e suites
 
 infra/
-  docker-compose.yml    HAPI FHIR (rest-hook subscriptions on) + PostgreSQL 15
+  docker-compose.yml    HAPI FHIR (rest-hook subscriptions on) + PostgreSQL 15 + Prometheus + Grafana
+  prometheus/           Scrape config for clinic-api /actuator/prometheus
+  grafana/              Provisioned clinic-api dashboard + 5xx alert
 
 docs/
   00-architecture.md    System design
@@ -94,6 +98,7 @@ docs/
   08-design-system.md   Angular Material M3 design system spec
   09-bp-alerts-demo.md  High BP subscription alerts + scripted demo
   10-auth.md            JWT authentication + role → permission RBAC
+  openapi.yaml          OpenAPI spec served by Swagger UI (./swagger.sh, dev.sh)
 ```
 
 ---
@@ -128,7 +133,7 @@ docker compose -f infra/docker-compose.yml down -v  # stop + wipe data
 ./mvnw spring-boot:run
 ./mvnw clean package
 ./mvnw test
-./mvnw verify          # tests + JaCoCo report at target/site/jacoco/index.html
+./mvnw verify          # tests + JaCoCo report at target/site/jacoco/index.html; fails below 90% line coverage
 ./mvnw spotless:apply   # format Java (Google style)
 ./mvnw spotless:check
 ```
@@ -140,6 +145,9 @@ npx nx serve patient-app
 npx nx build clinician-app
 npx nx test clinician-app
 npx nx test clinician-app --coverage --watch=false   # lcov + report in coverage/clinician-app/
+npx nx test seed-demo-data --coverage
+npx nx test auth --coverage --watch=false
+NX_DAEMON=false npx nx run-many -t e2e -p clinician-app-e2e patient-app-e2e --parallel=1   # needs the stack running
 ```
 
 ### Seed data
@@ -549,34 +557,21 @@ color: #334155;
 - Will be replaced by `$cp-space-*` tokens when `libs/design-system` is created
 
 ### Status
-- **clinician-app**: M3 shell + theme bootstrapped; patient roster and patient detail page implemented.
-- **patient-app**: Scaffolded, no feature code yet.
-- **libs/design-system, libs/ui, libs/shared**: Defined in `docs/08-design-system.md` but not yet created on disk.
+- **clinician-app**: login, patient roster, 3-panel patient dashboard (snapshot, timeline, care panel with trend charts), alerts Inbox.
+- **patient-app**: login, home, vitals with charts and recording, messages (static), profile.
+- **libs/design-system, libs/ui, libs/shared**: Defined in `docs/08-design-system.md` but not yet created; each app keeps its own `styles.scss` tokens.
 
 ---
 
-## Project Status (as of 2026-05-02)
+## Project Status (as of 2026-10-27)
 
-**Backend (clinic-api):** Production-style clinical dashboard backend complete. 11 FHIR resource types, 4 experience APIs, clinical intelligence layer (auto-condition detection, goal progress evaluation), partial-failure-safe dashboard aggregation.
+**Backend (clinic-api):** 11 FHIR resource types, 4 experience APIs, clinical intelligence layer (auto-condition detection, goal progress), JWT auth with role → permission RBAC and patient self-access, high BP alerts via FHIR Subscriptions stored as `Flag`s, Prometheus metrics.
 
-**Frontend (care-platform):** Active revamp in progress — see [`revamp/`](revamp/README.md) for the full plan. The current `clinician-app` (patient roster + legacy patient-detail with ApexCharts) is being replaced by the **Praxis** 3-panel clinical dashboard. Do not add features to the existing `patient-detail` component — it will be removed at the end of the revamp.
+**Frontend (care-platform):** clinician-app and patient-app both implemented, sharing `libs/auth`. Cucumber e2e suites cover the API and both apps.
 
 **Seed data:** `apps/seed-demo-data` — 8 idempotent patient profiles, each in its own `.feature` file.
 
-**Active work (revamp phases):**
-- Pre-Phase 0: Refactor `PatientRosterComponent` to RxJS (`toSignal`, `combineLatest`, `debounceTime`)
-- Pre-Phase 1: `--px-*` token layer + Inter font + teal M3 theme
-- Phase 1: `cp-topbar`, `cp-patient-header`, `DashboardComponent` shell (parallel RxJS streams)
-- Phase 2: `cp-snapshot-panel` — vitals, alerts, conditions, medications
-- Phase 3: `cp-timeline-panel` — inline expand, sparklines, infinite scroll
-- Phase 4: `cp-care-panel` — goals, pending orders, SVG trend charts, draggable resizer
-
-**Backend gaps to close (required before Phase 3):**
-- `TimelineEvent`: add `chiefComplaint`, `note`, `groupedObservations`, `linkedTo`/`linkedFrom`
-- `GoalProgress`: add `baselineValue`
-- `LatestVitals`: add `heartRate`, `temperature` (non-blocking, tiles show "–" until added)
-
-**Post-revamp:** CORS config, remove ApexCharts from `package.json`
+**Open items:** CORS config (the apps use the dev-server proxy); `libs/design-system`, `libs/ui`, `libs/shared`.
 
 ---
 
