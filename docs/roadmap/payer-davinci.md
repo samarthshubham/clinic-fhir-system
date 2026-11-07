@@ -155,7 +155,7 @@ Labels: `payer` `davinci` `documentation` · Size: S
 Labels: `payer` `davinci` `infra` · Size: S
 - **AC**
   - [ ] `docker compose -f infra/docker-compose.yml up -d` starts `hapi-fhir-payer` on 8081, backed by database `hapi_payer` in the existing Postgres
-  - [ ] US Core plus the HRex, CRD, DTR, PAS, CDex, PDex, CARIN BB, Plan-Net and Formulary packages are loaded, each version pinned after checking packages.fhir.org
+  - [ ] US Core plus the HRex, CRD, DTR, PAS, CDex, PDex, CARIN BB, Plan-Net, Formulary and ATR packages are loaded, each version pinned after checking packages.fhir.org
   - [ ] Bulk export, rest-hook subscriptions and request validation are enabled
   - [ ] The provider HAPI is unchanged
 - **Tests:** compose healthcheck; a smoke script `GET :8081/fhir/StructureDefinition?url=<PAS Claim profile>` returns 1

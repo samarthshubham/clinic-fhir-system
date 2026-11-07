@@ -46,6 +46,107 @@ services:
       postgres:
         condition: service_healthy
 
+  postgres-init:
+    image: postgres:15
+    container_name: clinic-postgres-init
+    environment:
+      PGHOST: postgres
+      PGUSER: hapi
+      PGPASSWORD: hapi
+      PGDATABASE: hapi
+    volumes:
+      - ./postgres/create-payer-db.sh:/create-payer-db.sh:ro
+    entrypoint: ["bash", "/create-payer-db.sh"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  hapi-fhir-payer:
+    image: hapiproject/hapi:v7.4.0
+    container_name: clinic-hapi-fhir-payer
+    ports:
+      - "8081:8080"
+    environment:
+      spring.datasource.url: jdbc:postgresql://postgres:5432/hapi_payer
+      spring.datasource.username: hapi
+      spring.datasource.password: hapi
+      spring.datasource.driverClassName: org.postgresql.Driver
+      spring.jpa.properties.hibernate.dialect: ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgres94Dialect
+      hapi.fhir.default_encoding: JSON
+      hapi.fhir.fhir_version: R4
+      hapi.fhir.allow_external_references: "true"
+      hapi.fhir.reuse_cached_search_results_millis: "-1"
+      hapi.fhir.bulk_export_enabled: "true"
+      hapi.fhir.subscription.resthook_enabled: "true"
+      hapi.fhir.validation.requests_enabled: "true"
+      hapi.fhir.install_transitive_ig_dependencies: "false"
+      hapi.fhir.implementationguides.terminology.name: hl7.terminology.r4
+      hapi.fhir.implementationguides.terminology.version: 7.1.0
+      hapi.fhir.implementationguides.terminology.installMode: STORE_AND_INSTALL
+      hapi.fhir.implementationguides.terminology.reloadExisting: "false"
+      hapi.fhir.implementationguides.extensions.name: hl7.fhir.uv.extensions.r4
+      hapi.fhir.implementationguides.extensions.version: 5.2.0
+      hapi.fhir.implementationguides.extensions.installMode: STORE_AND_INSTALL
+      hapi.fhir.implementationguides.extensions.reloadExisting: "false"
+      hapi.fhir.implementationguides.uscore.name: hl7.fhir.us.core
+      hapi.fhir.implementationguides.uscore.version: 7.0.0
+      hapi.fhir.implementationguides.uscore.installMode: STORE_AND_INSTALL
+      hapi.fhir.implementationguides.uscore.reloadExisting: "false"
+      hapi.fhir.implementationguides.hrex.name: hl7.fhir.us.davinci-hrex
+      hapi.fhir.implementationguides.hrex.version: 1.2.0
+      hapi.fhir.implementationguides.hrex.installMode: STORE_AND_INSTALL
+      hapi.fhir.implementationguides.hrex.reloadExisting: "false"
+      hapi.fhir.implementationguides.crd.name: hl7.fhir.us.davinci-crd
+      hapi.fhir.implementationguides.crd.version: 2.2.1
+      hapi.fhir.implementationguides.crd.installMode: STORE_AND_INSTALL
+      hapi.fhir.implementationguides.crd.reloadExisting: "false"
+      hapi.fhir.implementationguides.dtr.name: hl7.fhir.us.davinci-dtr
+      hapi.fhir.implementationguides.dtr.version: 2.2.0
+      hapi.fhir.implementationguides.dtr.installMode: STORE_AND_INSTALL
+      hapi.fhir.implementationguides.dtr.reloadExisting: "false"
+      hapi.fhir.implementationguides.pas.name: hl7.fhir.us.davinci-pas
+      hapi.fhir.implementationguides.pas.version: 2.2.1
+      hapi.fhir.implementationguides.pas.installMode: STORE_AND_INSTALL
+      hapi.fhir.implementationguides.pas.reloadExisting: "false"
+      hapi.fhir.implementationguides.cdex.name: hl7.fhir.us.davinci-cdex
+      hapi.fhir.implementationguides.cdex.version: 2.1.0
+      hapi.fhir.implementationguides.cdex.installMode: STORE_AND_INSTALL
+      hapi.fhir.implementationguides.cdex.reloadExisting: "false"
+      hapi.fhir.implementationguides.pdex.name: hl7.fhir.us.davinci-pdex
+      hapi.fhir.implementationguides.pdex.version: 2.2.0
+      hapi.fhir.implementationguides.pdex.installMode: STORE_AND_INSTALL
+      hapi.fhir.implementationguides.pdex.reloadExisting: "false"
+      hapi.fhir.implementationguides.carinbb.name: hl7.fhir.us.carin-bb
+      hapi.fhir.implementationguides.carinbb.version: 2.2.0
+      hapi.fhir.implementationguides.carinbb.installMode: STORE_AND_INSTALL
+      hapi.fhir.implementationguides.carinbb.reloadExisting: "false"
+      hapi.fhir.implementationguides.plannet.name: hl7.fhir.us.davinci-pdex-plan-net
+      hapi.fhir.implementationguides.plannet.version: 1.2.0
+      hapi.fhir.implementationguides.plannet.installMode: STORE_AND_INSTALL
+      hapi.fhir.implementationguides.plannet.reloadExisting: "false"
+      hapi.fhir.implementationguides.formulary.name: hl7.fhir.us.davinci-drug-formulary
+      hapi.fhir.implementationguides.formulary.version: 2.1.0
+      hapi.fhir.implementationguides.formulary.installMode: STORE_AND_INSTALL
+      hapi.fhir.implementationguides.formulary.reloadExisting: "false"
+      hapi.fhir.implementationguides.atr.name: hl7.fhir.us.davinci-atr
+      hapi.fhir.implementationguides.atr.version: 2.1.0
+      hapi.fhir.implementationguides.atr.installMode: STORE_AND_INSTALL
+      hapi.fhir.implementationguides.atr.reloadExisting: "false"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./payer/HealthCheck.java:/healthcheck/HealthCheck.java:ro
+    healthcheck:
+      test: ["CMD", "java", "/healthcheck/HealthCheck.java", "http://localhost:8080/fhir/metadata"]
+      interval: 30s
+      timeout: 20s
+      retries: 5
+      start_period: 600s
+    depends_on:
+      postgres-init:
+        condition: service_completed_successfully
+
   prometheus:
     image: prom/prometheus:v2.54.1
     container_name: clinic-prometheus

@@ -82,7 +82,9 @@ care-platform/      Angular 21 Nx monorepo
   libs/e2e-support/     Shared Cucumber steps and cleanup tasks for the e2e suites
 
 infra/
-  docker-compose.yml    HAPI FHIR (rest-hook subscriptions on) + PostgreSQL 15 + Prometheus + Grafana
+  docker-compose.yml    HAPI FHIR (rest-hook subscriptions on) + payer HAPI :8081 (Da Vinci IGs) + PostgreSQL 15 + Prometheus + Grafana
+  postgres/             create-payer-db.sh: creates the hapi_payer database (one-shot postgres-init service)
+  payer/                smoke.sh (payer IG smoke test) + HealthCheck.java (healthcheck for the distroless HAPI image)
   prometheus/           Scrape config for clinic-api /actuator/prometheus
   grafana/              Provisioned clinic-api dashboard + 5xx alert
 
@@ -128,7 +130,8 @@ When Serena is available, call `mcp__serena__initial_instructions` then `mcp__se
 
 ### Infrastructure (run from project root)
 ```bash
-docker compose -f infra/docker-compose.yml up -d    # start HAPI FHIR + Postgres
+docker compose -f infra/docker-compose.yml up -d    # start HAPI FHIR + Postgres (payer HAPI on 8081 too)
+bash infra/payer/smoke.sh                           # check the payer HAPI loaded the Da Vinci IGs
 docker compose -f infra/docker-compose.yml down     # stop (keep data)
 docker compose -f infra/docker-compose.yml down -v  # stop + wipe data
 ```

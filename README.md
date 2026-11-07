@@ -26,7 +26,7 @@ PostgreSQL 15  (managed entirely by HAPI)
 |---|---|---|
 | `clinic-api/` | Java 25, Spring Boot 3.5 | Backend REST API + FHIR integration |
 | `care-platform/` | Angular 21, Nx monorepo | `clinician-app` · `patient-app` · `seed-demo-data` · e2e suites (`*-e2e`) · libs `auth`, `e2e-support` |
-| `infra/` | Docker Compose | HAPI FHIR JPA Server + PostgreSQL 15 + Prometheus + Grafana |
+| `infra/` | Docker Compose | HAPI FHIR JPA Server, the payer HAPI FHIR server with the Da Vinci IGs, PostgreSQL 15, Prometheus and Grafana |
 | `docs/` | Markdown | Architecture, API reference, design docs |
 
 ---
@@ -63,10 +63,11 @@ Services start in the correct order, each waiting for the previous to be healthy
 |---|---|
 | PostgreSQL 15 | `localhost:5432` |
 | HAPI FHIR JPA Server | `http://localhost:8080/fhir` |
+| Payer HAPI FHIR server (Da Vinci IGs) | `http://localhost:8081/fhir` |
 | clinic-api (Spring Boot) | `http://localhost:9090` |
 | clinician-app (Angular) | `http://localhost:4200` |
 | patient-app (Angular) | `http://localhost:4201` |
-| Swagger UI | `http://localhost:8081` |
+| Swagger UI | `http://localhost:8082` |
 | Prometheus | `http://localhost:9091` |
 | Grafana | `http://localhost:3000` (login `admin` / `admin`) |
 
