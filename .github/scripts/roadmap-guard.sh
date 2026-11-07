@@ -10,7 +10,7 @@
 set -euo pipefail
 
 ROADMAP=docs/roadmap/payer-davinci.md
-PAYER_PATHS='^payer-api/|^care-platform/apps/payer-app|^fixtures/davinci/|^clinic-api/src/main/java/.*/(client|interop)/|^care-platform/apps/seed-demo-data/src/features/payer-'
+PAYER_PATHS='^payer-api/|^infra/(postgres|payer)/|^care-platform/apps/payer-app|^fixtures/davinci/|^clinic-api/src/main/java/.*/(client|interop)/|^care-platform/apps/seed-demo-data/src/features/payer-'
 
 output() {
   echo "$1=$2" >>"${GITHUB_OUTPUT:-/dev/stdout}"
