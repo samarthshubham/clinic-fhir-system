@@ -60,12 +60,7 @@ jobs:
         if: steps.guard.outputs.payer == 'true'
         run: |
           if [[ ! -s roadmap-review.md ]]; then
-            if git diff --name-only "origin/$BASE_REF...HEAD" |
-              grep -qxE '\.github/workflows/roadmap-review\.yml|\.claude/skills/roadmap-review/SKILL\.md'; then
-              echo "::notice::No scorecard: this PR changes the roadmap review itself, which only runs from main."
-              exit 0
-            fi
-            echo "::error::Payer paths changed but the roadmap review produced no scorecard, so the work is unverified."
+            echo "::error::Payer paths changed but the roadmap review produced no scorecard, so the work is unverified. If this PR also changes the roadmap review itself, move that change to its own PR."
             exit 1
           fi
           verdict=$(head -n 1 roadmap-review.md)
