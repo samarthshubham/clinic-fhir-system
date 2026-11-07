@@ -98,6 +98,11 @@ docs/
   08-design-system.md   Angular Material M3 design system spec
   09-bp-alerts-demo.md  High BP subscription alerts + scripted demo
   10-auth.md            JWT authentication + role → permission RBAC
+  11-payer-architecture.md  Payer side: payer-api, payer HAPI, Da Vinci calls (planned)
+  16-payer-test-strategy.md Test levels and test data for the payer work
+  roadmap/payer-davinci.md  Payer + Da Vinci roadmap: goal, NFRs, backlog with AC
+  adr/                  Architecture decision records (payer work)
+  diagrams/             Mermaid sources + rendered PNGs
   openapi.yaml          OpenAPI spec served by Swagger UI (./swagger.sh, dev.sh)
 ```
 
@@ -177,6 +182,10 @@ This is a personal project. Keep commits lightweight.
 - `wip:` prefix is fine for checkpoints.
 
 **PR review:** the `claude-review` check runs the `incremental-review` skill (`.claude/skills/incremental-review/SKILL.md`) on every push. `.github/scripts/review-state.sh` tracks the last reviewed commit in a sticky PR comment, so only new non-merge commits are reviewed. Run it locally with `/incremental-review <pr-number>`.
+
+**Payer roadmap:** payer and Da Vinci work follows `docs/roadmap/payer-davinci.md`, one story per PR, named in the PR template's `Roadmap story:` line. The `roadmap-review` check runs `.github/scripts/roadmap-guard.sh` and then the `roadmap-review` skill, which scores the PR against its story's AC, required tests and data, the ADRs in `docs/adr/` and the end-to-end goal. It fails unless the verdict is Aligned. Run it locally with `/roadmap-review <pr-number>`. If scope changes, update the roadmap in the same PR.
+
+**Roadmap issues:** each story has an issue (roadmap §8) under its epic. The PR says `Closes #n` (story finished) or `Part of #n` (partial), and the issue's AC and task boxes are ticked for what the PR delivers. The `issue-sync` check (`.github/scripts/issue-sync-check.py`) fails when the issue isn't referenced, is closed, is under the wrong epic or milestone, has AC that differ from the roadmap, or has unticked boxes on a closing PR; editing the issue re-runs it (`issue-sync-rerun.yml`). `epic-progress.yml` closes an epic when its last story closes and reopens it when a story reopens. Never close an epic from a PR.
 
 **Slow down and confirm with me before:**
 - Force-pushing or rewriting history.
@@ -570,6 +579,8 @@ color: #334155;
 **Frontend (care-platform):** clinician-app and patient-app both implemented, sharing `libs/auth`. Cucumber e2e suites cover the API and both apps.
 
 **Seed data:** `apps/seed-demo-data` — 8 idempotent patient profiles, each in its own `.feature` file.
+
+**Planned:** payer side and Da Vinci IGs (CRD, DTR, PAS, CDex, PDex, Plan-Net, Formulary) per `docs/roadmap/payer-davinci.md`.
 
 **Open items:** CORS config (the apps use the dev-server proxy); `libs/design-system`, `libs/ui`, `libs/shared`.
 

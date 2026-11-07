@@ -1,0 +1,33 @@
+flowchart LR
+  subgraph provider["Provider side (clinic)"]
+    direction TB
+    capp["clinician-app"]
+    papp["patient-app"]
+    capi["clinic-api :9090<br/>JSON for apps, payer client"]
+    phapi[("Provider HAPI :8080<br/>clinical record")]
+    capp --> capi
+    papp --> capi
+    capi --> phapi
+  end
+  subgraph payer["Payer side (Praxis Health Plan)"]
+    direction TB
+    yapp["payer-app<br/>UM reviewer"]
+    yapi["payer-api :9095<br/>/fhir · /cds-services · /api"]
+    yhapi[("Payer HAPI :8081<br/>members, claims, IGs")]
+    yapp --> yapi
+    yapi --> yhapi
+  end
+  pg[("PostgreSQL 15<br/>hapi + hapi_payer")]
+  capi == "Da Vinci APIs" ==> yapi
+  yapi -- "CDex Task" --> capi
+  yhapi -. "rest-hook" .-> capi
+  phapi --> pg
+  yhapi --> pg
+  classDef prov fill:#E1F5EE,stroke:#0F6E56,color:#085041
+  classDef pay fill:#EEEDFE,stroke:#534AB7,color:#3C3489
+  classDef store fill:#F1EFE8,stroke:#5F5E5A,color:#444441
+  class capp,papp,capi prov
+  class yapp,yapi pay
+  class phapi,yhapi,pg store
+  style provider fill:#F7FCFA,stroke:#0F6E56
+  style payer fill:#F8F7FE,stroke:#534AB7
