@@ -6,7 +6,7 @@
 > No permission is granted to copy, modify, distribute, sublicense, or use the code in any form
 > without explicit written permission from the author. See [LICENSE](./LICENSE) for full terms.
 
-A production-style, FHIR-compliant clinical management system for a small clinic. Built for learning and portfolio purposes using Java 21, Spring Boot, HAPI FHIR, and Angular 21.
+A production-style, FHIR-compliant clinical management system for a small clinic. Built for learning and portfolio purposes using Java 25, Spring Boot, HAPI FHIR, and Angular 21.
 
 ## Architecture
 
@@ -24,7 +24,7 @@ PostgreSQL 15  (managed entirely by HAPI)
 
 | Folder | Stack | Purpose |
 |---|---|---|
-| `clinic-api/` | Java 21, Spring Boot 3.5 | Backend REST API + FHIR integration |
+| `clinic-api/` | Java 25, Spring Boot 3.5 | Backend REST API + FHIR integration |
 | `care-platform/` | Angular 21, Nx monorepo | `clinician-app` · `patient-app` · `seed-demo-data` · e2e suites (`*-e2e`) · libs `auth`, `e2e-support` |
 | `infra/` | Docker Compose | HAPI FHIR JPA Server + PostgreSQL 15 + Prometheus + Grafana |
 | `docs/` | Markdown | Architecture, API reference, design docs |
@@ -35,7 +35,7 @@ PostgreSQL 15  (managed entirely by HAPI)
 
 ### Prerequisites
 
-- Java 21
+- Java 25
 - Docker Desktop
 - Node.js 18+
 
@@ -231,7 +231,7 @@ Claude Code also reviews pull requests on every push and leaves inline comments 
 
 | Layer | Technology |
 |---|---|
-| Backend | Java 21, Spring Boot 3.5, Spring Security (JWT), HAPI FHIR Client 7.4 |
+| Backend | Java 25, Spring Boot 3.5, Spring Security (JWT), HAPI FHIR Client 7.4 |
 | FHIR Server | HAPI FHIR JPA Server v7.4.0 (R4) |
 | Database | PostgreSQL 15 (owned by HAPI) |
 | Frontend | Angular 21, Angular Material M3, Nx monorepo |

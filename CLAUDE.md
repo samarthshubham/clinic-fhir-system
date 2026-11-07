@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # clinic-fhir-system — Claude Context
 
-A portfolio/learning project: a FHIR-compliant clinic management system built with Java 21, Spring Boot, HAPI FHIR, and Angular 21.
+A portfolio/learning project: a FHIR-compliant clinic management system built with Java 25, Spring Boot, HAPI FHIR, and Angular 21.
 
 ---
 
@@ -13,7 +13,7 @@ A portfolio/learning project: a FHIR-compliant clinic management system built wi
 ```
 Angular (care-platform/)
     ↓ REST JSON  (proxy → localhost:9090)
-clinic-api  (Spring Boot 3.5 / Java 21, port 9090)
+clinic-api  (Spring Boot 3.5 / Java 25, port 9090)
     ↓ FHIR REST HTTP
 HAPI FHIR JPA Server v7.4.0  (port 8080)
     ↓ JPA
