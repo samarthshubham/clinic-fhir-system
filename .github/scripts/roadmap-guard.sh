@@ -37,13 +37,15 @@ output payer true
 
 failed=false
 
-story=$(grep -oE 'Roadmap story: *E[0-9]+-S[0-9]+' <<<"$body" | head -n 1 | grep -oE 'E[0-9]+-S[0-9]+' || true)
+stories=$(grep -m 1 -E 'Roadmap story:' <<<"$body" | grep -oE 'E[0-9]+-S[0-9]+' || true)
+story=$(tr '\n' ',' <<<"$stories" | sed 's/,$//')
 output story "$story"
 if [[ -z "$story" ]]; then
   fail "Payer paths changed but the PR description has no 'Roadmap story: E<n>-S<n>' line."
-elif ! grep -qE "^#### $story " "$ROADMAP"; then
-  fail "Roadmap story $story is not in $ROADMAP."
 fi
+for id in $stories; do
+  grep -qE "^#### $id " "$ROADMAP" || fail "Roadmap story $id is not in $ROADMAP."
+done
 
 changed_main_without_tests() {
   local module=$1
