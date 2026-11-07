@@ -206,6 +206,7 @@ startup() {
   echo -e "${BOLD}All services started.${NC}"
   echo -e "  Postgres      → localhost:5432"
   echo -e "  HAPI FHIR     → http://localhost:8080/fhir"
+  echo -e "  Payer HAPI    → http://localhost:8081/fhir (ready ~5 min after start)"
   echo -e "  clinic-api    → http://localhost:9090"
   echo -e "  clinician-app → http://localhost:4200"
   echo -e "  patient-app   → http://localhost:4201"
