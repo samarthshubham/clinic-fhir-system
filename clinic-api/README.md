@@ -6,7 +6,7 @@ Spring Boot backend for the Clinic FHIR System. Exposes a REST API for clinic op
 
 | | |
 |---|---|
-| Language | Java 21 |
+| Language | Java 25 |
 | Framework | Spring Boot 3.5 |
 | FHIR Client | HAPI FHIR 7.4 (R4) |
 | Utilities | Lombok |
@@ -15,7 +15,7 @@ Spring Boot backend for the Clinic FHIR System. Exposes a REST API for clinic op
 
 ## Prerequisites
 
-- Java 21
+- Java 25
 - HAPI FHIR server running at `http://localhost:8080/fhir` (see [`../infra`](../infra))
 
 ## Running
