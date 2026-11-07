@@ -1,0 +1,74 @@
+name: Roadmap Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+
+concurrency:
+  group: roadmap-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  roadmap-review:
+    if: github.event.pull_request.draft == false
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      BASE_REF: ${{ github.event.pull_request.base.ref }}
+      PR_BODY: ${{ github.event.pull_request.body }}
+      REVIEW_NAME: roadmap-review
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Roadmap guard
+        id: guard
+        run: bash .github/scripts/roadmap-guard.sh
+
+      - name: Run roadmap review
+        id: claude
+        if: >-
+          steps.guard.outputs.payer == 'true' &&
+          !contains(github.event.pull_request.title, 'WIP') &&
+          !startsWith(github.event.pull_request.title, 'wip')
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: >-
+            /roadmap-review pr=${{ github.event.pull_request.number }}
+            repo=${{ github.repository }}
+            story=${{ steps.guard.outputs.story }}
+            base=origin/${{ github.event.pull_request.base.ref }}
+          claude_args: >-
+            --allowedTools "Read,Grep,Glob,Write,Bash(git show:*),Bash(git diff:*),Bash(git log:*),Bash(gh pr view:*),Bash(gh issue view:*),Bash(gh api:*)"
+
+      - name: Post scorecard
+        if: steps.claude.outcome == 'success' && hashFiles('roadmap-review.md') != ''
+        run: bash .github/scripts/review-state.sh save roadmap-review.md
+
+      - name: Fail unless aligned
+        if: steps.claude.outcome == 'success'
+        run: |
+          if [[ ! -s roadmap-review.md ]]; then
+            echo "::notice::No scorecard was written (usually because this PR changes the review workflow, which must match main)."
+            exit 0
+          fi
+          verdict=$(head -n 1 roadmap-review.md)
+          echo "$verdict"
+          [[ "$verdict" == "Verdict: Aligned" ]] || {
+            echo "::error::Roadmap review: ${verdict#Verdict: }. See the roadmap-review PR comment."
+            exit 1
+          }

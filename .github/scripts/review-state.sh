@@ -6,11 +6,14 @@
 #   review-state.sh save <summary>   -> create or update the sticky summary comment
 #
 # Env: REPO (owner/name), PR_NUMBER, HEAD_SHA, BASE_REF (default main), GH_TOKEN.
-# LAST_REVIEWED_SHA, when set, replaces the PR comment lookup (for local testing).
+# REVIEW_NAME (default claude-review) names the sticky comment, so several reviews
+# can each keep their own. LAST_REVIEWED_SHA, when set, replaces the PR comment
+# lookup (for local testing).
 set -euo pipefail
 
-SUMMARY_TAG='<!-- claude-review summary -->'
-SHA_TAG_PREFIX='<!-- claude-review last-reviewed-sha: '
+REVIEW_NAME=${REVIEW_NAME:-claude-review}
+SUMMARY_TAG="<!-- $REVIEW_NAME summary -->"
+SHA_TAG_PREFIX="<!-- $REVIEW_NAME last-reviewed-sha: "
 
 output() {
   echo "$1=$2" >>"${GITHUB_OUTPUT:-/dev/stdout}"
@@ -28,7 +31,7 @@ last_reviewed_sha() {
     return
   fi
   summary_comment | jq -r '.body // ""' |
-    sed -n 's/.*<!-- claude-review last-reviewed-sha: \([0-9a-f]\{40\}\) -->.*/\1/p' |
+    sed -n "s/.*$SHA_TAG_PREFIX\([0-9a-f]\{40\}\) -->.*/\1/p" |
     tail -n 1
 }
 
