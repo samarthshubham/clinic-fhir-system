@@ -73,21 +73,32 @@ clinic-api gets two additions:
 
 ## 5. Implementation guides
 
-The pinned versions are recorded here in E0-S2, after checking packages.fhir.org:
+The payer HAPI (`hapi-fhir-payer` in `infra/docker-compose.yml`) installs these packages at startup with `installMode: STORE_AND_INSTALL`. Versions were checked on packages.fhir.org on 2026-11-07, and all of them are FHIR R4.
 
-| Package | Version |
-|---|---|
-| hl7.fhir.us.core | _tbd_ |
-| hl7.fhir.us.davinci-hrex | _tbd_ |
-| hl7.fhir.us.davinci-crd | _tbd_ |
-| hl7.fhir.us.davinci-dtr | _tbd_ |
-| hl7.fhir.us.davinci-pas | _tbd_ |
-| hl7.fhir.us.davinci-cdex | _tbd_ |
-| hl7.fhir.us.davinci-pdex | _tbd_ |
-| hl7.fhir.us.carin-bb | _tbd_ |
-| hl7.fhir.us.davinci-pdex-plan-net | _tbd_ |
-| hl7.fhir.us.davinci-drug-formulary | _tbd_ |
-| hl7.fhir.us.davinci-atr | _tbd_ |
+| Package | Version | Note |
+|---|---|---|
+| hl7.fhir.us.core | 7.0.0 | 9.0.0 is the latest, but every Da Vinci IG below is built on 7.0.0 |
+| hl7.fhir.us.davinci-hrex | 1.2.0 | |
+| hl7.fhir.us.davinci-crd | 2.2.1 | |
+| hl7.fhir.us.davinci-dtr | 2.2.0 | the registry's 3.0.1 is an STU3 package |
+| hl7.fhir.us.davinci-pas | 2.2.1 | |
+| hl7.fhir.us.davinci-cdex | 2.1.0 | |
+| hl7.fhir.us.davinci-pdex | 2.2.0 | |
+| hl7.fhir.us.carin-bb | 2.2.0 | |
+| hl7.fhir.us.davinci-pdex-plan-net | 1.2.0 | |
+| hl7.fhir.us.davinci-drug-formulary | 2.1.0 | |
+| hl7.fhir.us.davinci-atr | 2.1.0 | |
+| hl7.terminology.r4 | 7.1.0 | shared dependency |
+| hl7.fhir.uv.extensions.r4 | 5.2.0 | shared dependency |
+
+How the packages are loaded:
+
+- `install_transitive_ig_dependencies` is off. Some IGs depend on older releases of each other (CDex 2.1.0 on PAS 2.1.0, ATR and Formulary on HRex 1.1.0), so transitive installs would load two versions of the same profiles, along with VSAC and the US Core 3.1.1 and 6.1.0 packages. Only the packages above are installed.
+- HAPI 7.4.0 stores only `active` conformance resources as REST resources. Draft ones (for example the CRD hook contexts, `PASTempCodes`, `hrex-patient-demographics` and `hrex-consent`) are not searchable, but they stay in the package cache and `$validate` still uses them.
+- Each start reinstalls the packages, so the payer HAPI takes about 4 to 5 minutes to become healthy. The compose healthcheck allows 10 minutes.
+- Bulk export (`$export`), rest-hook subscriptions and request validation are on. Requests that fail validation get a 422 with an `OperationOutcome`.
+
+`bash infra/payer/smoke.sh` checks that one profile per IG (the PAS Claim profile first) resolves to exactly one `StructureDefinition`, and that `$export` is in the CapabilityStatement. `PAYER_FHIR_URL` and `WAIT_SECONDS` override the defaults.
 
 ## 6. Out of scope
 
