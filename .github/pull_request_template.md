@@ -4,7 +4,10 @@
 
 Roadmap story: <!-- E?-S? from docs/roadmap/payer-davinci.md, or "none" for work outside the payer roadmap -->
 
-Closes #<!-- issue -->
+<!-- The story's issue (roadmap §8): "Closes #n" when this PR finishes the story, "Part of #n" when it delivers part of it. -->
+Closes #
+
+<!-- Before merging, tick in the issue the AC and tasks this PR delivers. A closing PR needs every box ticked. The issue-sync check enforces this, and roadmap-review checks the ticks against the code. -->
 
 ## Acceptance criteria
 

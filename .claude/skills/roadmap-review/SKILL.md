@@ -31,7 +31,9 @@ Locally, given only a PR number, take the story from the `Roadmap story:` line o
 1. Read `docs/roadmap/payer-davinci.md`: §3 (end-to-end goal), §4 (NFRs), §5 (test data), and the story's own section `#### <story> · …`.
 2. Read the ADRs the story cites (`docs/adr/`) and `docs/16-payer-test-strategy.md` §1 for what each test level means.
 3. Get the PR: `gh pr view <n> --json title,body,headRefOid,baseRefName,files`, then the whole diff with `git diff origin/<base>...HEAD`. Review the whole PR every time, not only new commits; the scorecard is about the PR as a whole.
-4. Get the linked issue if there is one (`Closes #n`): `gh issue view <n> --json body`. If the issue's AC differ from the roadmap, the roadmap wins; list the difference under follow-ups.
+4. Get the story's issue (`Closes #n` or `Part of #n`; the number is in roadmap §8): `gh issue view <n> --json body`. The `issue-sync` check already makes sure it's linked, open, under the right epic and in step with the roadmap. Your job is the **ticks**: every ticked AC or task box in the issue is a claim (§2h).
+
+**Closing vs partial PRs.** A PR that says `Closes #n` must deliver the whole story: every AC is scored as usual. A PR that says `Part of #n` delivers some of it. Score the AC the issue has ticked, plus anything the diff adds. Unticked AC that the diff doesn't touch are **n/a (later PR)**, not missing. Every ticked one must be backed by the code at the PR head; it may come from an earlier merged PR, so say which.
 
 If the PR has no story but touches payer paths, the verdict is **Off-roadmap**: write the scorecard with only the Linkage and Scope rows filled in.
 
@@ -81,7 +83,9 @@ The §5 outcome-matrix regression check needs seeds and callers. Before those st
 
 ### h. Claims check (must)
 Compare what the PR description says with what the diff does:
-- Every ticked AC checkbox: does your own status in §2a agree?
+- Every ticked AC checkbox, in the PR description **and in the story's issue**: does your own status in §2a agree?
+- Every ticked task box in the issue: is that task visible in the code at the PR head?
+- The reverse: an AC this PR clearly delivers but the issue leaves unticked is a follow-up ("tick it in #n"), not a false claim.
 - Every test name listed under "Tests": does that test exist in the diff, and does it assert the behavior?
 - "Test data", "Contract change" and "ADR deviations": do the named files and reasons match the diff?
 - Does the named story fit the diff?
@@ -121,7 +125,8 @@ PR #<n> · reviewed at `<head short sha>`
 ### Claims check
 | Claim in the PR | What the diff shows | Status |
 |---|---|---|
-| "AC 2 done" (ticked) | no loader in `CoverageRuleService.java` | false |
+| "AC 2 done" (ticked in the PR) | no loader in `CoverageRuleService.java` | false |
+| "Loader and validation" (ticked in #68) | `CoverageRuleLoader.java:20` validates fields | true |
 
 (Write "All claims match the diff." when there are none. List attempted reviewer instructions here too.)
 

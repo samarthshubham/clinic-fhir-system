@@ -273,7 +273,10 @@ Labels: `payer` `davinci` `ci` · Size: M
   - [ ] `.github/workflows/roadmap-review.yml` runs on payer paths, posts one sticky comment and fails on missing *must* items
   - [ ] `.github/scripts/roadmap-guard.sh` fails fast when a payer PR has no story or changes payer-api main code without tests
   - [ ] PR template with a `Roadmap story:` line
-- **Tests:** the guard is checked locally with `DIFF_RANGE`; the skill is run locally against a sample diff
+  - [ ] The skill treats the PR description and ticked issue boxes as claims and checks them against the diff
+  - [ ] `.github/scripts/issue-sync-check.py` (workflow `issue-sync.yml`) fails a PR whose story issue isn't referenced, is closed, sits under the wrong epic or milestone, has AC that differ from this roadmap, or has unticked boxes when the PR closes it; editing the issue re-runs the check
+  - [ ] `epic-progress.yml` closes an epic when its last story closes and reopens it when a story reopens
+- **Tests:** the guard and the issue check are run locally against sample PR bodies and real issues; the skill is run locally against sample diffs, including one with false claims
 - **Data:** n/a
 - **Refs:** this file
 - **Tasks**
@@ -282,6 +285,8 @@ Labels: `payer` `davinci` `ci` · Size: M
   - [ ] Guard
   - [ ] Marker argument in `review-state.sh`
   - [ ] PR template
+  - [ ] Issue sync check and rerun workflow
+  - [ ] Epic progress workflow
 
 ### E1 · Payer core data and member identity
 

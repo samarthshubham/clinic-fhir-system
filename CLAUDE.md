@@ -185,6 +185,8 @@ This is a personal project. Keep commits lightweight.
 
 **Payer roadmap:** payer and Da Vinci work follows `docs/roadmap/payer-davinci.md`, one story per PR, named in the PR template's `Roadmap story:` line. The `roadmap-review` check runs `.github/scripts/roadmap-guard.sh` and then the `roadmap-review` skill, which scores the PR against its story's AC, required tests and data, the ADRs in `docs/adr/` and the end-to-end goal. It fails unless the verdict is Aligned. Run it locally with `/roadmap-review <pr-number>`. If scope changes, update the roadmap in the same PR.
 
+**Roadmap issues:** each story has an issue (roadmap §8) under its epic. The PR says `Closes #n` (story finished) or `Part of #n` (partial), and the issue's AC and task boxes are ticked for what the PR delivers. The `issue-sync` check (`.github/scripts/issue-sync-check.py`) fails when the issue isn't referenced, is closed, is under the wrong epic or milestone, has AC that differ from the roadmap, or has unticked boxes on a closing PR; editing the issue re-runs it (`issue-sync-rerun.yml`). `epic-progress.yml` closes an epic when its last story closes and reopens it when a story reopens. Never close an epic from a PR.
+
 **Slow down and confirm with me before:**
 - Force-pushing or rewriting history.
 - Destructive changes (migrations, deletions, `rm -rf` in scripts) — commit current state first as a safety net.
