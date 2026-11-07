@@ -1,0 +1,25 @@
+sequenceDiagram
+  autonumber
+  actor C as Clinician
+  participant CA as clinic-api
+  participant PA as payer-api
+  actor R as UM reviewer
+  C->>CA: Sign MRI order
+  CA->>PA: CRD order-sign hook
+  PA-->>CA: Card "PA + documentation needed"
+  C->>CA: Open documentation
+  CA->>PA: Questionnaire/$questionnaire-package
+  PA-->>CA: Questionnaire + libraries
+  CA-->>C: Form prefilled from chart (DTR)
+  C->>CA: Complete form, submit prior auth
+  CA->>PA: Claim/$submit (PAS bundle)
+  PA-->>CA: ClaimResponse: pended, deadline set
+  R->>PA: Open queue, request documents
+  PA->>CA: CDex Task (attachment request)
+  C->>CA: Attach note
+  CA->>PA: Claim/$submit-attachment
+  R->>PA: Approve (Provenance)
+  PA-)CA: rest-hook: ClaimResponse changed
+  CA->>PA: Claim/$inquire
+  PA-->>CA: Approved, preAuthRef
+  CA-->>C: Inbox: approved, auth number shown

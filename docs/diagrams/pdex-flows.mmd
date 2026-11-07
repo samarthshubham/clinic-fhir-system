@@ -1,0 +1,21 @@
+flowchart TB
+  subgraph pa["Patient Access"]
+    direction LR
+    m["Member in patient-app"] --> ca1["clinic-api<br/>member token"] --> p1["payer-api /fhir<br/>member compartment only"]
+  end
+  subgraph pr["Provider Access"]
+    direction LR
+    ca2["clinic-api<br/>system token"] --> g["Group/{id}/$export<br/>attributed, not opted out"] --> nd["NDJSON import<br/>with Provenance"]
+  end
+  subgraph pp["Payer-to-Payer"]
+    direction LR
+    np["New payer"] --> mm["Patient/$member-match<br/>consent required"] --> ex["member-scoped $export"]
+  end
+  pa ~~~ pr ~~~ pp
+  classDef a fill:#E1F5EE,stroke:#0F6E56,color:#085041
+  classDef b fill:#EEEDFE,stroke:#534AB7,color:#3C3489
+  class m,ca1,ca2,nd,np a
+  class p1,g,mm,ex b
+  style pa fill:#FAFAF8,stroke:#888780
+  style pr fill:#FAFAF8,stroke:#888780
+  style pp fill:#FAFAF8,stroke:#888780
