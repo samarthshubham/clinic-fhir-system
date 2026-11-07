@@ -99,7 +99,7 @@ teardown() {
     rm -f "$PID_FILE"
   fi
 
-  for port in 9090 4200 4201 8081; do
+  for port in 9090 4200 4201 8082; do
     kill_port "$port"
   done
 
@@ -191,16 +191,16 @@ startup() {
   cd "$SCRIPT_DIR"
 
   # 4. Swagger UI
-  info "Swagger UI (:8081)"
+  info "Swagger UI (:8082)"
 
   docker rm -f clinic-swagger-ui > /dev/null 2>&1 || true
-  docker run --rm --name clinic-swagger-ui -p 8081:8080 \
+  docker run --rm --name clinic-swagger-ui -p 8082:8080 \
     -e SWAGGER_JSON=/spec/openapi.yaml \
     -v "$SCRIPT_DIR/docs/openapi.yaml:/spec/openapi.yaml:ro" \
     swaggerapi/swagger-ui 2>&1 | log_with_ts "$LOG_DIR/swagger.log" &
   SWAGGER_PID=$!
   echo "$SWAGGER_PID" >> "$PID_FILE"
-  ok "Swagger UI starting → http://localhost:8081 (PID $SWAGGER_PID, logs → logs/swagger.log)"
+  ok "Swagger UI starting → http://localhost:8082 (PID $SWAGGER_PID, logs → logs/swagger.log)"
 
   echo ""
   echo -e "${BOLD}All services started.${NC}"
@@ -209,7 +209,7 @@ startup() {
   echo -e "  clinic-api    → http://localhost:9090"
   echo -e "  clinician-app → http://localhost:4200"
   echo -e "  patient-app   → http://localhost:4201"
-  echo -e "  Swagger UI    → http://localhost:8081"
+  echo -e "  Swagger UI    → http://localhost:8082"
   echo -e "  Prometheus    → http://localhost:9091"
   echo -e "  Grafana       → http://localhost:3000 (admin/admin)"
   echo ""

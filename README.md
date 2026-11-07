@@ -66,7 +66,7 @@ Services start in the correct order, each waiting for the previous to be healthy
 | clinic-api (Spring Boot) | `http://localhost:9090` |
 | clinician-app (Angular) | `http://localhost:4200` |
 | patient-app (Angular) | `http://localhost:4201` |
-| Swagger UI | `http://localhost:8081` |
+| Swagger UI | `http://localhost:8082` |
 | Prometheus | `http://localhost:9091` |
 | Grafana | `http://localhost:3000` (login `admin` / `admin`) |
 
