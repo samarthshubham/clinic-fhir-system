@@ -46,6 +46,22 @@ services:
       postgres:
         condition: service_healthy
 
+  postgres-init:
+    image: postgres:15
+    container_name: clinic-postgres-init
+    environment:
+      PGHOST: postgres
+      PGUSER: hapi
+      PGPASSWORD: hapi
+      PGDATABASE: hapi
+    volumes:
+      - ./postgres/create-payer-db.sh:/create-payer-db.sh:ro
+    entrypoint: ["bash", "/create-payer-db.sh"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   prometheus:
     image: prom/prometheus:v2.54.1
     container_name: clinic-prometheus
