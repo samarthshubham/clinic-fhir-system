@@ -40,10 +40,7 @@ jobs:
 
       - name: Run roadmap review
         id: claude
-        if: >-
-          steps.guard.outputs.payer == 'true' &&
-          !contains(github.event.pull_request.title, 'WIP') &&
-          !startsWith(github.event.pull_request.title, 'wip')
+        if: steps.guard.outputs.payer == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -60,11 +57,16 @@ jobs:
         run: bash .github/scripts/review-state.sh save roadmap-review.md
 
       - name: Fail unless aligned
-        if: steps.claude.outcome == 'success'
+        if: steps.guard.outputs.payer == 'true'
         run: |
           if [[ ! -s roadmap-review.md ]]; then
-            echo "::notice::No scorecard was written (usually because this PR changes the review workflow, which must match main)."
-            exit 0
+            if git diff --name-only "origin/$BASE_REF...HEAD" |
+              grep -qxE '\.github/workflows/roadmap-review\.yml|\.claude/skills/roadmap-review/SKILL\.md'; then
+              echo "::notice::No scorecard: this PR changes the roadmap review itself, which only runs from main."
+              exit 0
+            fi
+            echo "::error::Payer paths changed but the roadmap review produced no scorecard, so the work is unverified."
+            exit 1
           fi
           verdict=$(head -n 1 roadmap-review.md)
           echo "$verdict"

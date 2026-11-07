@@ -2,6 +2,8 @@
 # Cheap, deterministic checks for payer / Da Vinci pull requests, run before the
 # roadmap-review agent. Writes payer=true|false and story=<id> to $GITHUB_OUTPUT
 # (or stdout) and exits 1 when a payer PR breaks a rule.
+# Passing it proves nothing about the work: a pasted story line and any test file
+# satisfy it. The roadmap-review agent verifies the claims against the diff.
 #
 # Env: BASE_REF, or DIFF_RANGE to override the compared range (local testing).
 #      PR_BODY, or PR_BODY_FILE pointing to a file holding it.
