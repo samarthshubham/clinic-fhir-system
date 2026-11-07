@@ -798,6 +798,16 @@ Labels: `payer` `davinci` `observability` · Size: S
 
 ## 8. GitHub tracking
 
-| Story | Issue |
-|---|---|
-| _filled in when the backlog is created_ | |
+Each epic is a GitHub issue labelled `epic`, with its stories attached as sub-issues. Milestones M0–M8 match the epics. Issues copy the story text at creation time; if they drift, this file wins.
+
+| Epic | Issue | Stories (sub-issues) |
+|---|---|---|
+| E0 | #56 | S1 #57, S2 #58, S3 #59, S4 #60, S5 #61, S6 #62, S7 #63, S8 #64, S9 #65 |
+| E1 | #66 | S1 #67, S2 #68, S3 #69 |
+| E2 | #70 | S1 #71, S2 #72, S3 #73, S4 #74 |
+| E3 | #75 | S1 #76, S2 #77, S3 #78, S4 #79, S5 #80 |
+| E4 | #81 | S1 #82, S2 #83, S3 #84, S4 #85, S5 #86, S6 #87, S7 #88, S8 #89 |
+| E5 | #90 | S1 #91, S2 #92, S3 #93 |
+| E6 | #94 | S1 #95, S2 #96, S3 #97, S4 #98, S5 #99, S6 #100 |
+| E7 | #101 | S1 #102, S2 #103, S3 #104, S4 #105 |
+| E8 | #106 | S1 #107, S2 #108, S3 #109, S4 #110, S5 #111 |
