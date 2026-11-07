@@ -84,7 +84,7 @@ care-platform/      Angular 21 Nx monorepo
 infra/
   docker-compose.yml    HAPI FHIR (rest-hook subscriptions on) + payer HAPI :8081 (Da Vinci IGs) + PostgreSQL 15 + Prometheus + Grafana
   postgres/             create-payer-db.sh: creates the hapi_payer database (one-shot postgres-init service)
-  payer/                smoke.sh (payer IG smoke test) + HealthCheck.java (healthcheck for the distroless HAPI image)
+  payer/                smoke.sh (payer IG smoke test) + HealthCheck.java (healthcheck for both distroless HAPI images)
   prometheus/           Scrape config for clinic-api /actuator/prometheus
   grafana/              Provisioned clinic-api dashboard + 5xx alert
 

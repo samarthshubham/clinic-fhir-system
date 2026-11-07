@@ -36,10 +36,12 @@ services:
       hapi.fhir.subscription.resthook_enabled: "true"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - ./payer/HealthCheck.java:/healthcheck/HealthCheck.java:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8080/fhir/metadata > /dev/null || exit 1"]
+      test: ["CMD", "java", "/healthcheck/HealthCheck.java", "http://localhost:8080/fhir/metadata"]
       interval: 30s
-      timeout: 10s
+      timeout: 20s
       retries: 5
       start_period: 60s
     depends_on:
