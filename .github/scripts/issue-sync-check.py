@@ -19,7 +19,7 @@ import re
 import subprocess
 import sys
 
-REPO = os.environ["REPO"]
+REPO = os.environ.get("REPO", "")
 ROADMAP = os.environ.get("ROADMAP", "docs/roadmap/payer-davinci.md")
 STORY_ID = r"E\d+-S\d+"
 CHECKBOX = re.compile(r"^\s*- \[( |x|X)\] (.+?)\s*$")
@@ -143,4 +143,5 @@ def main():
     return 0
 
 
-sys.exit(main())
+if __name__ == "__main__":
+    sys.exit(main())
