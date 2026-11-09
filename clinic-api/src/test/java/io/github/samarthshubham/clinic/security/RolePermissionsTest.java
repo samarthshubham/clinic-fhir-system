@@ -2,6 +2,8 @@ package io.github.samarthshubham.clinic.security;
 
 import static io.github.samarthshubham.clinic.security.Permission.APPOINTMENT_READ;
 import static io.github.samarthshubham.clinic.security.Permission.APPOINTMENT_WRITE;
+import static io.github.samarthshubham.clinic.security.Permission.COVERAGE_READ;
+import static io.github.samarthshubham.clinic.security.Permission.COVERAGE_WRITE;
 import static io.github.samarthshubham.clinic.security.Permission.PATIENT_READ;
 import static io.github.samarthshubham.clinic.security.Permission.PATIENT_WRITE;
 import static io.github.samarthshubham.clinic.security.Permission.PRACTITIONER_READ;
@@ -28,10 +30,16 @@ class RolePermissionsTest {
   }
 
   @Test
-  void frontDeskIsLimitedToRegistrationAndScheduling() {
+  void frontDeskIsLimitedToRegistrationSchedulingAndInsurance() {
     assertThat(RolePermissions.permissionsFor(Role.FRONT_DESK))
         .containsExactlyInAnyOrder(
-            PATIENT_READ, PATIENT_WRITE, APPOINTMENT_READ, APPOINTMENT_WRITE, PRACTITIONER_READ);
+            PATIENT_READ,
+            PATIENT_WRITE,
+            APPOINTMENT_READ,
+            APPOINTMENT_WRITE,
+            PRACTITIONER_READ,
+            COVERAGE_READ,
+            COVERAGE_WRITE);
   }
 
   @Test
@@ -44,7 +52,9 @@ class RolePermissionsTest {
             "patient:write",
             "appointment:read",
             "appointment:write",
-            "practitioner:read");
+            "practitioner:read",
+            "coverage:read",
+            "coverage:write");
   }
 
   @Test

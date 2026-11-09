@@ -13,6 +13,7 @@ import io.github.samarthshubham.clinic.service.AppointmentService;
 import io.github.samarthshubham.clinic.service.AuthService;
 import io.github.samarthshubham.clinic.service.CarePlanService;
 import io.github.samarthshubham.clinic.service.ConditionService;
+import io.github.samarthshubham.clinic.service.CoverageService;
 import io.github.samarthshubham.clinic.service.DashboardService;
 import io.github.samarthshubham.clinic.service.DiagnosticReportService;
 import io.github.samarthshubham.clinic.service.EncounterService;
@@ -118,7 +119,17 @@ class AuthorizationMatrixTest {
           get("/api/diagnostic-reports?patientId=p1", CLINICAL_STAFF),
           get("/api/care-plans?patientId=p1", CLINICAL_STAFF),
           get("/api/goals?patientId=p1", CLINICAL_STAFF),
+          get("/api/coverages/cov1", EVERYONE),
+          get("/api/coverages?patientId=p1", EVERYONE_AND_OWNER),
+          post(
+              "/api/coverages",
+              """
+              {"patientId":"p1","payerId":"praxis-health-plan","payerName":"Praxis Health Plan",
+               "memberId":"PHP-10001","status":"active","periodStart":"2026-01-01"}
+              """,
+              EVERYONE),
           get("/api/patients/p2", EVERYONE),
+          get("/api/coverages?patientId=p2", EVERYONE),
           get("/api/patients/p2/snapshot", CLINICAL_STAFF),
           get("/api/dashboard/p2", CLINICAL_STAFF),
           get("/api/appointments?patientId=p2", EVERYONE),
@@ -154,6 +165,7 @@ class AuthorizationMatrixTest {
   @MockitoBean private HighBpAlertService highBpAlertService;
   @MockitoBean private AlertService alertService;
   @MockitoBean private AuthService authService;
+  @MockitoBean private CoverageService coverageService;
 
   static Stream<Arguments> endpoints() {
     return ENDPOINTS.stream().map(endpoint -> Arguments.of(endpoint));

@@ -7,6 +7,8 @@ import static io.github.samarthshubham.clinic.security.Permission.APPOINTMENT_WR
 import static io.github.samarthshubham.clinic.security.Permission.CAREPLAN_WRITE;
 import static io.github.samarthshubham.clinic.security.Permission.CLINICAL_READ;
 import static io.github.samarthshubham.clinic.security.Permission.CONDITION_WRITE;
+import static io.github.samarthshubham.clinic.security.Permission.COVERAGE_READ;
+import static io.github.samarthshubham.clinic.security.Permission.COVERAGE_WRITE;
 import static io.github.samarthshubham.clinic.security.Permission.ENCOUNTER_WRITE;
 import static io.github.samarthshubham.clinic.security.Permission.MEDICATION_WRITE;
 import static io.github.samarthshubham.clinic.security.Permission.ORDER_WRITE;
@@ -27,7 +29,13 @@ public final class RolePermissions {
 
   private static final Set<Permission> FRONT_DESK_PERMISSIONS =
       EnumSet.of(
-          PATIENT_READ, PATIENT_WRITE, APPOINTMENT_READ, APPOINTMENT_WRITE, PRACTITIONER_READ);
+          PATIENT_READ,
+          PATIENT_WRITE,
+          APPOINTMENT_READ,
+          APPOINTMENT_WRITE,
+          PRACTITIONER_READ,
+          COVERAGE_READ,
+          COVERAGE_WRITE);
 
   private static final Set<Permission> CLINICIAN_PERMISSIONS =
       EnumSet.of(
@@ -44,7 +52,9 @@ public final class RolePermissions {
           ORDER_WRITE,
           CAREPLAN_WRITE,
           ALERT_READ,
-          ALERT_WRITE);
+          ALERT_WRITE,
+          COVERAGE_READ,
+          COVERAGE_WRITE);
 
   private static final Map<Role, Set<Permission>> PERMISSIONS =
       Map.of(
