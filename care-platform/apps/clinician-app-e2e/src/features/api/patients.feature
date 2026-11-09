@@ -16,6 +16,7 @@ Feature: Patients
     And the response field "dateOfBirth" is "1990-01-02"
     And the response field "gender" is "female"
     And the response field "phone" is "555-0100"
+    And the response field "mrn" contains "PX-"
 
   Scenario: Get a patient by id
     Given a test patient "alice"
