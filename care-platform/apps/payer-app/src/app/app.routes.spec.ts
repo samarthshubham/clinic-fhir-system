@@ -18,6 +18,8 @@ import { ShellComponent } from '@core/shell/shell.component';
 import { LoginComponent } from '@features/login/login.component';
 import { QueueComponent } from '@features/queue/queue.component';
 import { PlaceholderPageComponent } from '@features/placeholder/placeholder-page.component';
+import { MemberSearchComponent } from '@features/members/member-search/member-search.component';
+import { MemberDetailComponent } from '@features/members/member-detail/member-detail.component';
 
 describe('appRoutes', () => {
   function find(routes: Route[] | undefined, path: string): Route {
@@ -49,7 +51,14 @@ describe('appRoutes', () => {
     expect(await page('queue').loadComponent?.()).toBe(QueueComponent);
   });
 
-  it.each(['members', 'directory', 'metrics'])(
+  it('should lazy load member search and member detail', async () => {
+    expect(await page('members').loadComponent?.()).toBe(MemberSearchComponent);
+    expect(await page('members/:id').loadComponent?.()).toBe(
+      MemberDetailComponent,
+    );
+  });
+
+  it.each(['directory', 'metrics'])(
     'should show a placeholder for %s until its story lands',
     async (path) => {
       expect(await page(path).loadComponent?.()).toBe(PlaceholderPageComponent);

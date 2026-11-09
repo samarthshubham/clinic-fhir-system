@@ -1,0 +1,116 @@
+<h1>Members</h1>
+
+<form
+  class="app-member-search__filters"
+  [formGroup]="form"
+  role="search"
+  aria-label="Search members"
+  (ngSubmit)="reload()"
+>
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Name</mat-label>
+    <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+    <input matInput formControlName="name" autocomplete="off" />
+  </mat-form-field>
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Member ID</mat-label>
+    <input
+      matInput
+      formControlName="memberId"
+      class="cp-font-mono"
+      placeholder="PHP-10001"
+      autocomplete="off"
+    />
+  </mat-form-field>
+  <button mat-button type="button" (click)="clear()">Clear</button>
+</form>
+
+@if (isLoading()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Loading members" />
+}
+
+@if (hasError()) {
+  <div class="app-member-search__error" role="alert">
+    <p>Could not load members.</p>
+    <button mat-stroked-button type="button" (click)="reload()">
+      <mat-icon aria-hidden="true">refresh</mat-icon>
+      Try again
+    </button>
+  </div>
+}
+
+@if (isEmpty()) {
+  <cp-empty-state
+    icon="person_search"
+    title="No members match"
+    text="Try a different name or member ID."
+  />
+}
+
+<div class="app-member-search__table" [hidden]="!showTable()">
+  <table
+    mat-table
+    [dataSource]="dataSource"
+    matSort
+    matSortActive="name"
+    matSortDirection="asc"
+    aria-label="Members"
+  >
+    <ng-container matColumnDef="memberId">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Member ID</th>
+      <td mat-cell *matCellDef="let member" class="cp-font-mono">
+        {{ member.memberId ?? '—' }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+      <td mat-cell *matCellDef="let member">
+        <a [routerLink]="[member.id]">{{ member.name }}</a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="dateOfBirth">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Date of birth</th>
+      <td mat-cell *matCellDef="let member" class="cp-font-mono">
+        {{
+          member.dateOfBirth ? (member.dateOfBirth | date: 'dd MMM yyyy') : '—'
+        }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="planName">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Plan</th>
+      <td mat-cell *matCellDef="let member">{{ member.planName ?? '—' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="coverageStatus">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Coverage</th>
+      <td mat-cell *matCellDef="let member">
+        @if (member.coverageStatus) {
+          <span
+            [class]="
+              'cp-status-badge cp-status-badge--' +
+              coverageTone(member.coverageStatus)
+            "
+            >{{ member.coverageStatus | titlecase }}</span
+          >
+        } @else {
+          —
+        }
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let member; columns: displayedColumns"></tr>
+  </table>
+  <mat-paginator
+    [pageSizeOptions]="[10, 25, 50]"
+    [pageSize]="25"
+    showFirstLastButtons
+    aria-label="Select page of members"
+  />
+  <p class="app-member-search__total" aria-live="polite">
+    {{ total() }} {{ total() === 1 ? 'member' : 'members' }}
+  </p>
+</div>

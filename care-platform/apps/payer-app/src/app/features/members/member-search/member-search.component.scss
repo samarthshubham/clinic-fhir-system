@@ -1,0 +1,42 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1200px;
+}
+
+h1 {
+  margin: 0;
+  color: var(--px-text-strong);
+}
+
+.app-member-search__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-member-search__error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--px-crit);
+}
+
+.app-member-search__table {
+  overflow-x: auto;
+  background: var(--px-surface);
+  border: 1px solid var(--px-border);
+  border-radius: var(--px-radius);
+
+  table {
+    width: 100%;
+  }
+}
+
+.app-member-search__total {
+  margin: 0;
+  padding: 0 16px 12px;
+  color: var(--px-text-muted);
+}
