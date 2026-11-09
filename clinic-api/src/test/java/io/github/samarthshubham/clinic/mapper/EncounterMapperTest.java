@@ -43,7 +43,7 @@ class EncounterMapperTest {
     assertThat(type.getSystem())
         .isEqualTo("http://terminology.hl7.org/CodeSystem/v3-ParticipationType");
     assertThat(type.getCode()).isEqualTo("ATND");
-    assertThat(type.getDisplay()).isEqualTo("Attender");
+    assertThat(type.getDisplay()).isEqualTo("attender");
   }
 
   @Test

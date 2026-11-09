@@ -54,7 +54,7 @@ public class EncounterMapper {
                   new Coding()
                       .setSystem(PARTICIPATION_TYPE_SYSTEM)
                       .setCode("ATND")
-                      .setDisplay("Attender")));
+                      .setDisplay("attender")));
       participant.setIndividual(new Reference("Practitioner/" + request.practitionerId()));
       encounter.addParticipant(participant);
     }
