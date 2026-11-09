@@ -1,15 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { cascadeDeletePatient, upsertPatient, execFileSync } = vi.hoisted(
+const { cascadeDeletePatient, upsertPatient, execFileSync, payer } = vi.hoisted(
   () => ({
     cascadeDeletePatient: vi.fn<(id: string) => Promise<void>>(),
     upsertPatient: vi.fn<(patient: object) => Promise<void>>(),
     execFileSync: vi.fn(),
+    payer: {
+      ensurePayerOrganization: vi.fn(),
+      ensureInsurancePlan: vi.fn(),
+      ensureMemberPatient: vi.fn(),
+      ensureMemberCoverage: vi.fn(),
+    },
   }),
 );
 
 vi.mock('../../../apps/seed-demo-data/src/support/api-client', () => ({
-  apiClient: { cascadeDeletePatient, upsertPatient },
+  apiClient: { cascadeDeletePatient, upsertPatient, ...payer },
 }));
 vi.mock('node:child_process', () => ({ execFileSync }));
 
@@ -227,6 +233,55 @@ describe('e2eTasks', () => {
     expect(cascadeDeletePatient.mock.calls).toEqual([
       ['e2e-patient-1'],
       ['e2e-patient-1'],
+    ]);
+  });
+
+  it('creates a payer member with Gold PPO coverage and tracks it for cleanup', async () => {
+    const { cleanUpAfterSpec, e2eTasks } = await loadTasks();
+    payer.ensurePayerOrganization.mockResolvedValue({ id: 'org1' });
+    payer.ensureInsurancePlan.mockResolvedValue({ id: 'plan1' });
+    payer.ensureMemberPatient.mockResolvedValue({ id: 'm1' });
+    payer.ensureMemberCoverage.mockResolvedValue({ id: 'cov1' });
+    fetchMock.mockResolvedValue(status(200));
+
+    const member = await e2eTasks.createTestMember({
+      lastName: 'E2E-member-x',
+      memberId: 'PHP-91234',
+    });
+    await cleanUpAfterSpec(0);
+
+    expect(member).toEqual({ id: 'm1' });
+    expect(payer.ensurePayerOrganization).toHaveBeenCalledWith({
+      organizationId: 'PHP01',
+      name: 'Praxis Health Plan',
+    });
+    expect(payer.ensureInsurancePlan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        planId: 'praxis-gold-ppo',
+        organizationId: 'org1',
+      }),
+    );
+    expect(payer.ensureMemberPatient).toHaveBeenCalledWith(
+      'PHP-91234',
+      expect.objectContaining({
+        name: [{ family: 'E2E-member-x', given: ['Test'] }],
+      }),
+    );
+    expect(payer.ensureMemberCoverage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        memberPatientId: 'm1',
+        organizationId: 'org1',
+        memberId: 'PHP-91234',
+        status: 'active',
+        plan: {
+          id: 'plan1',
+          planId: 'praxis-gold-ppo',
+          name: 'Praxis Gold PPO',
+        },
+      }),
+    );
+    expect(requests()).toEqual([
+      `DELETE ${PAYER_HAPI}/Patient/m1?_cascade=delete`,
     ]);
   });
 

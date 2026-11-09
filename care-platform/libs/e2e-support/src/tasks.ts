@@ -1,6 +1,8 @@
 import { execFileSync } from 'node:child_process';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- reuses the seed app's cascade delete instead of duplicating it
 import { apiClient } from '../../../apps/seed-demo-data/src/support/api-client';
+// eslint-disable-next-line @nx/enforce-module-boundaries -- same relative dates as the seed
+import { daysAgo } from '../../../apps/seed-demo-data/src/support/date-helpers';
 
 const HAPI = 'http://localhost:8080/fhir';
 const PAYER_HAPI = 'http://localhost:8081/fhir';
@@ -25,6 +27,18 @@ export interface TestPatient {
   dateOfBirth: string;
   gender: string;
 }
+
+export interface TestMember {
+  lastName: string;
+  memberId: string;
+}
+
+const PRAXIS = { organizationId: 'PHP01', name: 'Praxis Health Plan' };
+const GOLD_PPO = {
+  planId: 'praxis-gold-ppo',
+  name: 'Praxis Gold PPO',
+  planType: 'PPO',
+};
 
 const tracked = {
   patientIds: new Set<string>(),
@@ -160,6 +174,33 @@ export const e2eTasks = {
     await apiClient.upsertPatient(patient);
     tracked.patientIds.add(patient.id);
     return null;
+  },
+  // Ensures Praxis Health Plan and its Gold PPO plan the same way the seed does, so the
+  // member's Coverage has a payer and plan to point at even when the seed never ran.
+  async createTestMember(member: TestMember): Promise<{ id: string }> {
+    const organization = await apiClient.ensurePayerOrganization(PRAXIS);
+    const plan = await apiClient.ensureInsurancePlan({
+      ...GOLD_PPO,
+      organizationId: organization.id,
+      periodStart: daysAgo(730),
+    });
+    const patient = await apiClient.ensureMemberPatient(member.memberId, {
+      id: member.memberId,
+      name: [{ family: member.lastName, given: ['Test'] }],
+      birthDate: '1980-05-15',
+      gender: 'female',
+    });
+    tracked.payerResources.add(`Patient/${patient.id}`);
+    await apiClient.ensureMemberCoverage({
+      memberPatientId: patient.id,
+      organizationId: organization.id,
+      payerName: PRAXIS.name,
+      memberId: member.memberId,
+      plan: { id: plan.id, planId: GOLD_PPO.planId, name: GOLD_PPO.name },
+      status: 'active',
+      periodStart: daysAgo(30),
+    });
+    return { id: patient.id };
   },
   async stopFhir(): Promise<null> {
     fhirStopped = true;
