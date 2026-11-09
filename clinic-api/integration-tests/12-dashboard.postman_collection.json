@@ -340,7 +340,7 @@
         "body": {
           "mode": "raw",
           "options": { "raw": { "language": "json" } },
-          "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"encounterId\": \"{{encounterId3}}\",\n  \"code\": \"Lipid Panel\",\n  \"category\": \"laboratory\",\n  \"status\": \"active\",\n  \"priority\": \"routine\",\n  \"authoredOn\": \"2026-05-06\"\n}"
+          "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"encounterId\": \"{{encounterId3}}\",\n  \"display\": \"Lipid Panel\",\n  \"category\": \"laboratory\",\n  \"status\": \"active\",\n  \"priority\": \"routine\",\n  \"authoredOn\": \"2026-05-06\"\n}"
         }
       },
       "event": [

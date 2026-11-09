@@ -6,22 +6,26 @@ import static io.github.samarthshubham.clinic.support.FhirDates.date;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.samarthshubham.clinic.config.ClinicalThresholds;
 import io.github.samarthshubham.clinic.dto.AlertItem;
 import io.github.samarthshubham.clinic.dto.LatestVitals;
 import io.github.samarthshubham.clinic.dto.SnapshotResponse;
 import io.github.samarthshubham.clinic.dto.VitalReading;
+import io.github.samarthshubham.clinic.mapper.CoverageMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Condition;
+import org.hl7.fhir.r4.model.Coverage;
 import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.Dosage;
 import org.hl7.fhir.r4.model.MedicationStatement;
 import org.hl7.fhir.r4.model.Observation;
 import org.hl7.fhir.r4.model.Quantity;
+import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.StringType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +57,44 @@ class SnapshotServiceTest {
   void setUp() {
     fhir = new FhirClientStub();
     service =
-        new SnapshotService(fhir.client(), new ClinicalThresholds(140, 180, 90, 120, 95.0, 90.0));
+        new SnapshotService(
+            fhir.client(),
+            new ClinicalThresholds(140, 180, 90, 120, 95.0, 90.0),
+            new CoverageService(fhir.client(), new CoverageMapper()));
+  }
+
+  @Test
+  void activeCoverageIsIncluded() {
+    Coverage coverage =
+        new Coverage()
+            .setStatus(Coverage.CoverageStatus.ACTIVE)
+            .setBeneficiary(new Reference("Patient/p1"));
+    coverage.setId("cov1");
+    fhir.givenSearchResult(Coverage.class, bundleOf(coverage));
+
+    SnapshotResponse snapshot = service.getSnapshot("p1");
+
+    assertThat(snapshot.coverage().id()).isEqualTo("cov1");
+    assertThat(fhir.lastSearchCriteria(Coverage.class))
+        .contains("beneficiary=Patient/p1", "status=active");
+  }
+
+  @Test
+  void coverageFailureLeavesTheRestOfTheSnapshot() {
+    Condition hypertension = new Condition();
+    hypertension.setId("c1");
+    fhir.givenSearchResult(Condition.class, bundleOf(hypertension));
+    fhir.givenSearchFails(Coverage.class, new InternalErrorException("FHIR server error"));
+
+    SnapshotResponse snapshot = service.getSnapshot("p1");
+
+    assertThat(snapshot.coverage()).isNull();
+    assertThat(snapshot.activeConditions()).hasSize(1);
+  }
+
+  @Test
+  void coverageIsNullWithoutAnActiveCoverage() {
+    assertThat(service.getSnapshot("p1").coverage()).isNull();
   }
 
   @Test

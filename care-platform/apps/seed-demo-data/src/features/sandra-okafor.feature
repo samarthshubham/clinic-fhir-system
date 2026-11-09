@@ -18,6 +18,13 @@ Feature: Seed Patient — Sandra Okafor (post-cholecystectomy recovery)
       | gender      | female                    |
       | phone       | 5551004004                |
       | email       | sandra.okafor@example.com |
+      | mrn         | PX-10000005               |
+
+    And the patient is covered by Praxis Health Plan:
+      | memberId       | PHP-10005       |
+      | planName       | Praxis Gold PPO |
+      | status         | active          |
+      | startedDaysAgo | 365             |
 
     # Pathology ordered at pre-op visit
     And a service request is placed with code "Surgical Pathology — Gallbladder" category "laboratory" authored 44 days ago

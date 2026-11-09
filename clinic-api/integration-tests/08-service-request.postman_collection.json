@@ -138,7 +138,7 @@
         "body": {
           "mode": "raw",
           "options": { "raw": { "language": "json" } },
-          "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"encounterId\": \"{{encounterId}}\",\n  \"practitionerId\": \"{{practitionerId}}\",\n  \"code\": \"Lipid Panel\",\n  \"category\": \"laboratory\",\n  \"status\": \"active\",\n  \"priority\": \"routine\",\n  \"authoredOn\": \"2026-04-10\"\n}"
+          "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"encounterId\": \"{{encounterId}}\",\n  \"practitionerId\": \"{{practitionerId}}\",\n  \"display\": \"Lipid Panel\",\n  \"category\": \"laboratory\",\n  \"status\": \"active\",\n  \"priority\": \"routine\",\n  \"authoredOn\": \"2026-04-10\"\n}"
         }
       },
       "event": [
@@ -160,7 +160,7 @@
               "  pm.expect(body.practitionerId).to.eql(pm.collectionVariables.get('practitionerId'));",
               "});",
               "pm.test('Fields match', () => {",
-              "  pm.expect(body.code).to.eql('Lipid Panel');",
+              "  pm.expect(body.display).to.eql('Lipid Panel');",
               "  pm.expect(body.category).to.eql('laboratory');",
               "  pm.expect(body.authoredOn).to.eql('2026-04-10');",
               "});",
@@ -183,7 +183,7 @@
         "body": {
           "mode": "raw",
           "options": { "raw": { "language": "json" } },
-          "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"code\": \"Echocardiogram\",\n  \"category\": \"imaging\",\n  \"status\": \"active\",\n  \"priority\": \"urgent\",\n  \"authoredOn\": \"2026-04-10\"\n}"
+          "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"display\": \"Echocardiogram\",\n  \"category\": \"imaging\",\n  \"status\": \"active\",\n  \"priority\": \"urgent\",\n  \"authoredOn\": \"2026-04-10\"\n}"
         }
       },
       "event": [
@@ -291,7 +291,7 @@
       ]
     },
     {
-      "name": "Error — POST Service Request Missing code",
+      "name": "Error — POST Service Request Missing display",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],

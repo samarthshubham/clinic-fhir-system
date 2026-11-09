@@ -3,12 +3,14 @@ package io.github.samarthshubham.clinic.service;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.DateClientParam;
 import ca.uhn.fhir.rest.gclient.StringClientParam;
+import ca.uhn.fhir.rest.gclient.TokenClientParam;
 import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.dto.PatientRequest;
 import io.github.samarthshubham.clinic.dto.PatientResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.PageMapper;
 import io.github.samarthshubham.clinic.mapper.PatientMapper;
+import java.security.SecureRandom;
 import java.time.LocalDate;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Patient;
@@ -16,6 +18,9 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class PatientService {
+
+  private static final SecureRandom MRN_RANDOM = new SecureRandom();
+  private static final int MRN_ATTEMPTS = 5;
 
   private final IGenericClient fhirClient;
   private final PatientMapper patientMapper;
@@ -26,9 +31,47 @@ public class PatientService {
   }
 
   public PatientResponse createPatient(PatientRequest request) {
-    var outcome = fhirClient.create().resource(patientMapper.toFhir(request)).execute();
+    var outcome = fhirClient.create().resource(patientMapper.toFhir(withMrn(request))).execute();
     String id = outcome.getId().getIdPart();
     return patientMapper.toResponse(fhirClient.read().resource(Patient.class).withId(id).execute());
+  }
+
+  static String newMrn() {
+    return "PX-%08d".formatted(MRN_RANDOM.nextInt(100_000_000));
+  }
+
+  private String unusedMrn() {
+    for (int attempt = 0; attempt < MRN_ATTEMPTS; attempt++) {
+      String mrn = newMrn();
+      Bundle existing =
+          fhirClient
+              .search()
+              .forResource(Patient.class)
+              .where(
+                  new TokenClientParam("identifier")
+                      .exactly()
+                      .systemAndCode(PatientMapper.MRN_SYSTEM, mrn))
+              .returnBundle(Bundle.class)
+              .execute();
+      if (!existing.hasEntry()) {
+        return mrn;
+      }
+    }
+    throw new IllegalStateException("No unused MRN after " + MRN_ATTEMPTS + " attempts");
+  }
+
+  private PatientRequest withMrn(PatientRequest request) {
+    if (request.mrn() != null && !request.mrn().isBlank()) {
+      return request;
+    }
+    return new PatientRequest(
+        request.firstName(),
+        request.lastName(),
+        request.dateOfBirth(),
+        request.gender(),
+        request.phone(),
+        request.email(),
+        unusedMrn());
   }
 
   public PatientResponse getPatient(String id) {

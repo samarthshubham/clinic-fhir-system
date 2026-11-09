@@ -8,7 +8,7 @@ Feature: Diagnostic reports
   Scenario: A report completes the order it is based on
     Given "clinician" creates "order" with POST "/api/service-requests":
       """
-      {"patientId":"{patient}","code":"Complete blood count","category":"laboratory","status":"active","priority":"routine","authoredOn":"{daysAgo:2}"}
+      {"patientId":"{patient}","display":"Complete blood count","category":"laboratory","status":"active","priority":"routine","authoredOn":"{daysAgo:2}"}
       """
     When I send POST "/api/diagnostic-reports" with body:
       """
