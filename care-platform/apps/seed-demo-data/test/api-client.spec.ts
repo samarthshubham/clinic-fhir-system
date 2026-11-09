@@ -207,6 +207,43 @@ describe('POST to the Spring API', () => {
   });
 });
 
+describe('ensureCoverage', () => {
+  const body = {
+    patientId: 'p1',
+    payerId: 'praxis-health-plan',
+    payerName: 'Praxis Health Plan',
+    memberId: 'PHP-10001',
+    status: 'active',
+    periodStart: '2026-01-01',
+  };
+  const memberSearch = `${HAPI}/Coverage?_count=100&_elements=id&identifier=${encodeURIComponent(
+    'http://praxis.clinic/fhir/identifier/member-id|PHP-10001',
+  )}`;
+
+  it('keeps the coverage that already has the member id', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(bundle('cov1')));
+
+    await expect(apiClient.ensureCoverage(body)).resolves.toEqual({
+      id: 'cov1',
+    });
+    expect(calls().map(({ url }) => url)).toEqual([memberSearch]);
+  });
+
+  it('creates the coverage through the Spring API when the member id is new', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ resourceType: 'Bundle' }))
+      .mockResolvedValueOnce(jsonResponse({ id: 'cov2' }));
+
+    await expect(apiClient.ensureCoverage(body)).resolves.toEqual({
+      id: 'cov2',
+    });
+    const [, create] = calls();
+    expect(create.url).toBe(`${SPRING}/coverages`);
+    expect(create.init?.method).toBe('POST');
+    expect(JSON.parse(create.init?.body as string)).toEqual(body);
+  });
+});
+
 describe('PUT to HAPI FHIR', () => {
   it('upserts a patient with telecom when phone and email are present', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({}));
@@ -272,6 +309,36 @@ describe('PUT to HAPI FHIR', () => {
     ]);
   });
 
+  it('adds the MRN identifier when the patient has one', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({}));
+
+    await apiClient.upsertPatient({
+      id: 'p4',
+      firstName: 'Katherine',
+      lastName: 'Johnson',
+      dateOfBirth: '1918-08-26',
+      gender: 'female',
+      mrn: 'PX-10000009',
+    });
+
+    const body = JSON.parse(calls()[0].init?.body as string);
+    expect(body.identifier).toEqual([
+      {
+        use: 'usual',
+        type: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+              code: 'MR',
+            },
+          ],
+        },
+        system: 'http://praxis.clinic/fhir/identifier/mrn',
+        value: 'PX-10000009',
+      },
+    ]);
+  });
+
   it('upserts the practitioner and organization under the given ids', async () => {
     fetchMock.mockImplementation(async () => jsonResponse({}));
 
@@ -302,6 +369,7 @@ describe('PUT to HAPI FHIR', () => {
 
 describe('cascadeDeletePatient', () => {
   const searchOrder = [
+    'Coverage',
     'Flag',
     'CarePlan',
     'Goal',
@@ -345,6 +413,7 @@ describe('cascadeDeletePatient', () => {
 
   it('deletes referencing resources before the resources they reference', async () => {
     routeFetch({
+      Coverage: bundle('cov1'),
       Flag: bundle('f1'),
       CarePlan: bundle('cp1'),
       Goal: bundle('g1', 'g2'),
@@ -363,6 +432,7 @@ describe('cascadeDeletePatient', () => {
       .filter(({ init }) => init?.method === 'DELETE')
       .map(({ url }) => url.slice(`${HAPI}/`.length));
     expect(deletes).toEqual([
+      'Coverage/cov1',
       'Flag/f1',
       'CarePlan/cp1',
       'Goal/g1',

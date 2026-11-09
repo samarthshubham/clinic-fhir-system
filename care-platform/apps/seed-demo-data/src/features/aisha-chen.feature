@@ -17,6 +17,14 @@ Feature: Seed Patient — Aisha Chen (new patient, minimal data)
       | gender      | female                 |
       | phone       | 5551006006             |
       | email       | aisha.chen@example.com |
+      | mrn         | PX-10000008            |
+
+    And the patient is covered by Praxis Health Plan:
+      | memberId       | PHP-10008       |
+      | planName       | Praxis Gold PPO |
+      | status         | cancelled       |
+      | startedDaysAgo | 400             |
+      | endedDaysAgo   | 30              |
 
     # Single encounter — new patient initial assessment, all vitals normal
     When an encounter is recorded 5 days ago with reason "New patient — initial assessment" and status "finished"

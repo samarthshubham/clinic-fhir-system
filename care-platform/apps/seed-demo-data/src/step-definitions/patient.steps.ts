@@ -14,6 +14,7 @@ Given(
       gender: row['gender'],
       phone: row['phone'],
       email: row['email'],
+      mrn: row['mrn'],
     };
 
     await apiClient.cascadeDeletePatient(fields.id);

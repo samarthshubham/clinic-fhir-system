@@ -2,6 +2,8 @@ const SPRING_API = 'http://localhost:9090';
 const HAPI_FHIR = 'http://localhost:8080';
 const DEFAULT_SEED_USERNAME = 'clinician';
 const DEFAULT_SEED_PASSWORD = 'Clinician#2026';
+const MRN_SYSTEM = 'http://praxis.clinic/fhir/identifier/mrn';
+const MEMBER_ID_SYSTEM = 'http://praxis.clinic/fhir/identifier/member-id';
 
 export interface CreatedResource {
   id: string;
@@ -36,6 +38,7 @@ export interface PatientFields {
   gender: string;
   phone?: string;
   email?: string;
+  mrn?: string;
 }
 
 export interface CreateConditionBody {
@@ -68,7 +71,9 @@ export interface CreateServiceRequestBody {
   patientId: string;
   encounterId?: string;
   practitionerId?: string;
-  code: string;
+  display: string;
+  codeSystem?: string;
+  code?: string;
   category: string;
   status: string;
   priority: string;
@@ -104,6 +109,18 @@ export interface CreateGoalBody {
   targetValue?: number;
   targetUnit?: string;
   targetDate?: string;
+}
+
+export interface CreateCoverageBody {
+  patientId: string;
+  payerId: string;
+  payerName: string;
+  memberId: string;
+  planName?: string;
+  status: string;
+  periodStart: string;
+  periodEnd?: string;
+  relationship?: string;
 }
 
 interface FhirSearchBundle {
@@ -224,9 +241,15 @@ class ApiClient {
 
   async cascadeDeletePatient(id: string): Promise<void> {
     // Order matters: delete referencing resources before the resources they reference.
+    // Coverage → Patient;
     // Flag (clinician alert) → Observation; CarePlan → Goal, Condition;
     // DiagnosticReport → ServiceRequest, Observation;
     // ServiceRequest, Observation → Encounter; everything → Patient.
+
+    const coverageIds = await this.searchFhirIds('Coverage', `patient=${id}`);
+    await Promise.all(
+      coverageIds.map((cid) => this.deleteFhirById('Coverage', cid)),
+    );
 
     const flagIds = await this.searchFhirIds('Flag', `patient=${id}`);
     await Promise.all(flagIds.map((fid) => this.deleteFhirById('Flag', fid)));
@@ -293,6 +316,23 @@ class ApiClient {
       name: [{ family: fields.lastName, given: [fields.firstName] }],
       birthDate: fields.dateOfBirth,
       gender: fields.gender,
+      ...(fields.mrn && {
+        identifier: [
+          {
+            use: 'usual',
+            type: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                  code: 'MR',
+                },
+              ],
+            },
+            system: MRN_SYSTEM,
+            value: fields.mrn,
+          },
+        ],
+      }),
       ...(telecom.length > 0 && { telecom }),
     });
   }
@@ -372,6 +412,15 @@ class ApiClient {
 
   createGoal(body: CreateGoalBody): Promise<CreatedResource> {
     return this.post<CreatedResource>(`${SPRING_API}/api/goals`, body);
+  }
+
+  async ensureCoverage(body: CreateCoverageBody): Promise<CreatedResource> {
+    const [existingId] = await this.searchFhirIds(
+      'Coverage',
+      `identifier=${encodeURIComponent(`${MEMBER_ID_SYSTEM}|${body.memberId}`)}`,
+    );
+    if (existingId) return { id: existingId };
+    return this.post<CreatedResource>(`${SPRING_API}/api/coverages`, body);
   }
 }
 
