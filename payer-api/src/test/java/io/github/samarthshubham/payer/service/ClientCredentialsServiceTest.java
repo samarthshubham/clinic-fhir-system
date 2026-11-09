@@ -4,6 +4,10 @@ import static io.github.samarthshubham.payer.support.TestAuth.CLIENT_ID;
 import static io.github.samarthshubham.payer.support.TestAuth.CLIENT_SECRET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 import io.github.samarthshubham.payer.config.AuthProperties;
 import io.github.samarthshubham.payer.exception.OAuthException;
@@ -70,6 +74,19 @@ class ClientCredentialsServiceTest {
         () -> service.issueToken("password", CLIENT_ID, CLIENT_SECRET, null),
         HttpStatus.BAD_REQUEST,
         "unsupported_grant_type");
+  }
+
+  @Test
+  void unknownClientStillPaysForAPasswordCheck() {
+    BCryptPasswordEncoder encoder = spy(new BCryptPasswordEncoder(4));
+    ClientCredentialsService timedService =
+        new ClientCredentialsService(properties, encoder, TestAuth.tokenService(properties));
+
+    assertOAuthError(
+        () -> timedService.issueToken("client_credentials", "someone-else", "guess", null),
+        HttpStatus.UNAUTHORIZED,
+        "invalid_client");
+    verify(encoder).matches(eq("guess"), anyString());
   }
 
   private static void assertOAuthError(Runnable call, HttpStatus status, String error) {
