@@ -19,12 +19,6 @@ Feature: Seed Patient — Priya Nair (healthy, preventive care)
       | email       | priya.nair@example.com |
       | mrn         | PX-10000001            |
 
-    And the patient is covered by Praxis Health Plan:
-      | memberId       | PHP-10001       |
-      | planName       | Praxis Gold PPO |
-      | status         | active          |
-      | startedDaysAgo | 365             |
-
     # Encounter 1 — annual wellness exam
     When an encounter is recorded 38 days ago with reason "Annual wellness exam" and status "finished"
     And vitals are recorded for that encounter:
