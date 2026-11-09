@@ -13,9 +13,9 @@ How the payer and Da Vinci work is tested, and where test data comes from. Every
 | **interop server** | payer-api | FHIR operations (`$submit`, `$inquire`, `$questionnaire-package`, `$member-match`, `$submit-attachment`) and CDS Hooks over real HTTP | `@SpringBootTest(webEnvironment = RANDOM_PORT)` + HAPI `IGenericClient`; the payer HAPI client is mocked |
 | **HTTP client** | clinic-api | CRD timeout and fail-open, PAS retries, the `$inquire` fallback | Spring `MockRestServiceServer` |
 | **contract** | both | both sides agree on the wire format: clinic-api's output equals the golden file, and payer-api accepts it | shared golden fixtures (§2) |
-| **profile validation** | CI job `ig-validate` | golden fixtures and mapper output conform to US Core and the Da Vinci profiles | HL7 `validator_cli.jar`, pinned, with `-ig` packages |
+| **profile validation** | CI job `ig-validate` (`.github/scripts/ig-validate.sh`) | golden fixtures and mapper output (`target/fhir-out/`, uploaded by the `backend` and `payer-api` jobs) conform to US Core and the Da Vinci profiles | HL7 `validator_cli.jar`, pinned by version and SHA-256, with the `-ig` packages from `infra/docker-compose.yml` and tx.fhir.org |
 | **frontend unit** | each app | the Questionnaire renderer (driven by real fixtures), CRD cards, queue sorting, prior auth status | Vitest, 90% line floor |
-| **API e2e** | `payer-app-e2e` `@api` | payer-api against the running stack | Cucumber + `libs/e2e-support` |
+| **API e2e** | `payer-app-e2e` `@api` | payer-api against the running stack (`e2e.yml` starts both HAPI servers, both APIs and all three e2e suites) | Cucumber + `libs/e2e-support` |
 | **UI e2e** | `@ui` in each e2e app | screens behave correctly | Cypress + Cucumber |
 | **journey e2e** | `@journey @payer` | the end-to-end goal in roadmap §3, across three apps and two APIs | Cypress + Cucumber |
 | **conformance** | `infra/inferno/` + nightly workflow | IG conformance for CRD, DTR, PAS, PDex, Plan-Net and Formulary | Inferno Da Vinci test kits |
