@@ -1,0 +1,61 @@
+:host {
+  display: block;
+  height: 100dvh;
+}
+
+.app-shell {
+  height: 100%;
+}
+
+.app-shell__sidenav {
+  width: 240px;
+  border-right: 1px solid var(--mat-sys-outline-variant);
+}
+
+.app-shell__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+}
+
+.app-shell__brand-name {
+  color: var(--px-text-strong);
+}
+
+.app-shell__brand-sub,
+.app-shell__user-title {
+  color: var(--px-text-muted);
+}
+
+.app-shell__content {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell__toolbar {
+  gap: 8px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.app-shell__spacer {
+  flex: 1;
+}
+
+.app-shell__user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+.app-shell__main {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 24px;
+
+  &:focus {
+    outline: none;
+  }
+}
