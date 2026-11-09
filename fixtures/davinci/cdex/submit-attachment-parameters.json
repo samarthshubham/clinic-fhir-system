@@ -1,0 +1,120 @@
+{
+  "resourceType": "Parameters",
+  "id": "submit-attachment-gerald-horton",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/us/davinci-cdex/StructureDefinition/cdex-parameters-submit-attachment"
+    ]
+  },
+  "parameter": [
+    {
+      "name": "TrackingId",
+      "valueIdentifier": {
+        "system": "http://praxishealthplan.example/fhir/identifier/tracking-id",
+        "value": "PHP-PA-0001-ATT-1"
+      }
+    },
+    {
+      "name": "AttachTo",
+      "valueCode": "preauthorization"
+    },
+    {
+      "name": "PayerId",
+      "valueIdentifier": {
+        "system": "http://praxishealthplan.example/fhir/identifier/payer-id",
+        "value": "PHP01"
+      }
+    },
+    {
+      "name": "OrganizationId",
+      "valueIdentifier": {
+        "system": "http://hl7.org/fhir/sid/us-npi",
+        "value": "1987654328"
+      }
+    },
+    {
+      "name": "ProviderId",
+      "valueIdentifier": {
+        "system": "http://hl7.org/fhir/sid/us-npi",
+        "value": "1234567893"
+      }
+    },
+    {
+      "name": "MemberId",
+      "valueIdentifier": {
+        "system": "http://praxishealthplan.example/fhir/identifier/member-id",
+        "value": "PHP-10003"
+      }
+    },
+    {
+      "name": "ServiceDate",
+      "valueDateTime": "2026-08-20"
+    },
+    {
+      "name": "Attachment",
+      "part": [
+        {
+          "name": "LineItem",
+          "valueString": "1"
+        },
+        {
+          "name": "Code",
+          "valueCodeableConcept": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "11506-3",
+                "display": "Progress note"
+              }
+            ],
+            "text": "Progress note"
+          }
+        },
+        {
+          "name": "Content",
+          "resource": {
+            "resourceType": "Observation",
+            "id": "spo2-gerald-horton",
+            "status": "final",
+            "category": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "vital-signs",
+                    "display": "Vital Signs"
+                  }
+                ]
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "59408-5",
+                  "display": "Oxygen saturation in Arterial blood by Pulse oximetry"
+                }
+              ],
+              "text": "SpO2"
+            },
+            "subject": {
+              "display": "Gerald Horton"
+            },
+            "effectiveDateTime": "2026-06-02T09:30:00-05:00",
+            "performer": [
+              {
+                "display": "Dr. Aisha Patel"
+              }
+            ],
+            "valueQuantity": {
+              "value": 88,
+              "unit": "%",
+              "system": "http://unitsofmeasure.org",
+              "code": "%"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
