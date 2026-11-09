@@ -43,7 +43,7 @@ export default defineConfig({
       on('before:run', async () => {
         await beforeRunHandler(config);
         await waitForUrls(['http://localhost:4400']);
-        await sweepBeforeRun();
+        await sweepBeforeRun({ payer: true });
       });
       on('after:run', async (results) => {
         await afterRunHandler(config, results);
