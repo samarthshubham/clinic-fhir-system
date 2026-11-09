@@ -1,0 +1,25 @@
+# Local development only. `./mvnw spring-boot:run` activates this profile (see pom.xml);
+# a packaged jar does not, so production has no demo accounts, no registered clients and
+# no default JWT secret.
+payer:
+  auth:
+    jwt-secret: ${PAYER_JWT_SECRET:dev-only-payer-jwt-secret-change-me-0123456789}
+    users:
+      - username: reviewer
+        password-hash: $2a$10$i7TPDZZ7IK3d/h9eQXx7uetNbWlWJ10yUdgwg7YHPo4mmmEmPHWbG
+        role: UM_REVIEWER
+        first-name: Dana
+        last-name: Whitfield
+        title: Utilization management nurse
+      - username: payeradmin
+        password-hash: $2a$10$tZG2TNzkyhvOxXMd1B0NlOB9YDC2X9gftSWCj1feHQ2A09Mo3aWam
+        role: PAYER_ADMIN
+        first-name: Sam
+        last-name: Okoro
+        title: Payer administrator
+    clients:
+      - client-id: clinic-api
+        client-secret-hash: ${PAYER_CLINIC_API_CLIENT_SECRET_HASH:$2a$10$nF8XQgdUJX3XdbE9ctC.xuhvIZan8R.hqJ.iC0cnK6A3mwIRK0hzi}
+        scopes:
+          - system/Claim.c
+          - system/Questionnaire.r

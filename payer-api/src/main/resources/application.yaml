@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: payer-api
+
+server:
+  port: 9095
+
+fhir:
+  server:
+    url: http://localhost:8081/fhir
+
+payer:
+  auth:
+    jwt-secret: ${PAYER_JWT_SECRET:}
+    issuer: payer-api
+    access-token-ttl: 15m
+    refresh-token-ttl: 7d
+    client-token-ttl: 5m
+  implementation-guides:
+    - url: http://hl7.org/fhir/us/core/ImplementationGuide/hl7.fhir.us.core
+      version: 7.0.0
+    - url: http://hl7.org/fhir/us/davinci-hrex/ImplementationGuide/hl7.fhir.us.davinci-hrex
+      version: 1.2.0
+    - url: http://hl7.org/fhir/us/davinci-crd/ImplementationGuide/hl7.fhir.us.davinci-crd
+      version: 2.2.1
+    - url: http://hl7.org/fhir/us/davinci-dtr/ImplementationGuide/hl7.fhir.us.davinci-dtr
+      version: 2.2.0
+    - url: http://hl7.org/fhir/us/davinci-pas/ImplementationGuide/hl7.fhir.us.davinci-pas
+      version: 2.2.1
+    - url: http://hl7.org/fhir/us/davinci-cdex/ImplementationGuide/hl7.fhir.us.davinci-cdex
+      version: 2.1.0
+    - url: http://hl7.org/fhir/us/davinci-pdex/ImplementationGuide/hl7.fhir.us.davinci-pdex
+      version: 2.2.0
+    - url: http://hl7.org/fhir/us/carin-bb/ImplementationGuide/hl7.fhir.us.carin-bb
+      version: 2.2.0
+    - url: http://hl7.org/fhir/us/davinci-pdex-plan-net/ImplementationGuide/hl7.fhir.us.davinci-pdex-plan-net
+      version: 1.2.0
+    - url: http://hl7.org/fhir/us/davinci-drug-formulary/ImplementationGuide/hl7.fhir.us.davinci-drug-formulary
+      version: 2.1.0
+    - url: http://hl7.org/fhir/us/davinci-atr/ImplementationGuide/hl7.fhir.us.davinci-atr
+      version: 2.1.0
+
+logging:
+  level:
+    io.github.samarthshubham.payer: DEBUG
+    ca.uhn.fhir: WARN
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true

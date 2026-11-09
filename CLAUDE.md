@@ -68,6 +68,13 @@ clinic-api/         Spring Boot backend (Maven)
   seed-data/        13 Synthea FHIR R4 patient bundles + load.sh
   integration-tests/ Postman collections (one per resource)
 
+payer-api/          Payer Spring Boot service (Maven, port 9095), client of the payer HAPI :8081
+  src/main/java/io/github/samarthshubham/payer/
+    interop/        PayerFhirServer (HAPI RestfulServer at /fhir), ImplementationGuideCapabilityInterceptor,
+                    ScopeInterceptor (SMART scopes + member compartment); auth per docs/15-payer-auth.md
+    config/         FhirConfig, RestfulServerConfig, ImplementationGuideProperties (IGs listed in /fhir/metadata)
+    security/ controller/ service/ mapper/ dto/ exception/   same layout as clinic-api (filled by later stories)
+
 care-platform/      Angular 21 Nx monorepo
   apps/clinician-app/   Clinician-facing UI: login, patient roster, 3-panel dashboard, Inbox
   apps/patient-app/     Patient-facing UI: login, home, vitals (charts + recording), messages, profile
@@ -88,7 +95,7 @@ infra/
   docker-compose.yml    HAPI FHIR (rest-hook subscriptions on) + payer HAPI :8081 (Da Vinci IGs) + PostgreSQL 15 + Prometheus + Grafana
   postgres/             create-payer-db.sh: creates the hapi_payer database (one-shot postgres-init service)
   payer/                smoke.sh (payer IG smoke test) + HealthCheck.java (healthcheck for both distroless HAPI images)
-  prometheus/           Scrape config for clinic-api /actuator/prometheus
+  prometheus/           Scrape config for clinic-api and payer-api /actuator/prometheus
   grafana/              Provisioned clinic-api dashboard + 5xx alert
 
 docs/
@@ -104,6 +111,7 @@ docs/
   09-bp-alerts-demo.md  High BP subscription alerts + scripted demo
   10-auth.md            JWT authentication + role → permission RBAC
   11-payer-architecture.md  Payer side: payer-api, payer HAPI, Da Vinci calls (planned)
+  15-payer-auth.md      payer-api staff login, /oauth/token client_credentials, SMART scope enforcement
   16-payer-test-strategy.md Test levels and test data for the payer work
   roadmap/payer-davinci.md  Payer + Da Vinci roadmap: goal, NFRs, backlog with AC
   adr/                  Architecture decision records (payer work)
@@ -147,6 +155,13 @@ docker compose -f infra/docker-compose.yml down -v  # stop + wipe data
 ./mvnw verify          # tests + JaCoCo report at target/site/jacoco/index.html; fails below 90% line coverage
 ./mvnw spotless:apply   # format Java (Google style)
 ./mvnw spotless:check
+```
+
+### payer-api (run from payer-api/)
+```bash
+./mvnw spring-boot:run  # http://localhost:9095/fhir/metadata
+./mvnw verify           # tests + JaCoCo; fails below 90% line coverage
+./mvnw spotless:apply
 ```
 
 ### care-platform (run from care-platform/)
