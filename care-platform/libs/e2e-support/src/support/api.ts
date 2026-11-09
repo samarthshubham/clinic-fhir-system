@@ -8,6 +8,8 @@ export const PASSWORDS: Record<string, string> = {
   priya: 'Priya#2026',
   'e2e-patient': 'E2ePatient#2026',
   'e2e-patient-2': 'E2ePatient#2026',
+  reviewer: 'Reviewer#2026',
+  payeradmin: 'PayerAdmin#2026',
 };
 
 const TOKEN_TTL_MS = 10 * 60_000;

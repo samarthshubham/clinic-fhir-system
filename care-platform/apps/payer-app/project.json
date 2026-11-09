@@ -1,0 +1,106 @@
+{
+  "name": "payer-app",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "app",
+  "sourceRoot": "apps/payer-app/src",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/payer-app",
+        "browser": "apps/payer-app/src/main.ts",
+        "tsConfig": "apps/payer-app/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/payer-app/public"
+          }
+        ],
+        "styles": ["apps/payer-app/src/styles.scss"]
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kb",
+              "maximumError": "1mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "4kb",
+              "maximumError": "8kb"
+            }
+          ],
+          "outputHashing": "all",
+          "fileReplacements": [
+            {
+              "replace": "apps/payer-app/src/app/features/login/demo-accounts.ts",
+              "with": "apps/payer-app/src/app/features/login/demo-accounts.prod.ts"
+            }
+          ]
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "options": {
+        "port": 4400
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "payer-app:build:production"
+        },
+        "development": {
+          "buildTarget": "payer-app:build:development",
+          "proxyConfig": "apps/payer-app/proxy.conf.json"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "serve-e2e": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "options": {
+        "buildTarget": "payer-app:build:development",
+        "proxyConfig": "apps/payer-app/proxy.conf.json",
+        "port": 4400
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@angular/build:unit-test",
+      "options": {
+        "coverageInclude": ["apps/payer-app/src/**/*.ts"],
+        "coverageExclude": ["**/*.spec.ts", "**/main.ts"],
+        "coverageReporters": ["lcov", "text-summary"],
+        "coverageThresholds": {
+          "lines": 90
+        }
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "payer-app:build",
+        "port": 4400,
+        "staticFilePath": "dist/apps/payer-app/browser",
+        "spa": true
+      }
+    }
+  }
+}

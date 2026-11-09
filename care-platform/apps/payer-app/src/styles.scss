@@ -1,0 +1,179 @@
+// ─── Angular Material M3 Theming ─────────────────────────────────────────────
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+// ─── Payer App Theme ──────────────────────────────────────────────────────────
+// density -1: compact rows/form fields, like clinician-app
+// Azure primary sets the payer app apart from the clinic's cyan
+
+$payer-typography: (
+  brand-family: 'Inter',
+  plain-family: 'Inter',
+  bold-weight: 700,
+  medium-weight: 500,
+  regular-weight: 400,
+);
+
+$payer-light: mat.define-theme(
+  (
+    color: (
+      theme-type: light,
+      primary: mat.$azure-palette,
+      tertiary: mat.$green-palette,
+    ),
+    typography: $payer-typography,
+    density: (
+      scale: -1,
+    ),
+  )
+);
+
+$payer-dark: mat.define-theme(
+  (
+    color: (
+      theme-type: dark,
+      primary: mat.$azure-palette,
+      tertiary: mat.$green-palette,
+    ),
+    typography: $payer-typography,
+    density: (
+      scale: -1,
+    ),
+  )
+);
+
+:root {
+  @include mat.all-component-themes($payer-light);
+}
+
+[data-theme='dark'] {
+  @include mat.all-component-themes($payer-dark);
+}
+
+// ─── Custom token layer (--px-*) ─────────────────────────────────────────────
+
+:root {
+  --px-crit: #b91c1c;
+
+  --px-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --px-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --px-bg: #f6f6f3;
+  --px-surface: #ffffff;
+  --px-border: #ccc9c0;
+  --px-text: #15171a;
+  --px-text-strong: #0f172a;
+  --px-text-muted: #6b7077;
+  --px-divider: rgba(15, 23, 42, 0.1);
+  --px-shadow:
+    0 1px 2px rgba(15, 17, 20, 0.04), 0 0 0 1px rgba(15, 17, 20, 0.04);
+
+  --px-radius: 10px;
+}
+
+[data-theme='dark'] {
+  --px-bg: #0e1013;
+  --px-surface: #16191e;
+  --px-border: #262b32;
+  --px-text: #ecedef;
+  --px-text-strong: #f1f5f9;
+  --px-text-muted: #9aa0a8;
+  --px-divider: rgba(148, 163, 184, 0.1);
+  --px-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+// ─── Status badge colors (cp-status-badge utility only) ──────────────────────
+
+$cp-success-bg: #f0fdf4;
+$cp-success-border: #86efac;
+$cp-success-text: #047857;
+$cp-warning-bg: #fffbeb;
+$cp-warning-border: #fbbf24;
+$cp-warning-text: #b45309;
+$cp-critical-bg: #fff1f2;
+$cp-critical-border: #fca5a5;
+$cp-critical-text: #b91c1c;
+$cp-info-bg: #ecfeff;
+$cp-info-border: #a5f3fc;
+$cp-info-text: #0e7490;
+
+// ─── Global Reset & Layout ────────────────────────────────────────────────────
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family: var(--px-sans);
+  font-size: 13px;
+  line-height: 1.45;
+  background: var(--px-bg);
+  color: var(--px-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.cp-skip-link {
+  position: absolute;
+  top: -100%;
+  left: 16px;
+  padding: 8px 16px;
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+  border-radius: 4px;
+  z-index: 9999;
+  font-family: var(--px-sans);
+  font-size: 0.875rem;
+  text-decoration: none;
+
+  &:focus {
+    top: 16px;
+  }
+}
+
+.cp-font-mono {
+  font-family: var(--px-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.cp-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.cp-status-badge--success {
+  background: $cp-success-bg;
+  border-color: $cp-success-border;
+  color: $cp-success-text;
+}
+
+.cp-status-badge--warning {
+  background: $cp-warning-bg;
+  border-color: $cp-warning-border;
+  color: $cp-warning-text;
+}
+
+.cp-status-badge--critical {
+  background: $cp-critical-bg;
+  border-color: $cp-critical-border;
+  color: $cp-critical-text;
+}
+
+.cp-status-badge--info {
+  background: $cp-info-bg;
+  border-color: $cp-info-border;
+  color: $cp-info-text;
+}

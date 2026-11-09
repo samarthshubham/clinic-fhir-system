@@ -1,0 +1,55 @@
+<mat-sidenav-container class="app-shell">
+  <mat-sidenav mode="side" opened class="app-shell__sidenav">
+    <div class="app-shell__brand">
+      <span class="app-shell__brand-name">Praxis Health Plan</span>
+      <span class="app-shell__brand-sub">Utilization management</span>
+    </div>
+    <nav aria-label="Main">
+      <mat-nav-list>
+        @for (item of navItems; track item.path) {
+          <a
+            mat-list-item
+            [routerLink]="item.path"
+            routerLinkActive
+            #link="routerLinkActive"
+            ariaCurrentWhenActive="page"
+            [activated]="link.isActive"
+          >
+            <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+            <span matListItemTitle>{{ item.label }}</span>
+          </a>
+        }
+      </mat-nav-list>
+    </nav>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="app-shell__content">
+    <mat-toolbar class="app-shell__toolbar">
+      <span class="app-shell__spacer"></span>
+      @if (auth.user(); as user) {
+        <span class="app-shell__user">
+          <span class="app-shell__user-name">{{ user.name }}</span>
+          @if (user.title) {
+            <span class="app-shell__user-title">{{ user.title }}</span>
+          }
+        </span>
+      }
+      <button
+        mat-icon-button
+        type="button"
+        [attr.aria-label]="
+          theme.isDark() ? 'Switch to light theme' : 'Switch to dark theme'
+        "
+        [matTooltip]="theme.isDark() ? 'Light theme' : 'Dark theme'"
+        (click)="theme.toggle()"
+      >
+        <mat-icon>{{ theme.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+      <button mat-button type="button" (click)="auth.logout()">Sign out</button>
+    </mat-toolbar>
+
+    <main id="main-content" class="app-shell__main" tabindex="-1">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

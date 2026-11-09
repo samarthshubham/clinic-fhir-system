@@ -1,0 +1,50 @@
+import {
+  ApplicationConfig,
+  APP_INITIALIZER,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import {
+  provideHttpClient,
+  withFetch,
+  withInterceptors,
+} from '@angular/common/http';
+import { MatIconRegistry } from '@angular/material/icon';
+import { appRoutes } from './app.routes';
+import { ThemeService } from '@core/theme.service';
+import { AuthService, authInterceptor, provideAuth } from '@care-platform/auth';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideBrowserGlobalErrorListeners(),
+    provideRouter(appRoutes, withComponentInputBinding()),
+    provideAuth({
+      loginPath: '/login',
+      homePath: '/queue',
+      refreshTokenKey: 'praxis-payer.refreshToken',
+    }),
+    provideAnimationsAsync(),
+    provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
+    {
+      provide: APP_INITIALIZER,
+      useFactory: (theme: ThemeService) => () => theme.init(),
+      deps: [ThemeService],
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: (auth: AuthService) => () => auth.restoreSession(),
+      deps: [AuthService],
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: (registry: MatIconRegistry) => () => {
+        registry.setDefaultFontSetClass('material-symbols-outlined');
+      },
+      deps: [MatIconRegistry],
+      multi: true,
+    },
+  ],
+};
