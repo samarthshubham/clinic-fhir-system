@@ -1,0 +1,171 @@
+<a mat-button routerLink="/members" class="app-member-detail__back">
+  <mat-icon aria-hidden="true">arrow_back</mat-icon>
+  Members
+</a>
+
+@switch (state().status) {
+  @case ('loading') {
+    <mat-progress-bar mode="indeterminate" aria-label="Loading member" />
+  }
+  @case ('not-found') {
+    <cp-empty-state
+      icon="person_off"
+      title="Member not found"
+      text="This member is not enrolled with Praxis Health Plan."
+    />
+  }
+  @case ('error') {
+    <p class="app-member-detail__error" role="alert">
+      Could not load this member.
+    </p>
+  }
+}
+
+@if (state(); as s) {
+  @if (s.status === 'loaded') {
+    <header class="app-member-detail__header">
+      <h1>{{ s.name }}</h1>
+      <dl class="app-member-detail__facts">
+        <div>
+          <dt>Member ID</dt>
+          <dd class="cp-font-mono">{{ s.member.memberId ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>Date of birth</dt>
+          <dd class="cp-font-mono">
+            {{
+              s.member.dateOfBirth
+                ? (s.member.dateOfBirth | date: 'dd MMM yyyy')
+                : '—'
+            }}
+          </dd>
+        </div>
+        <div>
+          <dt>Gender</dt>
+          <dd>{{ s.member.gender ? (s.member.gender | titlecase) : '—' }}</dd>
+        </div>
+      </dl>
+    </header>
+
+    <section aria-labelledby="coverage-heading">
+      <h2 id="coverage-heading">Coverage</h2>
+      @for (coverage of s.member.coverages; track coverage.id) {
+        <mat-card appearance="outlined" class="app-member-detail__coverage">
+          <mat-card-header>
+            <mat-card-title>{{
+              coverage.plan?.name ?? 'Unknown plan'
+            }}</mat-card-title>
+            <mat-card-subtitle>
+              {{ coverage.payerName ?? '—' }}
+              @if (coverage.plan?.type; as planType) {
+                · {{ planType }}
+              }
+            </mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <dl class="app-member-detail__facts">
+              <div>
+                <dt>Status</dt>
+                <dd>
+                  <span
+                    [class]="
+                      'cp-status-badge cp-status-badge--' +
+                      coverageTone(coverage.status)
+                    "
+                    >{{ coverage.status ?? 'unknown' | titlecase }}</span
+                  >
+                </dd>
+              </div>
+              <div>
+                <dt>Plan ID</dt>
+                <dd class="cp-font-mono">{{ coverage.plan?.planId ?? '—' }}</dd>
+              </div>
+              <div>
+                <dt>Period</dt>
+                <dd class="cp-font-mono">
+                  {{
+                    coverage.periodStart
+                      ? (coverage.periodStart | date: 'dd MMM yyyy')
+                      : '—'
+                  }}
+                  –
+                  {{
+                    coverage.periodEnd
+                      ? (coverage.periodEnd | date: 'dd MMM yyyy')
+                      : 'ongoing'
+                  }}
+                </dd>
+              </div>
+              <div>
+                <dt>Relationship</dt>
+                <dd>
+                  {{
+                    coverage.relationship
+                      ? (coverage.relationship | titlecase)
+                      : '—'
+                  }}
+                </dd>
+              </div>
+            </dl>
+          </mat-card-content>
+        </mat-card>
+      } @empty {
+        <cp-empty-state
+          icon="shield"
+          title="No coverage on file"
+          text="This member has no Praxis Health Plan coverage."
+        />
+      }
+    </section>
+
+    <section aria-labelledby="prior-auth-heading">
+      <h2 id="prior-auth-heading">Prior authorization history</h2>
+      @if (s.member.priorAuths.length) {
+        <div class="app-member-detail__table">
+          <table
+            mat-table
+            [dataSource]="s.member.priorAuths"
+            aria-labelledby="prior-auth-heading"
+          >
+            <ng-container matColumnDef="submitted">
+              <th mat-header-cell *matHeaderCellDef>Submitted</th>
+              <td mat-cell *matCellDef="let pa" class="cp-font-mono">
+                {{ pa.submitted ? (pa.submitted | date: 'dd MMM yyyy') : '—' }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="service">
+              <th mat-header-cell *matHeaderCellDef>Service</th>
+              <td mat-cell *matCellDef="let pa">{{ pa.service ?? '—' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let pa">
+                {{ pa.status ? (pa.status | titlecase) : '—' }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="outcome">
+              <th mat-header-cell *matHeaderCellDef>Outcome</th>
+              <td mat-cell *matCellDef="let pa">
+                {{ pa.outcome ? (pa.outcome | titlecase) : 'Pending' }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="preAuthRef">
+              <th mat-header-cell *matHeaderCellDef>Auth number</th>
+              <td mat-cell *matCellDef="let pa" class="cp-font-mono">
+                {{ pa.preAuthRef ?? '—' }}
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="priorAuthColumns"></tr>
+            <tr mat-row *matRowDef="let pa; columns: priorAuthColumns"></tr>
+          </table>
+        </div>
+      } @else {
+        <cp-empty-state
+          icon="assignment"
+          title="No prior authorizations"
+          text="Prior authorization requests for this member appear here."
+        />
+      }
+    </section>
+  }
+}

@@ -10,6 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import io.github.samarthshubham.payer.service.AuthService;
 import io.github.samarthshubham.payer.service.ClientCredentialsService;
+import io.github.samarthshubham.payer.service.MemberService;
 import io.github.samarthshubham.payer.service.TokenService;
 import io.github.samarthshubham.payer.support.TestAuth;
 import io.github.samarthshubham.payer.support.TestInteropProviders;
@@ -52,6 +53,7 @@ class AuthorizationMatrixTest {
   }
 
   private static final Set<Caller> EVERYONE = EnumSet.allOf(Caller.class);
+  private static final Set<Caller> STAFF = EnumSet.of(Caller.UM_REVIEWER, Caller.PAYER_ADMIN);
   private static final String FORM = "application/x-www-form-urlencoded";
   private static final String JSON = "application/json";
   private static final String FHIR_JSON = "application/fhir+json";
@@ -64,6 +66,8 @@ class AuthorizationMatrixTest {
           json("POST", "/api/auth/refresh", JSON, "{\"refreshToken\":\"r\"}", EVERYONE),
           json("POST", "/oauth/token", FORM, "grant_type=client_credentials", EVERYONE),
           json("GET", "/actuator/health", null, null, EVERYONE),
+          json("GET", "/api/members?name=Nair", null, null, STAFF),
+          json("GET", "/api/members/member-a", null, null, STAFF),
           fhir("GET", "/fhir/metadata", null, EVERYONE),
           fhir("GET", "/fhir/Patient/member-a", null, EnumSet.of(SYSTEM_READER, MEMBER_A)),
           fhir("GET", "/fhir/Patient/member-b", null, EnumSet.of(SYSTEM_READER, MEMBER_B)),
@@ -88,6 +92,7 @@ class AuthorizationMatrixTest {
   @MockitoBean private IGenericClient payerHapiClient;
   @MockitoBean private AuthService authService;
   @MockitoBean private ClientCredentialsService clientCredentialsService;
+  @MockitoBean private MemberService memberService;
 
   static Stream<Arguments> endpointsByCaller() {
     List<Arguments> cases = new ArrayList<>();

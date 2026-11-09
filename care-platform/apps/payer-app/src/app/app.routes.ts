@@ -31,12 +31,18 @@ export const appRoutes: Route[] = [
       {
         path: 'members',
         title: 'Members · Praxis Health Plan',
-        loadComponent: placeholderPage,
-        data: {
-          heading: 'Members',
-          icon: 'group',
-          description: 'Search members and see their coverage.',
-        },
+        loadComponent: () =>
+          import(
+            './features/members/member-search/member-search.component'
+          ).then((m) => m.MemberSearchComponent),
+      },
+      {
+        path: 'members/:id',
+        title: 'Member · Praxis Health Plan',
+        loadComponent: () =>
+          import(
+            './features/members/member-detail/member-detail.component'
+          ).then((m) => m.MemberDetailComponent),
       },
       {
         path: 'directory',
