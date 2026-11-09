@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Writes backend=true|false and frontend=true|false to $GITHUB_OUTPUT (or stdout),
+# Writes backend=, payer= and frontend=true|false to $GITHUB_OUTPUT (or stdout),
 # so CI skips test jobs whose code a pull request does not touch.
 # Pushes to main always run everything. Changing ci.yml runs everything.
 #
@@ -12,6 +12,7 @@ output() {
 
 if [[ "${GITHUB_EVENT_NAME:-}" != "pull_request" && -z "${DIFF_RANGE:-}" ]]; then
   output backend true
+  output payer true
   output frontend true
   exit 0
 fi
@@ -28,6 +29,12 @@ if touches '^clinic-api/' '^clinic-api/(integration-tests|seed-data)/|\.md$'; th
   output backend true
 else
   output backend false
+fi
+
+if touches '^payer-api/' '\.md$'; then
+  output payer true
+else
+  output payer false
 fi
 
 if touches '^care-platform/' '\.md$'; then
