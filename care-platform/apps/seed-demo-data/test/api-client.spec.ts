@@ -3,6 +3,11 @@ import { apiClient } from '../src/support/api-client';
 
 const HAPI = 'http://localhost:8080/fhir';
 const SPRING = 'http://localhost:9090/api';
+const PAYER_HAPI = 'http://localhost:8081/fhir';
+const PAYER_API = 'http://localhost:9095';
+const US_CORE = 'http://hl7.org/fhir/us/core/StructureDefinition';
+const MEMBER_ID_SYSTEM =
+  'http://praxishealthplan.example/fhir/identifier/member-id';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -241,6 +246,329 @@ describe('ensureCoverage', () => {
     expect(create.url).toBe(`${SPRING}/coverages`);
     expect(create.init?.method).toBe('POST');
     expect(JSON.parse(create.init?.body as string)).toEqual(body);
+  });
+});
+
+describe('payer-api token', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('asks for a client_credentials token as the dev clinic-api client', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ access_token: 'sys1' }));
+
+    await expect(apiClient.payerApiToken()).resolves.toBe('sys1');
+
+    const basic = Buffer.from(
+      'clinic-api:dev-only-clinic-api-client-secret',
+    ).toString('base64');
+    expect(calls()).toEqual([
+      {
+        url: `${PAYER_API}/oauth/token`,
+        init: {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Authorization: `Basic ${basic}`,
+          },
+          body: 'grant_type=client_credentials',
+        },
+      },
+    ]);
+  });
+
+  it('takes the client from PAYER_CLIENT_ID and PAYER_CLIENT_SECRET', async () => {
+    vi.stubEnv('PAYER_CLIENT_ID', 'other-client');
+    vi.stubEnv('PAYER_CLIENT_SECRET', 'other-secret');
+    fetchMock.mockResolvedValueOnce(jsonResponse({ access_token: 'sys2' }));
+
+    await apiClient.payerApiToken();
+
+    const headers = calls()[0].init?.headers as Record<string, string>;
+    expect(headers['Authorization']).toBe(
+      `Basic ${Buffer.from('other-client:other-secret').toString('base64')}`,
+    );
+  });
+
+  it('fails with the OAuth error when the client is rejected', async () => {
+    fetchMock.mockResolvedValueOnce(
+      textResponse('{"error":"invalid_client"}', 401),
+    );
+
+    await expect(
+      apiClient.payerApiToken('clinic-api', 'wrong'),
+    ).rejects.toThrow(
+      'Token request for clinic-api failed [401]: {"error":"invalid_client"}',
+    );
+  });
+});
+
+describe('payer HAPI conditional creates', () => {
+  const plan = { id: 'ip1', planId: 'gold-ppo', name: 'Praxis Gold PPO' };
+
+  function sent(): {
+    url: string;
+    headers: Record<string, string>;
+    body: Record<string, unknown>;
+  } {
+    const [{ url, init }] = calls();
+    return {
+      url,
+      headers: init?.headers as Record<string, string>,
+      body: JSON.parse(init?.body as string),
+    };
+  }
+
+  function ifNoneExist(system: string, value: string): string {
+    return `identifier=${encodeURIComponent(`${system}|${value}`)}`;
+  }
+
+  it('creates the payer organization unless its identifier exists', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'org1', extra: 1 }));
+
+    await expect(
+      apiClient.ensurePayerOrganization({
+        organizationId: 'praxis-health-plan',
+        name: 'Praxis Health Plan',
+      }),
+    ).resolves.toEqual({ id: 'org1' });
+
+    const { url, headers, body } = sent();
+    expect(url).toBe(`${PAYER_HAPI}/Organization`);
+    expect(headers).toEqual({
+      'Content-Type': 'application/fhir+json',
+      Accept: 'application/fhir+json',
+      'If-None-Exist': ifNoneExist(
+        'http://praxishealthplan.example/fhir/identifier/organization',
+        'praxis-health-plan',
+      ),
+    });
+    expect(body).toMatchObject({
+      resourceType: 'Organization',
+      meta: { profile: [`${US_CORE}/us-core-organization`] },
+      active: true,
+      name: 'Praxis Health Plan',
+      type: [{ coding: [{ code: 'pay' }] }],
+    });
+  });
+
+  it('creates an insurance plan owned and administered by the payer', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'ip1' }));
+
+    await apiClient.ensureInsurancePlan({
+      planId: 'gold-ppo',
+      name: 'Praxis Gold PPO',
+      planType: 'PPO',
+      organizationId: 'org1',
+      periodStart: '2024-11-09',
+    });
+
+    const { url, headers, body } = sent();
+    expect(url).toBe(`${PAYER_HAPI}/InsurancePlan`);
+    expect(headers['If-None-Exist']).toBe(
+      ifNoneExist(
+        'http://praxishealthplan.example/fhir/identifier/insurance-plan',
+        'gold-ppo',
+      ),
+    );
+    expect(body).toMatchObject({
+      resourceType: 'InsurancePlan',
+      status: 'active',
+      name: 'Praxis Gold PPO',
+      period: { start: '2024-11-09' },
+      ownedBy: { reference: 'Organization/org1' },
+      administeredBy: { reference: 'Organization/org1' },
+      plan: [{ type: { text: 'PPO' } }],
+    });
+  });
+
+  it('creates the member patient from the provider demographics under the member id', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'm1' }));
+
+    await apiClient.ensureMemberPatient('PHP-10001', {
+      id: 'seed-priya-nair',
+      name: [{ family: 'Nair', given: ['Priya'] }],
+      birthDate: '1992-07-28',
+      gender: 'female',
+      telecom: [{ system: 'phone', value: '5551002002' }],
+    });
+
+    const { url, headers, body } = sent();
+    expect(url).toBe(`${PAYER_HAPI}/Patient`);
+    expect(headers['If-None-Exist']).toBe(
+      ifNoneExist(MEMBER_ID_SYSTEM, 'PHP-10001'),
+    );
+    expect(body).toEqual({
+      resourceType: 'Patient',
+      meta: { profile: [`${US_CORE}/us-core-patient`] },
+      identifier: [
+        {
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                code: 'MB',
+                display: 'Member Number',
+              },
+            ],
+          },
+          system: MEMBER_ID_SYSTEM,
+          value: 'PHP-10001',
+        },
+      ],
+      active: true,
+      name: [{ family: 'Nair', given: ['Priya'] }],
+      birthDate: '1992-07-28',
+      gender: 'female',
+      telecom: [{ system: 'phone', value: '5551002002' }],
+    });
+  });
+
+  it('leaves telecom out of the member patient when the provider has none', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'm2' }));
+
+    await apiClient.ensureMemberPatient('PHP-10002', { id: 'p2' });
+
+    expect(sent().body).not.toHaveProperty('telecom');
+  });
+
+  it('creates the member coverage with the shared member id and the plan class', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'c1' }));
+
+    await apiClient.ensureMemberCoverage({
+      memberPatientId: 'm1',
+      organizationId: 'org1',
+      payerName: 'Praxis Health Plan',
+      memberId: 'PHP-10008',
+      plan,
+      status: 'cancelled',
+      periodStart: '2025-10-05',
+      periodEnd: '2026-10-10',
+    });
+
+    const { url, headers, body } = sent();
+    expect(url).toBe(`${PAYER_HAPI}/Coverage`);
+    expect(headers['If-None-Exist']).toBe(
+      ifNoneExist(MEMBER_ID_SYSTEM, 'PHP-10008'),
+    );
+    expect(body).toMatchObject({
+      resourceType: 'Coverage',
+      meta: { profile: [`${US_CORE}/us-core-coverage`] },
+      identifier: [{ system: MEMBER_ID_SYSTEM, value: 'PHP-10008' }],
+      status: 'cancelled',
+      subscriberId: 'PHP-10008',
+      beneficiary: { reference: 'Patient/m1' },
+      relationship: { coding: [{ code: 'self' }] },
+      period: { start: '2025-10-05', end: '2026-10-10' },
+      payor: [
+        { reference: 'Organization/org1', display: 'Praxis Health Plan' },
+      ],
+      class: [
+        {
+          type: { coding: [{ code: 'plan' }] },
+          value: 'gold-ppo',
+          name: 'Praxis Gold PPO',
+        },
+      ],
+    });
+  });
+
+  it('leaves the period open when the coverage has not ended', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'c2' }));
+
+    await apiClient.ensureMemberCoverage({
+      memberPatientId: 'm1',
+      organizationId: 'org1',
+      payerName: 'Praxis Health Plan',
+      memberId: 'PHP-10001',
+      plan,
+      status: 'active',
+      periodStart: '2025-11-09',
+    });
+
+    expect(sent().body['period']).toEqual({ start: '2025-11-09' });
+  });
+
+  it('includes status and a truncated response body when the payer HAPI rejects it', async () => {
+    fetchMock.mockResolvedValueOnce(textResponse('z'.repeat(400), 422));
+
+    await expect(
+      apiClient.ensureMemberPatient('PHP-10001', { id: 'p1' }),
+    ).rejects.toThrow(
+      `POST ${PAYER_HAPI}/Patient failed [422]: ${'z'.repeat(300)}`,
+    );
+  });
+});
+
+describe('payer HAPI and provider HAPI reads', () => {
+  it('finds an insurance plan by exact name and returns its plan id', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        entry: [
+          { resource: { id: 'other', identifier: [] } },
+          {
+            resource: {
+              id: 'ip1',
+              identifier: [
+                { system: 'urn:other', value: 'x' },
+                {
+                  system:
+                    'http://praxishealthplan.example/fhir/identifier/insurance-plan',
+                  value: 'gold-ppo',
+                },
+              ],
+            },
+          },
+        ],
+      }),
+    );
+
+    await expect(
+      apiClient.findInsurancePlan('Praxis Gold PPO'),
+    ).resolves.toEqual({
+      id: 'ip1',
+      planId: 'gold-ppo',
+      name: 'Praxis Gold PPO',
+    });
+    expect(calls()[0].url).toBe(
+      `${PAYER_HAPI}/InsurancePlan?name:exact=${encodeURIComponent('Praxis Gold PPO')}`,
+    );
+  });
+
+  it('fails when the plan has not been seeded', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ resourceType: 'Bundle' }));
+
+    await expect(
+      apiClient.findInsurancePlan('Praxis Gold PPO'),
+    ).rejects.toThrow(
+      'Insurance plan "Praxis Gold PPO" is not in the payer HAPI; run payer-plans.feature first',
+    );
+  });
+
+  it('fails when the plan search is rejected', async () => {
+    fetchMock.mockResolvedValueOnce(textResponse('', 500));
+
+    await expect(
+      apiClient.findInsurancePlan('Praxis Gold PPO'),
+    ).rejects.toThrow('GET /fhir/InsurancePlan failed [500]');
+  });
+
+  it('reads the provider patient from the provider HAPI', async () => {
+    const patient = { id: 'seed-priya-nair', gender: 'female' };
+    fetchMock.mockResolvedValueOnce(jsonResponse(patient));
+
+    await expect(
+      apiClient.getProviderPatient('seed-priya-nair'),
+    ).resolves.toEqual(patient);
+    expect(calls()[0].url).toBe(`${HAPI}/Patient/seed-priya-nair`);
+  });
+
+  it('fails when the provider patient is missing', async () => {
+    fetchMock.mockResolvedValueOnce(textResponse('', 404));
+
+    await expect(apiClient.getProviderPatient('nobody')).rejects.toThrow(
+      'GET /fhir/Patient/nobody failed [404]',
+    );
   });
 });
 
