@@ -1,0 +1,77 @@
+rules:
+  - system: http://loinc.org
+    code: 58410-2
+    display: CBC panel - Blood by Automated count
+    paNeeded: false
+    docNeeded: false
+    emergencyExempt: false
+
+  - system: http://loinc.org
+    code: 24348-5
+    display: Free T4 and TSH panel - Serum or Plasma
+    paNeeded: false
+    docNeeded: false
+    emergencyExempt: false
+
+  - system: http://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets
+    code: E2103
+    display: Non-adjunctive, non-implanted continuous glucose monitor or receiver
+    paNeeded: true
+    docNeeded: true
+    questionnaire: http://praxishealthplan.example/fhir/Questionnaire/continuous-glucose-monitor
+    autoApproveCriteria:
+      - linkId: diabetes-diagnosis
+        operator: EQUALS
+        value: "true"
+      - linkId: insulin-treated
+        operator: EQUALS
+        value: "true"
+    emergencyExempt: false
+
+  - system: http://snomed.info/sct
+    code: "60554003"
+    display: Polysomnography
+    paNeeded: true
+    docNeeded: true
+    questionnaire: http://praxishealthplan.example/fhir/Questionnaire/polysomnography
+    emergencyExempt: false
+
+  - system: http://snomed.info/sct
+    code: "40701008"
+    display: Echocardiography
+    paNeeded: true
+    docNeeded: true
+    questionnaire: http://praxishealthplan.example/fhir/Questionnaire/echocardiogram
+    emergencyExempt: false
+
+  - system: http://www.ama-assn.org/go/cpt
+    code: "72148"
+    display: MRI lumbar spine without contrast
+    paNeeded: true
+    docNeeded: true
+    questionnaire: http://praxishealthplan.example/fhir/Questionnaire/mri-lumbar-spine
+    autoApproveCriteria:
+      - linkId: conservative-therapy-weeks
+        operator: AT_LEAST
+        value: "6"
+        denialReason:
+          code: conservative-therapy-not-met
+          text: Under 6 weeks of conservative therapy. Lumbar spine MRI needs at least 6 weeks of documented conservative therapy.
+      - linkId: neurological-deficit
+        operator: EQUALS
+        value: "true"
+    emergencyExempt: false
+
+  - system: http://snomed.info/sct
+    code: "76746007"
+    display: Cardiovascular stress testing
+    paNeeded: true
+    docNeeded: false
+    emergencyExempt: false
+
+  - system: http://snomed.info/sct
+    code: "276341003"
+    display: Cardiovascular investigation (emergency cardiac workup)
+    paNeeded: true
+    docNeeded: false
+    emergencyExempt: true

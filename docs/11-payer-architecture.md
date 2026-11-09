@@ -100,7 +100,26 @@ How the packages are loaded:
 
 `bash infra/payer/smoke.sh` checks that one profile per IG (the PAS Claim profile first) resolves to exactly one `StructureDefinition`, and that `$export` is in the CapabilityStatement. `PAYER_FHIR_URL` and `WAIT_SECONDS` override the defaults.
 
-## 6. Out of scope
+## 6. Coverage rules
+
+`payer-api/src/main/resources/coverage-rules.yaml` is the one rules source for CRD, DTR and PAS ([ADR 0007](adr/0007-one-coverage-rules-source.md)). `CoverageRuleService` loads it at startup and refuses to start on an invalid file. Lookups are by code system + code, and an unknown code means "no PA needed". These codes are the canonical ones for the §5 demo orders, seeds and fixtures.
+
+| Service | System | Code | PA | Docs | Questionnaire |
+|---|---|---|---|---|---|
+| CBC | `http://loinc.org` | `58410-2` | no | no | |
+| Thyroid panel (free T4 + TSH) | `http://loinc.org` | `24348-5` | no | no | |
+| Continuous glucose monitor | `http://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets` | `E2103` | yes | yes | `continuous-glucose-monitor` |
+| Polysomnography | `http://snomed.info/sct` | `60554003` | yes | yes | `polysomnography` |
+| Echocardiogram | `http://snomed.info/sct` | `40701008` | yes | yes | `echocardiogram` |
+| MRI lumbar spine without contrast | `http://www.ama-assn.org/go/cpt` | `72148` | yes | yes | `mri-lumbar-spine` |
+| Cardiac stress test | `http://snomed.info/sct` | `76746007` | yes | no | |
+| Emergency cardiac workup | `http://snomed.info/sct` | `276341003` | yes, waived when `stat` | no | |
+
+- Questionnaire canonicals are `http://praxishealthplan.example/fhir/Questionnaire/<name>`; E3-S1 authors them.
+- `emergencyExempt` waives PA for `stat` orders only. An `urgent` order still needs PA, on the expedited clock.
+- `autoApproveCriteria` test DTR answers by `linkId` with `EQUALS`, `AT_LEAST` or `AT_MOST`. All met: auto-approve. An unmet criterion with a `denialReason`: deny with that reason. Otherwise, or with no criteria: pend for review. The CGM needs a diabetes diagnosis and insulin treatment; the MRI is denied under 6 weeks of conservative therapy and auto-approved only with a neurological deficit.
+
+## 7. Out of scope
 
 - X12 278 translation ([ADR 0004](adr/0004-fhir-pas-without-x12.md)).
 - Real claims adjudication and payment. `ExplanationOfBenefit` history is seeded.
