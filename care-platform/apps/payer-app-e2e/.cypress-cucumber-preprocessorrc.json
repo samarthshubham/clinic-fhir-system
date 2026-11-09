@@ -1,0 +1,8 @@
+{
+  "stepDefinitions": [
+    "src/step-definitions/**/*.ts",
+    "../../libs/e2e-support/src/steps/**/*.ts"
+  ],
+  "json": { "enabled": false },
+  "html": { "enabled": true, "output": "reports/cucumber-report.html" }
+}
