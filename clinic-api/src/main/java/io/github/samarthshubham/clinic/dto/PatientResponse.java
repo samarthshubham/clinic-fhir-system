@@ -8,4 +8,5 @@ public record PatientResponse(
     String gender,
     String phone,
     String email,
-    Boolean active) {}
+    Boolean active,
+    String mrn) {}

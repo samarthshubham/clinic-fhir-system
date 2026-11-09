@@ -139,7 +139,7 @@
         "body": {
           "mode": "raw",
           "options": { "raw": { "language": "json" } },
-          "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"encounterId\": \"{{encounterId}}\",\n  \"practitionerId\": \"{{practitionerId}}\",\n  \"code\": \"Lipid Panel\",\n  \"category\": \"laboratory\",\n  \"status\": \"active\",\n  \"priority\": \"routine\",\n  \"authoredOn\": \"2026-04-10\"\n}"
+          "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"encounterId\": \"{{encounterId}}\",\n  \"practitionerId\": \"{{practitionerId}}\",\n  \"display\": \"Lipid Panel\",\n  \"category\": \"laboratory\",\n  \"status\": \"active\",\n  \"priority\": \"routine\",\n  \"authoredOn\": \"2026-04-10\"\n}"
         }
       },
       "event": [

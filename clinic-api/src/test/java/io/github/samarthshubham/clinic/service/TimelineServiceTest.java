@@ -385,6 +385,8 @@ class TimelineServiceTest {
                     null,
                     practitionerId,
                     "Lipid panel",
+                    null,
+                    null,
                     "laboratory",
                     "active",
                     "routine",

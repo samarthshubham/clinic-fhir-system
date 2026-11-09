@@ -1,0 +1,26 @@
+{
+  "resourceType": "ServiceRequest",
+  "meta": {
+    "profile": [ "http://hl7.org/fhir/us/core/StructureDefinition/us-core-servicerequest" ]
+  },
+  "status": "active",
+  "intent": "order",
+  "category": [ {
+    "text": "laboratory"
+  } ],
+  "priority": "routine",
+  "code": {
+    "coding": [ {
+      "system": "http://loinc.org",
+      "code": "58410-2"
+    } ],
+    "text": "Complete Blood Count"
+  },
+  "subject": {
+    "reference": "Patient/seed-priya-nair"
+  },
+  "authoredOn": "2026-03-03",
+  "requester": {
+    "reference": "Practitioner/seed-default-practitioner"
+  }
+}

@@ -18,6 +18,13 @@ Feature: Seed Patient — Marcus Webb (hypertensive)
       | gender      | male                    |
       | phone       | 5551001001              |
       | email       | marcus.webb@example.com |
+      | mrn         | PX-10000004             |
+
+    And the patient is covered by Praxis Health Plan:
+      | memberId       | PHP-10004       |
+      | planName       | Praxis Gold PPO |
+      | status         | active          |
+      | startedDaysAgo | 365             |
 
     # Encounter 1 — initial presentation, severe uncontrolled hypertension
     When an encounter is recorded 90 days ago with reason "Initial hypertension evaluation" and note "BP 182/114 at rest — significantly elevated. No prior treatment. Lisinopril initiated. Lifestyle counselling given. Lab work ordered." and status "finished"

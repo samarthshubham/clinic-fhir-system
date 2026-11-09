@@ -2,11 +2,10 @@ package io.github.samarthshubham.clinic.mapper;
 
 import io.github.samarthshubham.clinic.dto.EncounterRequest;
 import io.github.samarthshubham.clinic.dto.EncounterResponse;
-import java.time.ZoneId;
-import java.util.Date;
 import java.util.Objects;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Coding;
+import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.Encounter;
 import org.hl7.fhir.r4.model.Period;
 import org.hl7.fhir.r4.model.Reference;
@@ -18,16 +17,28 @@ public class EncounterMapper {
 
   private static final String PARTICIPATION_TYPE_SYSTEM =
       "http://terminology.hl7.org/CodeSystem/v3-ParticipationType";
+  private static final Coding AMBULATORY =
+      new Coding()
+          .setSystem("http://terminology.hl7.org/CodeSystem/v3-ActCode")
+          .setCode("AMB")
+          .setDisplay("ambulatory");
+  private static final Coding PATIENT_ENCOUNTER_PROCEDURE =
+      new Coding()
+          .setSystem("http://snomed.info/sct")
+          .setCode("308335008")
+          .setDisplay("Patient encounter procedure");
   public static final String NOTE_EXTENSION_URL =
       "http://praxis.clinic/fhir/extension/encounter-note";
 
   public Encounter toFhir(EncounterRequest request) {
     Encounter encounter = new Encounter();
+    encounter.getMeta().addProfile(UsCoreProfiles.ENCOUNTER);
     encounter.setSubject(new Reference("Patient/" + request.patientId()));
     encounter.setStatus(Encounter.EncounterStatus.fromCode(request.status()));
-    Date startDate =
-        Date.from(request.visitDate().atStartOfDay(ZoneId.systemDefault()).toInstant());
-    encounter.setPeriod(new Period().setStart(startDate));
+    encounter.setClass_(AMBULATORY.copy());
+    encounter.addType(new CodeableConcept().addCoding(PATIENT_ENCOUNTER_PROCEDURE.copy()));
+    encounter.setPeriod(
+        new Period().setStartElement(new DateTimeType(request.visitDate().toString())));
     if (request.reason() != null) {
       encounter.addReasonCode(new CodeableConcept().setText(request.reason()));
     }
@@ -43,7 +54,7 @@ public class EncounterMapper {
                   new Coding()
                       .setSystem(PARTICIPATION_TYPE_SYSTEM)
                       .setCode("ATND")
-                      .setDisplay("Attender")));
+                      .setDisplay("attender")));
       participant.setIndividual(new Reference("Practitioner/" + request.practitionerId()));
       encounter.addParticipant(participant);
     }

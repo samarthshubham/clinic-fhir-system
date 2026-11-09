@@ -1,6 +1,7 @@
 package io.github.samarthshubham.clinic.mapper;
 
 import static io.github.samarthshubham.clinic.support.FhirDates.localDate;
+import static io.github.samarthshubham.clinic.support.GoldenFhir.assertMatchesGolden;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -24,7 +25,16 @@ class ServiceRequestMapperTest {
     ServiceRequest order =
         mapper.toFhir(
             new ServiceRequestRequest(
-                "p1", "e1", "dr1", "Lipid panel", "laboratory", "active", "urgent", AUTHORED));
+                "p1",
+                "e1",
+                "dr1",
+                "Lipid panel",
+                null,
+                null,
+                "laboratory",
+                "active",
+                "urgent",
+                AUTHORED));
 
     assertThat(order.getSubject().getReference()).isEqualTo("Patient/p1");
     assertThat(order.getEncounter().getReference()).isEqualTo("Encounter/e1");
@@ -50,7 +60,7 @@ class ServiceRequestMapperTest {
     ServiceRequest order =
         mapper.toFhir(
             new ServiceRequestRequest(
-                "p1", null, null, "CBC", "laboratory", status, priority, AUTHORED));
+                "p1", null, null, "CBC", null, null, "laboratory", status, priority, AUTHORED));
 
     assertThat(order.getStatus()).isEqualTo(expectedStatus);
     assertThat(order.getPriority()).isEqualTo(expectedPriority);
@@ -61,7 +71,7 @@ class ServiceRequestMapperTest {
   void unknownStatusOrPriorityIsRejected(String status, String priority) {
     ServiceRequestRequest request =
         new ServiceRequestRequest(
-            "p1", null, null, "CBC", "laboratory", status, priority, AUTHORED);
+            "p1", null, null, "CBC", null, null, "laboratory", status, priority, AUTHORED);
 
     assertThatThrownBy(() -> mapper.toFhir(request)).isInstanceOf(FHIRException.class);
   }
@@ -71,7 +81,16 @@ class ServiceRequestMapperTest {
     ServiceRequest order =
         mapper.toFhir(
             new ServiceRequestRequest(
-                "p1", null, null, "Chest X-ray", "imaging", "active", "routine", AUTHORED));
+                "p1",
+                null,
+                null,
+                "Chest X-ray",
+                null,
+                null,
+                "imaging",
+                "active",
+                "routine",
+                AUTHORED));
 
     assertThat(order.hasEncounter()).isFalse();
     assertThat(order.hasRequester()).isFalse();
@@ -82,7 +101,16 @@ class ServiceRequestMapperTest {
     ServiceRequest serviceRequest =
         mapper.toFhir(
             new ServiceRequestRequest(
-                "p1", "e1", "dr1", "Lipid panel", "laboratory", "active", "urgent", AUTHORED));
+                "p1",
+                "e1",
+                "dr1",
+                "Lipid panel",
+                null,
+                null,
+                "laboratory",
+                "active",
+                "urgent",
+                AUTHORED));
     serviceRequest.setId("sr1");
 
     assertThat(mapper.toResponse(serviceRequest))
@@ -93,6 +121,8 @@ class ServiceRequestMapperTest {
                 "e1",
                 "dr1",
                 "Lipid panel",
+                null,
+                null,
                 "laboratory",
                 "active",
                 "urgent",
@@ -106,6 +136,63 @@ class ServiceRequestMapperTest {
 
     assertThat(mapper.toResponse(serviceRequest))
         .isEqualTo(
-            new ServiceRequestResponse("sr1", null, null, null, null, null, null, null, null));
+            new ServiceRequestResponse(
+                "sr1", null, null, null, null, null, null, null, null, null, null));
+  }
+
+  @Test
+  void setsTheUsCoreProfileOrderIntentAndCoding() {
+    ServiceRequest order =
+        mapper.toFhir(
+            new ServiceRequestRequest(
+                "p1",
+                null,
+                null,
+                "Lipid panel",
+                "http://loinc.org",
+                "57698-3",
+                "laboratory",
+                "active",
+                "routine",
+                AUTHORED));
+
+    assertThat(order.getMeta().hasProfile(UsCoreProfiles.SERVICE_REQUEST)).isTrue();
+    assertThat(order.getIntent()).isEqualTo(ServiceRequest.ServiceRequestIntent.ORDER);
+    assertThat(order.getCode().getText()).isEqualTo("Lipid panel");
+    assertThat(order.getCode().getCodingFirstRep().getSystem()).isEqualTo("http://loinc.org");
+    assertThat(order.getCode().getCodingFirstRep().getCode()).isEqualTo("57698-3");
+    assertThat(order.getAuthoredOnElement().getValueAsString()).isEqualTo("2026-03-03");
+    order.setId("sr1");
+    assertThat(mapper.toResponse(order))
+        .extracting(ServiceRequestResponse::codeSystem, ServiceRequestResponse::code)
+        .containsExactly("http://loinc.org", "57698-3");
+  }
+
+  @Test
+  void omitsTheCodingWhenNoCodeIsGiven() {
+    ServiceRequest order =
+        mapper.toFhir(
+            new ServiceRequestRequest(
+                "p1", null, null, "CBC", null, null, "laboratory", "active", "routine", AUTHORED));
+
+    assertThat(order.getCode().hasCoding()).isFalse();
+  }
+
+  @Test
+  void serviceRequestMatchesTheGoldenFixture() {
+    assertMatchesGolden(
+        mapper.toFhir(
+            new ServiceRequestRequest(
+                "seed-priya-nair",
+                null,
+                "seed-default-practitioner",
+                "Complete Blood Count",
+                "http://loinc.org",
+                "58410-2",
+                "laboratory",
+                "active",
+                "routine",
+                AUTHORED)),
+        "provider/service-request.json");
   }
 }

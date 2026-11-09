@@ -12,9 +12,13 @@ import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.PatientMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
 import java.time.LocalDate;
+import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Patient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class PatientServiceTest {
 
@@ -31,12 +35,64 @@ class PatientServiceTest {
   void createStoresMappedPatientAndReturnsTheStoredCopy() {
     PatientResponse patient =
         service.createPatient(
-            new PatientRequest("Priya", "Nair", LocalDate.of(1985, 3, 14), "female", null, null));
+            new PatientRequest(
+                "Priya", "Nair", LocalDate.of(1985, 3, 14), "female", null, null, "PX-00000042"));
 
     assertThat(fhir.created()).singleElement().isInstanceOf(Patient.class);
     assertThat(patient)
         .isEqualTo(
-            new PatientResponse("1", "Priya", "Nair", "1985-03-14", "female", null, null, null));
+            new PatientResponse(
+                "1", "Priya", "Nair", "1985-03-14", "female", null, null, null, "PX-00000042"));
+  }
+
+  @ParameterizedTest
+  @NullSource
+  @ValueSource(strings = {"", "  "})
+  void createWithoutMrnGeneratesOne(String mrn) {
+    PatientResponse patient =
+        service.createPatient(
+            new PatientRequest(
+                "Priya", "Nair", LocalDate.of(1985, 3, 14), "female", null, null, mrn));
+
+    assertThat(patient.mrn()).matches("PX-\\d{8}");
+    assertThat(fhir.stored(Patient.class, "1").getIdentifierFirstRep().getSystem())
+        .isEqualTo(PatientMapper.MRN_SYSTEM);
+  }
+
+  @Test
+  void generatedMrnThatIsAlreadyTakenIsReplaced() {
+    Patient taken = new Patient();
+    taken.setId("other");
+    fhir.givenSearchResult(Patient.class, bundleOf(taken), new Bundle());
+
+    PatientResponse patient =
+        service.createPatient(
+            new PatientRequest(
+                "Priya", "Nair", LocalDate.of(1985, 3, 14), "female", null, null, null));
+
+    assertThat(fhir.searchCount(Patient.class)).isEqualTo(2);
+    assertThat(fhir.lastSearchCriteria(Patient.class).get(0))
+        .startsWith("identifier=" + PatientMapper.MRN_SYSTEM + "|PX-");
+    assertThat(patient.mrn()).matches("PX-\\d{8}");
+  }
+
+  @Test
+  void createFailsWhenEveryGeneratedMrnIsTaken() {
+    Patient taken = new Patient();
+    taken.setId("other");
+    fhir.givenSearchResult(Patient.class, bundleOf(taken));
+    PatientRequest request =
+        new PatientRequest("Priya", "Nair", LocalDate.of(1985, 3, 14), "female", null, null, null);
+
+    assertThatThrownBy(() -> service.createPatient(request))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("No unused MRN after 5 attempts");
+    assertThat(fhir.created()).isEmpty();
+  }
+
+  @Test
+  void generatedMrnsDiffer() {
+    assertThat(PatientService.newMrn()).isNotEqualTo(PatientService.newMrn());
   }
 
   @Test
@@ -44,7 +100,7 @@ class PatientServiceTest {
     fhir.givenStored(new Patient().setActive(true), "p1");
 
     assertThat(service.getPatient("p1"))
-        .isEqualTo(new PatientResponse("p1", null, null, null, null, null, null, true));
+        .isEqualTo(new PatientResponse("p1", null, null, null, null, null, null, true, null));
   }
 
   @Test

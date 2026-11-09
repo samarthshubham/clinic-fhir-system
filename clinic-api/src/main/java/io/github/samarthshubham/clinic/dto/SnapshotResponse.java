@@ -7,4 +7,5 @@ public record SnapshotResponse(
     List<Map<String, Object>> activeConditions,
     List<Map<String, Object>> currentMedications,
     LatestVitals latestVitals,
-    List<AlertItem> alerts) {}
+    List<AlertItem> alerts,
+    CoverageResponse coverage) {}

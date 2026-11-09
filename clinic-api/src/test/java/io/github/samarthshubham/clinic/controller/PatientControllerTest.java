@@ -39,17 +39,26 @@ class PatientControllerTest {
   private static final String VALID_PATIENT =
       """
       {"firstName":"Priya","lastName":"Nair","dateOfBirth":"1985-03-14","gender":"female",
-       "phone":"555-0100","email":"priya@example.com"}
+       "phone":"555-0100","email":"priya@example.com","mrn":"PX-00000042"}
       """;
 
   private static final PatientResponse PRIYA =
       new PatientResponse(
-          "p1", "Priya", "Nair", "1985-03-14", "female", "555-0100", "priya@example.com", true);
+          "p1",
+          "Priya",
+          "Nair",
+          "1985-03-14",
+          "female",
+          "555-0100",
+          "priya@example.com",
+          true,
+          "PX-00000042");
 
   private static final String PRIYA_JSON =
       """
       {"id":"p1","firstName":"Priya","lastName":"Nair","dateOfBirth":"1985-03-14",
-       "gender":"female","phone":"555-0100","email":"priya@example.com","active":true}
+       "gender":"female","phone":"555-0100","email":"priya@example.com","active":true,
+       "mrn":"PX-00000042"}
       """;
 
   @Autowired private MockMvcTester mvc;
@@ -80,7 +89,8 @@ class PatientControllerTest {
                 LocalDate.of(1985, 3, 14),
                 "female",
                 "555-0100",
-                "priya@example.com"));
+                "priya@example.com",
+                "PX-00000042"));
   }
 
   @Test
@@ -138,7 +148,7 @@ class PatientControllerTest {
     when(snapshotService.getSnapshot("p1"))
         .thenReturn(
             new SnapshotResponse(
-                List.of(Map.of("display", "Hypertension")), List.of(), null, List.of()));
+                List.of(Map.of("display", "Hypertension")), List.of(), null, List.of(), null));
 
     assertThat(mvc.get().uri("/api/patients/p1/snapshot"))
         .hasStatusOk()

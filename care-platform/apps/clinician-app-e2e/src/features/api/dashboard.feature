@@ -23,7 +23,7 @@ Feature: Dashboard
       """
     And "clinician" creates "order" with POST "/api/service-requests":
       """
-      {"patientId":"{patient}","code":"Lipid panel","category":"laboratory","status":"active","priority":"routine","authoredOn":"{daysAgo:1}"}
+      {"patientId":"{patient}","display":"Lipid panel","category":"laboratory","status":"active","priority":"routine","authoredOn":"{daysAgo:1}"}
       """
     And "clinician" creates "plan" with POST "/api/care-plans":
       """

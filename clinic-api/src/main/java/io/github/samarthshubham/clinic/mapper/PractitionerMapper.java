@@ -16,6 +16,7 @@ public class PractitionerMapper {
 
   public Practitioner toFhir(PractitionerRequest request) {
     Practitioner practitioner = new Practitioner();
+    practitioner.getMeta().addProfile(UsCoreProfiles.PRACTITIONER);
     practitioner.addName().setFamily(request.lastName()).addGiven(request.firstName());
     practitioner.addQualification().setCode(new CodeableConcept().setText(request.specialty()));
     if (request.npi() != null) {

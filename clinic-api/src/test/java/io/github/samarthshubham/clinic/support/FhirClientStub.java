@@ -61,6 +61,8 @@ public final class FhirClientStub {
   private final Map<Class<?>, List<String>> pendingCriteria = new HashMap<>();
   private final Map<Class<?>, List<List<String>>> executedSearches = new HashMap<>();
   private final List<IBaseResource> created = new ArrayList<>();
+  private final Map<String, String> conditionalMatches = new HashMap<>();
+  private final List<String> conditionalCreates = new ArrayList<>();
   private final List<IBaseResource> updated = new ArrayList<>();
   private final List<String> deletedTags = new ArrayList<>();
   private final Map<String, Bundle> pages = new HashMap<>();
@@ -160,6 +162,14 @@ public final class FhirClientStub {
 
   public <T extends IBaseResource> T stored(Class<T> type, String id) {
     return type.cast(stored.getOrDefault(type, Map.of()).get(id));
+  }
+
+  public void givenConditionalCreateMatches(String url, String existingId) {
+    conditionalMatches.put(url, existingId);
+  }
+
+  public List<String> conditionalCreates() {
+    return List.copyOf(conditionalCreates);
   }
 
   public void givenPage(String url, Bundle page) {
@@ -304,7 +314,25 @@ public final class FhirClientStub {
             })
         .when(createTyped)
         .execute();
+    lenient()
+        .doAnswer(inv -> conditionalCreateTyped(resource, inv.getArgument(0)))
+        .when(createTyped)
+        .conditionalByUrl(anyString());
     return createTyped;
+  }
+
+  private ICreateTyped conditionalCreateTyped(IBaseResource resource, String url) {
+    conditionalCreates.add(url);
+    String existingId = conditionalMatches.get(url);
+    if (existingId == null) {
+      return createTyped(resource);
+    }
+    ICreateTyped matched = lenientMock(ICreateTyped.class, Answers.RETURNS_DEFAULTS);
+    lenient()
+        .doReturn(new MethodOutcome(new IdType(resource.fhirType(), existingId)))
+        .when(matched)
+        .execute();
+    return matched;
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})

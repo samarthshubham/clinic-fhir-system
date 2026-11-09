@@ -1,6 +1,7 @@
 package io.github.samarthshubham.clinic.mapper;
 
 import static io.github.samarthshubham.clinic.support.FhirDates.localDate;
+import static io.github.samarthshubham.clinic.support.GoldenFhir.assertMatchesGolden;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.samarthshubham.clinic.dto.ConditionRequest;
@@ -64,5 +65,31 @@ class ConditionMapperTest {
 
     assertThat(mapper.toResponse(condition))
         .isEqualTo(new ConditionResponse("c1", null, null, null, null, null, null));
+  }
+
+  @Test
+  void setsTheUsCoreProblemProfileAndCategory() {
+    Condition condition =
+        mapper.toFhir(
+            new ConditionRequest("p1", null, "61582004", "Allergic rhinitis", "active", ONSET));
+
+    assertThat(condition.getMeta().hasProfile(UsCoreProfiles.CONDITION_PROBLEMS)).isTrue();
+    assertThat(condition.getCategoryFirstRep().getCodingFirstRep().getCode())
+        .isEqualTo("problem-list-item");
+    assertThat(condition.getOnsetDateTimeType().getValueAsString()).isEqualTo("2026-04-02");
+  }
+
+  @Test
+  void conditionMatchesTheGoldenFixture() {
+    assertMatchesGolden(
+        mapper.toFhir(
+            new ConditionRequest(
+                "seed-priya-nair",
+                null,
+                "61582004",
+                "Seasonal allergic rhinitis",
+                "active",
+                ONSET)),
+        "provider/condition.json");
   }
 }

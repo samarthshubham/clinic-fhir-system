@@ -5,6 +5,7 @@ import ca.uhn.fhir.rest.gclient.ReferenceClientParam;
 import ca.uhn.fhir.rest.gclient.TokenClientParam;
 import io.github.samarthshubham.clinic.config.ClinicalThresholds;
 import io.github.samarthshubham.clinic.dto.AlertItem;
+import io.github.samarthshubham.clinic.dto.CoverageResponse;
 import io.github.samarthshubham.clinic.dto.LatestVitals;
 import io.github.samarthshubham.clinic.dto.SnapshotResponse;
 import io.github.samarthshubham.clinic.dto.VitalReading;
@@ -41,10 +42,13 @@ public class SnapshotService {
 
   private final IGenericClient fhirClient;
   private final ClinicalThresholds thresholds;
+  private final CoverageService coverageService;
 
-  public SnapshotService(IGenericClient fhirClient, ClinicalThresholds thresholds) {
+  public SnapshotService(
+      IGenericClient fhirClient, ClinicalThresholds thresholds, CoverageService coverageService) {
     this.fhirClient = fhirClient;
     this.thresholds = thresholds;
+    this.coverageService = coverageService;
   }
 
   public SnapshotResponse getSnapshot(String patientId) {
@@ -52,7 +56,17 @@ public class SnapshotService {
     List<Map<String, Object>> medications = fetchActiveMedications(patientId);
     LatestVitals vitals = fetchLatestVitals(patientId);
     List<AlertItem> alerts = computeAlerts(vitals);
-    return new SnapshotResponse(conditions, medications, vitals, alerts);
+    return new SnapshotResponse(
+        conditions, medications, vitals, alerts, findActiveCoverage(patientId));
+  }
+
+  private CoverageResponse findActiveCoverage(String patientId) {
+    try {
+      return coverageService.findActiveCoverage(patientId);
+    } catch (Exception e) {
+      log.warn("coverage: failed for patient {} — {}", patientId, e.getMessage());
+      return null;
+    }
   }
 
   private List<Map<String, Object>> fetchActiveConditions(String patientId) {
