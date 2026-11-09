@@ -1,0 +1,96 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Edit coverage' : 'Add coverage' }}</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <mat-dialog-content class="app-coverage-dialog__fields">
+    <mat-form-field appearance="outline">
+      <mat-label>Payer name</mat-label>
+      <input matInput formControlName="payerName" required />
+      @if (form.controls.payerName.hasError('required')) {
+        <mat-error>Payer name is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Payer ID</mat-label>
+      <input matInput formControlName="payerId" required />
+      <mat-hint>For example praxis-health-plan</mat-hint>
+      @if (form.controls.payerId.hasError('required')) {
+        <mat-error>Payer ID is required</mat-error>
+      } @else if (form.controls.payerId.hasError('pattern')) {
+        <mat-error>Use only letters, digits, '.', '_' and '-'</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Plan</mat-label>
+      <input matInput formControlName="planName" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Member ID</mat-label>
+      <input
+        matInput
+        class="cp-font-mono"
+        formControlName="memberId"
+        required
+      />
+      @if (form.controls.memberId.hasError('required')) {
+        <mat-error>Member ID is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Status</mat-label>
+      <mat-select formControlName="status" required>
+        @for (s of statuses; track s.value) {
+          <mat-option [value]="s.value">{{ s.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Relationship to subscriber</mat-label>
+      <mat-select formControlName="relationship" required>
+        @for (r of relationships; track r.value) {
+          <mat-option [value]="r.value">{{ r.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Coverage start</mat-label>
+      <input matInput type="date" formControlName="periodStart" required />
+      @if (form.controls.periodStart.hasError('required')) {
+        <mat-error>Coverage start is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Coverage end</mat-label>
+      <input
+        matInput
+        type="date"
+        formControlName="periodEnd"
+        [errorStateMatcher]="periodEndMatcher"
+      />
+      <mat-error>Coverage end can't be before the start</mat-error>
+    </mat-form-field>
+
+    @if (state(); as s) {
+      @if (s.status === 'error') {
+        <p class="app-coverage-dialog__error" role="alert">{{ s.message }}</p>
+      }
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close>Cancel</button>
+    <button
+      mat-flat-button
+      type="submit"
+      [disabled]="state().status === 'saving'"
+    >
+      {{ state().status === 'saving' ? 'Saving…' : 'Save' }}
+    </button>
+  </mat-dialog-actions>
+</form>

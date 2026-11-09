@@ -1,0 +1,14 @@
+// Coverage dialog — layout only. Colors via --px-* tokens.
+
+.app-coverage-dialog__fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 12px;
+  row-gap: 4px;
+}
+
+.app-coverage-dialog__error {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--px-crit);
+}

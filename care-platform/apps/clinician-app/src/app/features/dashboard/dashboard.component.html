@@ -19,7 +19,11 @@
       } @else if (isPatientError()) {
         <cp-panel-error message="Snapshot unavailable" (retry)="reload()" />
       } @else {
-        <cp-snapshot-panel [snapshot]="snapshotData()!" />
+        <cp-snapshot-panel
+          [snapshot]="snapshotData()!"
+          [patientId]="patientId()"
+          (coverageSaved)="onCoverageSaved($event)"
+        />
       }
     </aside>
 

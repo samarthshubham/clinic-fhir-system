@@ -1,19 +1,37 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+} from '@angular/core';
 import { DatePipe, UpperCasePipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
+import { CpCoverageCardComponent } from '@features/dashboard/components/cp-coverage-card/cp-coverage-card.component';
 import { CpVitalCellComponent } from '@features/dashboard/components/cp-vital-cell/cp-vital-cell.component';
-import { SnapshotResponse } from '@features/dashboard/dashboard.model';
+import {
+  CoverageResponse,
+  SnapshotResponse,
+} from '@features/dashboard/dashboard.model';
 
 @Component({
   selector: 'cp-snapshot-panel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, UpperCasePipe, MatIconModule, CpVitalCellComponent],
+  imports: [
+    DatePipe,
+    UpperCasePipe,
+    MatIconModule,
+    CpVitalCellComponent,
+    CpCoverageCardComponent,
+  ],
   templateUrl: './cp-snapshot-panel.component.html',
   styleUrl: './cp-snapshot-panel.component.scss',
 })
 export class CpSnapshotPanelComponent {
   @Input({ required: true }) snapshot!: SnapshotResponse;
+  @Input({ required: true }) patientId!: string;
+  @Output() coverageSaved = new EventEmitter<CoverageResponse>();
 
   private readonly today = new Date();
 
