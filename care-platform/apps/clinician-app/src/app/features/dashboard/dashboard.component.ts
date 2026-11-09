@@ -26,9 +26,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { DashboardService } from './dashboard.service';
 import {
   ActiveCarePlan,
+  CoverageResponse,
   DashboardResponse,
   PatientHeaderData,
   PendingOrder,
+  SnapshotResponse,
   TimelineEvent,
   TrendsResponse,
   extractPatientHeader,
@@ -154,11 +156,24 @@ export class DashboardComponent implements AfterViewInit {
   readonly isPatientLoading = computed(() => this.dashboard() === null);
   readonly isPatientError = computed(() => this.dashboard() === 'error');
 
-  readonly snapshotData = computed(() => {
-    const d = this.dashboard();
-    if (!d || d === 'error') return null;
-    return d.snapshot;
-  });
+  private readonly coverageSaved$ = new Subject<CoverageResponse>();
+
+  readonly snapshotData = toSignal<SnapshotResponse | null>(
+    this.dashboard$.pipe(
+      switchMap((d) =>
+        !d || d === 'error'
+          ? of(null)
+          : this.coverageSaved$.pipe(
+              map((coverage) => ({
+                ...d.snapshot,
+                coverage: coverage.status === 'active' ? coverage : null,
+              })),
+              startWith(d.snapshot),
+            ),
+      ),
+    ),
+    { initialValue: null },
+  );
 
   readonly patientHeader = computed<PatientHeaderData | null>(() => {
     const d = this.dashboard();
@@ -253,6 +268,10 @@ export class DashboardComponent implements AfterViewInit {
 
   reload(): void {
     this.reload$.next();
+  }
+
+  onCoverageSaved(coverage: CoverageResponse): void {
+    this.coverageSaved$.next(coverage);
   }
 
   onLoadMore(): void {

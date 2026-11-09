@@ -2,8 +2,10 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, ParamMap } from '@angular/router';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { DashboardComponent } from './dashboard.component';
+import { AuthService } from '@care-platform/auth';
 import { DashboardService } from './dashboard.service';
 import {
+  CoverageResponse,
   DashboardResponse,
   TimelineEvent,
   TrendsResponse,
@@ -49,6 +51,7 @@ const dashboard: DashboardResponse = {
     currentMedications: [],
     latestVitals: null,
     alerts: [],
+    coverage: null,
   },
   upcomingAppointment: null,
   recentEncounters: [],
@@ -66,6 +69,20 @@ const dashboard: DashboardResponse = {
   activeCarePlan: null,
   recentDiagnosticReport: null,
   warnings: [],
+};
+
+const coverage: CoverageResponse = {
+  id: 'cov1',
+  patientId: 'p1',
+  payerOrganizationId: 'org1',
+  payerId: 'praxis-health-plan',
+  payerName: 'Praxis Health Plan',
+  memberId: 'PHP-10001',
+  planName: 'Praxis Gold PPO',
+  status: 'active',
+  periodStart: '2026-01-01',
+  periodEnd: null,
+  relationship: 'self',
 };
 
 const trends: TrendsResponse = {
@@ -105,6 +122,7 @@ describe('DashboardComponent', () => {
       imports: [DashboardComponent],
       providers: [
         { provide: ActivatedRoute, useValue: { paramMap: params } },
+        { provide: AuthService, useValue: { hasRole: () => true } },
         {
           provide: DashboardService,
           useValue: {
@@ -165,6 +183,32 @@ describe('DashboardComponent', () => {
     expect(el.querySelector('cp-snapshot-panel')).not.toBeNull();
     expect(el.querySelector('cp-care-panel')).not.toBeNull();
     expect(el.querySelector('cp-timeline-skeleton')).not.toBeNull();
+  });
+
+  it('should show a saved coverage without refetching the dashboard', async () => {
+    const fixture = await render();
+    const c = fixture.componentInstance;
+    dashboardCalls[0].response.next(dashboard);
+    await fixture.whenStable();
+
+    c.onCoverageSaved(coverage);
+
+    expect(c.snapshotData()).toEqual({ ...dashboard.snapshot, coverage });
+    expect(dashboardCalls.length).toBe(1);
+  });
+
+  it('should drop the coverage from the snapshot when it is saved as not active', async () => {
+    const fixture = await render();
+    const c = fixture.componentInstance;
+    dashboardCalls[0].response.next({
+      ...dashboard,
+      snapshot: { ...dashboard.snapshot, coverage },
+    });
+    await fixture.whenStable();
+
+    c.onCoverageSaved({ ...coverage, status: 'cancelled' });
+
+    expect(c.snapshotData()?.coverage).toBeNull();
   });
 
   it('should isolate a dashboard failure from the timeline', async () => {

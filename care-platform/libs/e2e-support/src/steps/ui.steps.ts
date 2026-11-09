@@ -125,6 +125,46 @@ Then('the inbox no longer shows the test patient', () => {
   cy.contains('li', ctx.names['patient']).should('not.exist');
 });
 
+const coverageCard = () =>
+  cy.get('section[aria-labelledby="cp-coverage-card-title"]', {
+    timeout: 15_000,
+  });
+
+When(
+  'I add coverage with payer {string} \\({string}), plan {string} and member id {string}',
+  (payerName: string, payerId: string, plan: string, memberId: string) => {
+    coverageCard().contains('button', 'Add coverage').click();
+    cy.get('mat-dialog-container').within(() => {
+      cy.get('input[formcontrolname="payerName"]').type(payerName);
+      cy.get('input[formcontrolname="payerId"]').type(payerId);
+      cy.get('input[formcontrolname="planName"]').type(plan);
+      cy.get('input[formcontrolname="memberId"]').type(memberId);
+      cy.contains('button', 'Save').click();
+    });
+    cy.get('mat-dialog-container').should('not.exist');
+  },
+);
+
+Then('the chart shows no active coverage', () => {
+  coverageCard().should('contain.text', 'No active coverage on file.');
+});
+
+Then(
+  'the chart shows active coverage from {string} on plan {string} with member id {string}',
+  (payerName: string, plan: string, memberId: string) => {
+    coverageCard().within(() => {
+      cy.get('.app-coverage-card__payer').should('contain.text', payerName);
+      cy.get('.app-coverage-card__plan').should('contain.text', plan);
+      cy.get('.app-coverage-card__member').should('contain.text', memberId);
+      cy.get('.cp-status-badge--success').should('contain.text', 'active');
+    });
+  },
+);
+
+Then('focus is back on the coverage edit button', () => {
+  cy.focused().should('have.attr', 'aria-label', 'Edit coverage');
+});
+
 Then('the navigation has no {string} link', (name: string) => {
   cy.contains('nav a', name).should('not.exist');
 });

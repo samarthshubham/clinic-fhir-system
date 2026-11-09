@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -38,6 +39,13 @@ public class CoverageController {
   @GetMapping("/{id}")
   public ResponseEntity<CoverageResponse> getCoverage(@PathVariable @NotBlank String id) {
     return ResponseEntity.ok(coverageService.getCoverage(id));
+  }
+
+  @PreAuthorize("hasAuthority('coverage:write')")
+  @PutMapping("/{id}")
+  public ResponseEntity<CoverageResponse> updateCoverage(
+      @PathVariable String id, @Valid @RequestBody CoverageRequest request) {
+    return ResponseEntity.ok(coverageService.updateCoverage(id, request));
   }
 
   @PreAuthorize("hasAuthority('coverage:read') or @patientAccess.isSelf(#patientId)")

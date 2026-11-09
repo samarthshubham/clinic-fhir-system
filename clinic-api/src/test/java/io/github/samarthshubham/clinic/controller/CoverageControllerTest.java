@@ -2,6 +2,7 @@ package io.github.samarthshubham.clinic.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -10,6 +11,7 @@ import io.github.samarthshubham.clinic.config.SecurityConfig;
 import io.github.samarthshubham.clinic.dto.CoverageRequest;
 import io.github.samarthshubham.clinic.dto.CoverageResponse;
 import io.github.samarthshubham.clinic.dto.PageResponse;
+import io.github.samarthshubham.clinic.exception.ReferenceValidationException;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.security.Role;
 import io.github.samarthshubham.clinic.service.CoverageService;
@@ -167,6 +169,97 @@ class CoverageControllerTest {
         .isStrictlyEqualTo(
             """
             {"status":404,"message":"Coverage with id 'missing' not found"}
+            """);
+  }
+
+  @Test
+  void updateReturnsTheUpdatedCoverage() {
+    when(coverageService.updateCoverage(eq("cov1"), any())).thenReturn(PRIYA_COVERAGE);
+
+    assertThat(
+            mvc.put()
+                .uri("/api/coverages/cov1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"patientId":"p1","payerId":"praxis-health-plan","payerName":"Praxis Health Plan",
+                     "memberId":"PHP-10001","planName":"Praxis Gold PPO","status":"active",
+                     "periodStart":"2026-01-01","relationship":"self"}
+                    """))
+        .hasStatusOk()
+        .bodyJson()
+        .isStrictlyEqualTo(PRIYA_COVERAGE_JSON);
+    verify(coverageService)
+        .updateCoverage(
+            "cov1",
+            new CoverageRequest(
+                "p1",
+                "praxis-health-plan",
+                "Praxis Health Plan",
+                "PHP-10001",
+                "Praxis Gold PPO",
+                "active",
+                LocalDate.of(2026, 1, 1),
+                null,
+                "self"));
+  }
+
+  @Test
+  void updateWithoutPayerNameReturnsBadRequest() {
+    assertThat(
+            mvc.put()
+                .uri("/api/coverages/cov1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"patientId":"p1","payerId":"praxis-health-plan","memberId":"PHP-10001",
+                     "status":"active","periodStart":"2026-01-01"}
+                    """))
+        .hasStatus(HttpStatus.BAD_REQUEST)
+        .bodyJson()
+        .isStrictlyEqualTo(
+            """
+            {"status":400,"message":"must not be blank"}
+            """);
+    verifyNoInteractions(coverageService);
+  }
+
+  @Test
+  void updateUnknownCoverageReturnsNotFound() {
+    when(coverageService.updateCoverage(eq("missing"), any()))
+        .thenThrow(new ResourceNotFoundException("Coverage", "missing"));
+
+    assertThat(
+            mvc.put()
+                .uri("/api/coverages/missing")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"patientId":"p1","payerId":"praxis-health-plan","payerName":"Praxis Health Plan",
+                     "memberId":"PHP-10001","status":"active","periodStart":"2026-01-01"}
+                    """))
+        .hasStatus(HttpStatus.NOT_FOUND);
+  }
+
+  @Test
+  void updateForAnotherPatientReturnsUnprocessableEntity() {
+    when(coverageService.updateCoverage(eq("cov1"), any()))
+        .thenThrow(new ReferenceValidationException("Coverage", "cov1", "p2"));
+
+    assertThat(
+            mvc.put()
+                .uri("/api/coverages/cov1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"patientId":"p2","payerId":"praxis-health-plan","payerName":"Praxis Health Plan",
+                     "memberId":"PHP-10001","status":"active","periodStart":"2026-01-01"}
+                    """))
+        .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+        .bodyJson()
+        .isStrictlyEqualTo(
+            """
+            {"status":422,"message":"Referenced Coverage with id 'cov1' does not belong to Patient 'p2'"}
             """);
   }
 

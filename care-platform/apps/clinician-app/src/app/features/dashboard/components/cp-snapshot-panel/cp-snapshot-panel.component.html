@@ -127,4 +127,10 @@
       }
     </ul>
   </div>
+
+  <cp-coverage-card
+    [patientId]="patientId"
+    [coverage]="snapshot.coverage"
+    (saved)="coverageSaved.emit($event)"
+  />
 </aside>
