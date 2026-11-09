@@ -11,7 +11,7 @@ const DEFAULT_PAYER_CLIENT_SECRET = 'dev-only-clinic-api-client-secret';
 const MEMBER_ID_SYSTEM =
   'http://praxishealthplan.example/fhir/identifier/member-id';
 const PAYER_ORGANIZATION_SYSTEM =
-  'http://praxishealthplan.example/fhir/identifier/organization';
+  'http://praxishealthplan.example/fhir/identifier/payer-id';
 const INSURANCE_PLAN_SYSTEM =
   'http://praxishealthplan.example/fhir/identifier/insurance-plan';
 const IDENTIFIER_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v2-0203';

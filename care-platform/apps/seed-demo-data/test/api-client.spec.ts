@@ -304,7 +304,11 @@ describe('payer-api token', () => {
 });
 
 describe('payer HAPI conditional creates', () => {
-  const plan = { id: 'ip1', planId: 'gold-ppo', name: 'Praxis Gold PPO' };
+  const plan = {
+    id: 'ip1',
+    planId: 'praxis-gold-ppo',
+    name: 'Praxis Gold PPO',
+  };
 
   function sent(): {
     url: string;
@@ -328,7 +332,7 @@ describe('payer HAPI conditional creates', () => {
 
     await expect(
       apiClient.ensurePayerOrganization({
-        organizationId: 'praxis-health-plan',
+        organizationId: 'PHP01',
         name: 'Praxis Health Plan',
       }),
     ).resolves.toEqual({ id: 'org1' });
@@ -339,8 +343,8 @@ describe('payer HAPI conditional creates', () => {
       'Content-Type': 'application/fhir+json',
       Accept: 'application/fhir+json',
       'If-None-Exist': ifNoneExist(
-        'http://praxishealthplan.example/fhir/identifier/organization',
-        'praxis-health-plan',
+        'http://praxishealthplan.example/fhir/identifier/payer-id',
+        'PHP01',
       ),
     });
     expect(body).toMatchObject({
@@ -356,7 +360,7 @@ describe('payer HAPI conditional creates', () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'ip1' }));
 
     await apiClient.ensureInsurancePlan({
-      planId: 'gold-ppo',
+      planId: 'praxis-gold-ppo',
       name: 'Praxis Gold PPO',
       planType: 'PPO',
       organizationId: 'org1',
@@ -368,7 +372,7 @@ describe('payer HAPI conditional creates', () => {
     expect(headers['If-None-Exist']).toBe(
       ifNoneExist(
         'http://praxishealthplan.example/fhir/identifier/insurance-plan',
-        'gold-ppo',
+        'praxis-gold-ppo',
       ),
     );
     expect(body).toMatchObject({
@@ -466,7 +470,7 @@ describe('payer HAPI conditional creates', () => {
       class: [
         {
           type: { coding: [{ code: 'plan' }] },
-          value: 'gold-ppo',
+          value: 'praxis-gold-ppo',
           name: 'Praxis Gold PPO',
         },
       ],
@@ -514,7 +518,7 @@ describe('payer HAPI and provider HAPI reads', () => {
                 {
                   system:
                     'http://praxishealthplan.example/fhir/identifier/insurance-plan',
-                  value: 'gold-ppo',
+                  value: 'praxis-gold-ppo',
                 },
               ],
             },
@@ -527,7 +531,7 @@ describe('payer HAPI and provider HAPI reads', () => {
       apiClient.findInsurancePlan('Praxis Gold PPO'),
     ).resolves.toEqual({
       id: 'ip1',
-      planId: 'gold-ppo',
+      planId: 'praxis-gold-ppo',
       name: 'Praxis Gold PPO',
     });
     expect(calls()[0].url).toBe(

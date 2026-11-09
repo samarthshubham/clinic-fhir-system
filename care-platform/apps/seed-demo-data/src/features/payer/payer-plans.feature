@@ -8,8 +8,8 @@ Feature: Seed payer — Praxis Health Plan and its insurance plans
     Given the seed has a payer-api system token
 
   Scenario: Seed Praxis Health Plan
-    Given payer organization "praxis-health-plan" named "Praxis Health Plan" is in the payer HAPI
+    Given payer organization "PHP01" named "Praxis Health Plan" is in the payer HAPI
     And the payer offers these insurance plans:
-      | planId     | name              | planType | startedDaysAgo |
-      | gold-ppo   | Praxis Gold PPO   | PPO      | 730            |
-      | silver-hmo | Praxis Silver HMO | HMO      | 730            |
+      | planId            | name              | planType | startedDaysAgo |
+      | praxis-gold-ppo   | Praxis Gold PPO   | PPO      | 730            |
+      | praxis-silver-hmo | Praxis Silver HMO | HMO      | 730            |

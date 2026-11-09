@@ -11,7 +11,7 @@ Feature: Seed payer — members and their coverage on both sides
 
   Background: Praxis Health Plan is seeded
     Given the seed has a payer-api system token
-    And payer organization "praxis-health-plan" named "Praxis Health Plan" is in the payer HAPI
+    And payer organization "PHP01" named "Praxis Health Plan" is in the payer HAPI
 
   Scenario Outline: Enroll <patient> as member <memberId>
     Given the provider patient "<patient>"
