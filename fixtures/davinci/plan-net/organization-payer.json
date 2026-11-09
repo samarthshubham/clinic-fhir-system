@@ -1,0 +1,91 @@
+{
+  "resourceType": "Organization",
+  "id": "praxis-health-plan",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Organization"
+    ]
+  },
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/org-description",
+      "valueString": "Praxis Health Plan is a fictional health plan used by the clinic-fhir-system demo."
+    }
+  ],
+  "identifier": [
+    {
+      "system": "http://praxishealthplan.example/fhir/identifier/payer-id",
+      "value": "PHP01"
+    }
+  ],
+  "active": true,
+  "type": [
+    {
+      "coding": [
+        {
+          "system": "http://hl7.org/fhir/us/davinci-pdex-plan-net/CodeSystem/OrgTypeCS",
+          "code": "payer",
+          "display": "Payer"
+        }
+      ]
+    }
+  ],
+  "name": "Praxis Health Plan",
+  "telecom": [
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/contactpoint-availabletime",
+          "extension": [
+            {
+              "url": "daysOfWeek",
+              "valueCode": "mon"
+            },
+            {
+              "url": "daysOfWeek",
+              "valueCode": "tue"
+            },
+            {
+              "url": "daysOfWeek",
+              "valueCode": "wed"
+            },
+            {
+              "url": "daysOfWeek",
+              "valueCode": "thu"
+            },
+            {
+              "url": "daysOfWeek",
+              "valueCode": "fri"
+            },
+            {
+              "url": "availableStartTime",
+              "valueTime": "08:00:00"
+            },
+            {
+              "url": "availableEndTime",
+              "valueTime": "17:00:00"
+            }
+          ]
+        }
+      ],
+      "system": "phone",
+      "value": "(555)-010-2000",
+      "rank": 2
+    },
+    {
+      "system": "url",
+      "value": "http://praxishealthplan.example",
+      "rank": 1
+    }
+  ],
+  "address": [
+    {
+      "line": [
+        "200 Example Plaza"
+      ],
+      "city": "Springfield",
+      "state": "IL",
+      "postalCode": "62701"
+    }
+  ]
+}

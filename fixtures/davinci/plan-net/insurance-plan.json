@@ -1,0 +1,51 @@
+{
+  "resourceType": "InsurancePlan",
+  "id": "praxis-gold-ppo",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-InsurancePlan"
+    ]
+  },
+  "status": "active",
+  "type": [
+    {
+      "coding": [
+        {
+          "system": "http://hl7.org/fhir/us/davinci-pdex-plan-net/CodeSystem/InsuranceProductTypeCS",
+          "code": "commppo",
+          "display": "Commercial PPO"
+        }
+      ]
+    }
+  ],
+  "name": "Praxis Gold PPO",
+  "ownedBy": {
+    "reference": "Organization/praxis-health-plan"
+  },
+  "administeredBy": {
+    "reference": "Organization/praxis-health-plan"
+  },
+  "coverageArea": [
+    {
+      "reference": "Location/state-of-illinois"
+    }
+  ],
+  "network": [
+    {
+      "reference": "Organization/praxis-standard-network"
+    }
+  ],
+  "plan": [
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/us/davinci-pdex-plan-net/CodeSystem/InsurancePlanTypeCS",
+            "code": "gold",
+            "display": "Gold-QHP"
+          }
+        ]
+      }
+    }
+  ]
+}

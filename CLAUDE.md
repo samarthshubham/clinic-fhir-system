@@ -88,9 +88,11 @@ care-platform/      Angular 21 Nx monorepo
                            vitals.steps.ts, clinical.steps.ts
     src/support/        api-client.ts, world.ts, date-helpers.ts
   libs/auth/            @care-platform/auth: shared login, token interceptor, guards (provideAuth per app)
-  libs/e2e-support/     Shared Cucumber steps and cleanup tasks for the e2e suites
+  libs/e2e-support/     Shared Cucumber steps and cleanup tasks for the e2e suites (provider HAPI, and payer HAPI with sweepBeforeRun({ payer: true }))
 
-fixtures/davinci/   Golden FHIR fixtures (clinic-api test resources); provider/ = US Core mapper output
+fixtures/davinci/       Golden Da Vinci fixtures per IG (provider, crd, dtr, pas, cdex, pdex, plan-net, formulary); test resources in both
+                        Maven modules, validated by the ig-validate CI job (.github/scripts/ig-validate.sh); provenance in its README;
+                        provider/ = clinic-api US Core mapper output
 
 infra/
   docker-compose.yml    HAPI FHIR (rest-hook subscriptions on) + payer HAPI :8081 (Da Vinci IGs) + PostgreSQL 15 + Prometheus + Grafana
@@ -176,8 +178,14 @@ npx nx test clinician-app
 npx nx test clinician-app --coverage --watch=false   # lcov + report in coverage/clinician-app/
 npx nx test seed-demo-data --coverage
 npx nx test auth --coverage --watch=false
+npx nx test e2e-support --coverage
 NX_DAEMON=false npx nx run-many -t e2e -p clinician-app-e2e patient-app-e2e --parallel=1   # needs the stack running
-NX_DAEMON=false npx nx e2e payer-app-e2e   # needs payer-api (dev profile) and the provider HAPI for cleanup
+NX_DAEMON=false npx nx e2e payer-app-e2e   # needs payer-api (dev profile) and both HAPI servers for cleanup
+```
+
+### IG validation (run from project root)
+```bash
+bash .github/scripts/ig-validate.sh   # golden fixtures + target/fhir-out of both APIs; pinned validator_cli.jar, tx.fhir.org
 ```
 
 ### Seed data

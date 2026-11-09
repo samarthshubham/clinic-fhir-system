@@ -1,0 +1,51 @@
+{
+  "resourceType": "ServiceRequest",
+  "id": "polysomnography-gerald-horton",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/us/davinci-crd/StructureDefinition/profile-servicerequest"
+    ]
+  },
+  "status": "draft",
+  "intent": "order",
+  "category": [
+    {
+      "text": "procedure"
+    }
+  ],
+  "priority": "routine",
+  "code": {
+    "coding": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "60554003",
+        "display": "Polysomnography"
+      }
+    ],
+    "text": "Polysomnography"
+  },
+  "subject": {
+    "reference": "Patient/gerald-horton"
+  },
+  "authoredOn": "2026-08-20",
+  "requester": {
+    "reference": "Practitioner/aisha-patel",
+    "display": "Dr. Aisha Patel"
+  },
+  "insurance": [
+    {
+      "reference": "Coverage/coverage-gerald-horton"
+    }
+  ],
+  "reasonCode": [
+    {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "78275009",
+          "display": "Obstructive sleep apnea syndrome"
+        }
+      ]
+    }
+  ]
+}

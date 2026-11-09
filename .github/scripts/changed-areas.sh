@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Writes backend=, payer= and frontend=true|false to $GITHUB_OUTPUT (or stdout),
+# Writes backend=, payer=, frontend= and igvalidate=true|false to $GITHUB_OUTPUT (or stdout),
 # so CI skips test jobs whose code a pull request does not touch.
 # Pushes to main always run everything. Changing ci.yml runs everything.
 #
@@ -14,6 +14,7 @@ if [[ "${GITHUB_EVENT_NAME:-}" != "pull_request" && -z "${DIFF_RANGE:-}" ]]; the
   output backend true
   output payer true
   output frontend true
+  output igvalidate true
   exit 0
 fi
 
@@ -25,13 +26,13 @@ touches() {
   grep -E "$include" <<<"$files" | grep -qvE "$exclude"
 }
 
-if touches '^clinic-api/' '^clinic-api/(integration-tests|seed-data)/|\.md$'; then
+if touches '^(clinic-api|fixtures)/' '^clinic-api/(integration-tests|seed-data)/|\.md$'; then
   output backend true
 else
   output backend false
 fi
 
-if touches '^payer-api/' '\.md$'; then
+if touches '^(payer-api|fixtures)/' '\.md$'; then
   output payer true
 else
   output payer false
@@ -41,4 +42,10 @@ if touches '^care-platform/' '\.md$'; then
   output frontend true
 else
   output frontend false
+fi
+
+if touches '^(clinic-api|payer-api|fixtures)/|^\.github/scripts/ig-validate|^infra/docker-compose\.yml$' '^clinic-api/(integration-tests|seed-data)/|\.md$'; then
+  output igvalidate true
+else
+  output igvalidate false
 fi
