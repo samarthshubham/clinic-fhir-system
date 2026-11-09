@@ -87,7 +87,7 @@ public Patient toFhir(PatientRequest request) {
 | Request Field | FHIR Path |
 |---|---|
 | `patientId` | `Coverage.beneficiary` (Reference `Patient/{id}`) |
-| `memberId` | `Coverage.identifier[system=http://praxis.clinic/fhir/identifier/member-id]` (type `v2-0203#MB`) and `Coverage.subscriberId` |
+| `memberId` | `Coverage.identifier[system=http://praxishealthplan.example/fhir/identifier/member-id]` (type `v2-0203#MB`) and `Coverage.subscriberId` |
 | `status` | `Coverage.status` |
 | `relationship` *(default `self`)* | `Coverage.relationship.coding[0]` (system `http://terminology.hl7.org/CodeSystem/subscriber-relationship`) |
 | `periodStart` / `periodEnd` *(optional)* | `Coverage.period.start` / `.end` |
@@ -101,6 +101,8 @@ The payer `Organization` is looked up by `identifier=http://praxis.clinic/fhir/i
 | `payerId` | `Organization.identifier[system=http://praxis.clinic/fhir/identifier/payer]` |
 | `payerName` | `Organization.name` |
 | *(fixed)* | `Organization.active` = `true`, `Organization.type[0]` = `organization-type#pay` |
+
+The member id system belongs to the payer (`http://praxishealthplan.example/fhir/identifier/member-id`), and the payer HAPI's `Coverage` uses the same identifier, so the two sides match a member by `Coverage.identifier`.
 
 ---
 

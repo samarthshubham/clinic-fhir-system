@@ -15,7 +15,8 @@ import org.springframework.stereotype.Component;
 public class CoverageMapper {
 
   public static final String PAYER_SYSTEM = "http://praxis.clinic/fhir/identifier/payer";
-  public static final String MEMBER_ID_SYSTEM = "http://praxis.clinic/fhir/identifier/member-id";
+  public static final String MEMBER_ID_SYSTEM =
+      "http://praxishealthplan.example/fhir/identifier/member-id";
   private static final String IDENTIFIER_TYPE_SYSTEM =
       "http://terminology.hl7.org/CodeSystem/v2-0203";
   private static final String RELATIONSHIP_SYSTEM =

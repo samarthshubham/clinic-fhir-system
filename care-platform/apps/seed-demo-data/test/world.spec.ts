@@ -32,9 +32,12 @@ describe('SeedWorld', () => {
     expect(world.currentConditionId).toBeNull();
     expect(world.currentGoalId).toBeNull();
     expect(world.currentServiceRequestId).toBeNull();
+    expect(world.currentCoverage).toBeNull();
     expect(world.pendingReportBody).toBeNull();
     expect(world.allGoalIds).toEqual([]);
     expect(world.allConditionIds).toEqual([]);
+    expect(world.payerApiToken).toBeNull();
+    expect(world.payerOrganizationId).toBeNull();
   });
 
   it('passes Cucumber options to the base world', () => {
@@ -49,8 +52,10 @@ describe('SeedWorld', () => {
     first.allGoalIds.push('goal-1');
     first.allConditionIds.push('cond-1');
     first.currentPatientId = 'patient-1';
+    first.payerApiToken = 'token-1';
     expect(second.allGoalIds).toEqual([]);
     expect(second.allConditionIds).toEqual([]);
     expect(second.currentPatientId).toBeNull();
+    expect(second.payerApiToken).toBeNull();
   });
 });

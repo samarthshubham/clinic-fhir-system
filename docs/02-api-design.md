@@ -328,6 +328,8 @@ Send only the vitals you have — null fields are skipped. Each non-null vital i
 
 `planName`, `periodEnd` and `relationship` (default `self`) are optional. `status` is `active`, `cancelled`, `draft` or `entered-in-error`.
 
+`memberId` is the payer's member id (`PHP-#####`), stored under the payer's identifier system `http://praxishealthplan.example/fhir/identifier/member-id`, so the provider and payer `Coverage` share one identifier.
+
 The payer is a FHIR `Organization` found by its identifier (`http://praxis.clinic/fhir/identifier/payer|{payerId}`). If none exists, clinic-api creates it, so every coverage of one payer points at the same `Organization`.
 
 **Response `201 Created` — `CoverageResponse`:** the same fields plus `id` and `payerOrganizationId`. The list returns `PageResponse<CoverageResponse>`.

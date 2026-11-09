@@ -20,12 +20,6 @@ Feature: Seed Patient — Tony Stark (hypertensive crisis)
       | email       | tony.stark@stark-ind.com |
       | mrn         | PX-10000006              |
 
-    And the patient is covered by Praxis Health Plan:
-      | memberId       | PHP-10006       |
-      | planName       | Praxis Gold PPO |
-      | status         | active          |
-      | startedDaysAgo | 365             |
-
     # Visit 1 — initial cardiac evaluation, baseline vitals
     When an encounter is recorded 90 days ago with reason "Cardiac evaluation — implant check" and note "Initial evaluation. BP elevated despite current medication. Arc reactor causing EMI with standard cardiac monitoring. CMP ordered to assess renal and electrolyte status." and status "finished"
     And vitals are recorded for that encounter:

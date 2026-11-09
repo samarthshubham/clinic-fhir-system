@@ -35,17 +35,24 @@ Each Cucumber `Scenario` is one patient. Before creating a patient, the step cas
 
 ## Prerequisites
 
-All three services must be running before executing the seed:
+All of these must be running before executing the seed:
 
-**1. HAPI FHIR + PostgreSQL** (Docker):
+**1. Provider HAPI FHIR (8080), payer HAPI FHIR (8081) + PostgreSQL** (Docker):
 ```bash
 # from project root
 docker compose -f infra/docker-compose.yml up -d
+bash infra/payer/smoke.sh   # waits until the payer HAPI has loaded its IGs (4-5 min on first start)
 ```
 
 **2. Spring Boot API** (port 9090):
 ```bash
 # from clinic-api/
+./mvnw spring-boot:run
+```
+
+**3. payer-api** (port 9095), for the `payer-*` features:
+```bash
+# from payer-api/
 ./mvnw spring-boot:run
 ```
 
@@ -62,13 +69,28 @@ The Spring Boot API requires a JWT, so a Cucumber `BeforeAll` hook (`src/support
 
 Expected output on success:
 ```
-5 scenarios (5 passed)
-51 steps (51 passed)
+17 scenarios (17 passed)
+212 steps (212 passed)
 ```
 
 An HTML report is written to `apps/seed-demo-data/reports/seed-data-report.html` after each run.
 
 > **Idempotency**: Each run is safe to repeat. Before creating a patient, the step cascade-deletes that patient's existing observations and encounters, then re-creates everything with the same fixed ID. Practitioner and organization follow the same pattern. Running the seed twice produces identical data — no duplicates.
+
+### Payer data (`src/features/payer/`)
+
+`cucumber.json` runs the payer features after the patient profiles, plans before members:
+
+| Feature | Seeds |
+|---|---|
+| `payer-plans.feature` | Praxis Health Plan (`Organization`) and two `InsurancePlan`s, Praxis Gold PPO and Praxis Silver HMO, in the payer HAPI |
+| `payer-members.feature` | for each of the 8 profiles: the provider `Coverage` (through clinic-api), and a member `Patient` + `Coverage` in the payer HAPI. Aisha Chen's coverage is `cancelled` |
+
+- Both `Coverage`s of a member carry the same identifier, `http://praxishealthplan.example/fhir/identifier/member-id|PHP-#####`. That's how the two sides match a member. The payer `Patient` copies its demographics from the provider `Patient`.
+- payer-api has no write endpoints yet, so payer resources go straight to the payer HAPI. They are identifier-based conditional creates (`If-None-Exist`), so a rerun leaves them as they are: no new resources and no new versions.
+- The profile features rebuild their provider patients on every run, which deletes the provider `Coverage`. `payer-members.feature` runs after them and creates it again.
+- Payer dates are set by the first run and stay fixed after that. Provider dates are recalculated on every run, so the payer and provider coverage periods drift apart by the days since the first seed. Wipe the payer HAPI (`docker compose down -v`) to realign them.
+- Each payer scenario first gets a payer-api system token (`client_credentials`) and keeps it on the world as `payerApiToken`, for payer stories that will call payer-api. The defaults are the dev client `clinic-api` / `dev-only-clinic-api-client-secret` from payer-api's `application-dev.yaml`. Override them with `PAYER_CLIENT_ID` / `PAYER_CLIENT_SECRET`, and the URLs with `PAYER_FHIR_URL` (default `http://localhost:8081/fhir`) and `PAYER_API_URL` (default `http://localhost:9095`).
 
 ---
 
