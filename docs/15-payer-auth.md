@@ -71,6 +71,7 @@ A member token has `scope=patient/*.r` and `patient=<payer Patient id>`. ADR 000
 - Anything without a rule is denied: 403 with an `OperationOutcome` (NFR-SEC-1).
 - Compartment checks are HAPI's. A member reading `Patient/B` or a `Claim` whose patient is B gets 403, including resources inside search results and operation responses (NFR-SEC-2).
 - `patient/` scopes count only with a `patient` claim, and `system/` scopes only without one.
+- Batch and transaction Bundles get no rules and are denied, because the per-request `r`/`s`/`u` gating can't see the entries inside a Bundle.
 - SMART scopes say nothing about operations, so an operation needs an `OperationScope` naming the resource type and permission it requires. Operations without one are denied, so a new operation is closed until its story opens it.
 - `GET /fhir/metadata` stays public. Its `rest.security` lists the `SMART-on-FHIR` service and the token URL in the `oauth-uris` extension. The `.well-known/smart-configuration` document comes with E6-S1.
 

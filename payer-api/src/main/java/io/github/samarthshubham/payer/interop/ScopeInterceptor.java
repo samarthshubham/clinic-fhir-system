@@ -48,6 +48,11 @@ public class ScopeInterceptor extends AuthorizationInterceptor {
       }
       return rules.build();
     }
+    // The per-request permission gating below cannot see inside a Bundle, so batch and
+    // transaction requests get no rules and are denied until a story needs them.
+    if (request.getRestOperationType() == RestOperationTypeEnum.TRANSACTION) {
+      return rules.build();
+    }
     String patient = token.getClaimAsString(JwtConfig.PATIENT_CLAIM);
     IdType member = patient == null ? null : new IdType("Patient", patient);
     for (SmartScope scope : SmartScope.parseAll(token.getClaimAsString(JwtConfig.SCOPE_CLAIM))) {
