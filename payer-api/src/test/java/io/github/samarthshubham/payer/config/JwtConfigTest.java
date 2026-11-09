@@ -57,6 +57,21 @@ class JwtConfigTest {
     assertThat(jwtConfig.jwtAuthenticationConverter().convert(jwt).getAuthorities()).isEmpty();
   }
 
+  @Test
+  void unknownRoleInAValidTokenIsIgnored() {
+    Jwt jwt =
+        new Jwt(
+            "token",
+            Instant.now(),
+            Instant.now().plusSeconds(60),
+            Map.of("alg", "HS256"),
+            Map.of(JwtConfig.ROLES_CLAIM, List.of("RETIRED_ROLE", "PAYER_ADMIN")));
+
+    assertThat(jwtConfig.jwtAuthenticationConverter().convert(jwt).getAuthorities())
+        .extracting(GrantedAuthority::getAuthority)
+        .containsExactly("ROLE_PAYER_ADMIN", "member:read", "priorauth:read");
+  }
+
   private static AuthProperties withSecret(String secret) {
     AuthProperties properties = TestAuth.properties();
     return new AuthProperties(

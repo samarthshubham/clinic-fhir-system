@@ -5,6 +5,7 @@ import io.github.samarthshubham.payer.security.Role;
 import io.github.samarthshubham.payer.security.RolePermissions;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -79,6 +80,9 @@ public class JwtConfig {
 
   private static List<Role> rolesOf(Jwt jwt) {
     List<String> roles = jwt.getClaimAsStringList(ROLES_CLAIM);
-    return roles == null ? List.of() : roles.stream().map(Role::valueOf).toList();
+    if (roles == null) {
+      return List.of();
+    }
+    return Arrays.stream(Role.values()).filter(role -> roles.contains(role.name())).toList();
   }
 }
