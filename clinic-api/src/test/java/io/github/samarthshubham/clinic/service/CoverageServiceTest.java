@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.samarthshubham.clinic.dto.CoverageRequest;
 import io.github.samarthshubham.clinic.dto.CoverageResponse;
+import io.github.samarthshubham.clinic.exception.ReferenceValidationException;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.CoverageMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
@@ -85,6 +86,56 @@ class CoverageServiceTest {
     fhir.givenReadFails(Coverage.class, "x", new InternalErrorException("FHIR server error"));
 
     assertThatThrownBy(() -> service.getCoverage("x")).isInstanceOf(InternalErrorException.class);
+  }
+
+  @Test
+  void updateReplacesTheStoredCoverage() {
+    Coverage stored =
+        new Coverage()
+            .setStatus(Coverage.CoverageStatus.ACTIVE)
+            .setBeneficiary(new Reference("Patient/p1"));
+    fhir.givenStored(stored, "cov1");
+    CoverageRequest cancelled =
+        new CoverageRequest(
+            "p1",
+            "praxis-health-plan",
+            "Praxis Health Plan",
+            "PHP-20002",
+            "Praxis Silver HMO",
+            "cancelled",
+            LocalDate.of(2026, 1, 1),
+            LocalDate.of(2026, 6, 30),
+            "self");
+
+    CoverageResponse coverage = service.updateCoverage("cov1", cancelled);
+
+    assertThat(fhir.updated()).singleElement().isInstanceOf(Coverage.class);
+    assertThat(coverage.id()).isEqualTo("cov1");
+    assertThat(coverage.status()).isEqualTo("cancelled");
+    assertThat(coverage.memberId()).isEqualTo("PHP-20002");
+    assertThat(coverage.planName()).isEqualTo("Praxis Silver HMO");
+    assertThat(coverage.periodEnd()).isEqualTo(LocalDate.of(2026, 6, 30));
+    assertThat(fhir.conditionalCreates())
+        .containsExactly(
+            "Organization?identifier=" + CoverageMapper.PAYER_SYSTEM + "|praxis-health-plan");
+  }
+
+  @Test
+  void updateUnknownCoverageThrowsNotFound() {
+    assertThatThrownBy(() -> service.updateCoverage("missing", REQUEST))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessage("Coverage with id 'missing' not found");
+    assertThat(fhir.updated()).isEmpty();
+  }
+
+  @Test
+  void updateRejectsMovingTheCoverageToAnotherPatient() {
+    fhir.givenStored(new Coverage().setBeneficiary(new Reference("Patient/p2")), "cov1");
+
+    assertThatThrownBy(() -> service.updateCoverage("cov1", REQUEST))
+        .isInstanceOf(ReferenceValidationException.class)
+        .hasMessage("Referenced Coverage with id 'cov1' does not belong to Patient 'p1'");
+    assertThat(fhir.updated()).isEmpty();
   }
 
   @Test

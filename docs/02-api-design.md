@@ -74,6 +74,7 @@ Tokens carry **roles**; on each request the server expands them into **permissio
 | `coverage:read` | `GET /api/coverages/{id}` | ✓ | ✓ | ✓ | |
 | `coverage:read` | `GET /api/coverages?patientId=` | ✓ | ✓ | ✓ | own |
 | `coverage:write` | `POST /api/coverages` | ✓ | ✓ | ✓ | |
+| `coverage:write` | `PUT /api/coverages/{id}` | ✓ | ✓ | ✓ | |
 
 The front desk records insurance at registration and check-in, and clinicians need it when they order (CRD and prior auth later), so both get `coverage:read` and `coverage:write`.
 
@@ -319,6 +320,7 @@ Send only the vitals you have — null fields are skipped. Each non-null vital i
 |---|---|---|
 | `POST` | `/api/coverages` | Record a patient's insurance |
 | `GET` | `/api/coverages/{id}` | Get coverage |
+| `PUT` | `/api/coverages/{id}` | Edit coverage |
 | `GET` | `/api/coverages?patientId={id}` | List a patient's coverages |
 
 ### POST /api/coverages
@@ -331,6 +333,9 @@ Send only the vitals you have — null fields are skipped. Each non-null vital i
 The payer is a FHIR `Organization` found by its identifier (`http://praxis.clinic/fhir/identifier/payer|{payerId}`). If none exists, clinic-api creates it, so every coverage of one payer points at the same `Organization`.
 
 **Response `201 Created` — `CoverageResponse`:** the same fields plus `id` and `payerOrganizationId`. The list returns `PageResponse<CoverageResponse>`.
+
+### PUT /api/coverages/{id}
+Takes the same body as `POST` and replaces the stored coverage (payer found or created the same way). `patientId` must match the coverage's beneficiary, else `422`. Unknown id: `404`. **Response `200 OK` — `CoverageResponse`.**
 
 ---
 

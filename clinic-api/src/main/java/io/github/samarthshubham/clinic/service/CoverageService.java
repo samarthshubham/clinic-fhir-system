@@ -6,6 +6,7 @@ import ca.uhn.fhir.rest.gclient.TokenClientParam;
 import io.github.samarthshubham.clinic.dto.CoverageRequest;
 import io.github.samarthshubham.clinic.dto.CoverageResponse;
 import io.github.samarthshubham.clinic.dto.PageResponse;
+import io.github.samarthshubham.clinic.exception.ReferenceValidationException;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.CoverageMapper;
 import io.github.samarthshubham.clinic.mapper.PageMapper;
@@ -34,12 +35,17 @@ public class CoverageService {
   }
 
   public CoverageResponse getCoverage(String id) {
-    try {
-      return coverageMapper.toResponse(
-          fhirClient.read().resource(Coverage.class).withId(id).execute());
-    } catch (ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException e) {
-      throw new ResourceNotFoundException("Coverage", id);
+    return coverageMapper.toResponse(findCoverage(id));
+  }
+
+  public CoverageResponse updateCoverage(String id, CoverageRequest request) {
+    if (!request.patientId().equals(getCoverage(id).patientId())) {
+      throw new ReferenceValidationException("Coverage", id, request.patientId());
     }
+    Coverage coverage = coverageMapper.toFhir(request, findOrCreatePayer(request));
+    coverage.setId(id);
+    fhirClient.update().resource(coverage).execute();
+    return coverageMapper.toResponse(findCoverage(id));
   }
 
   public PageResponse<CoverageResponse> getCoveragesForPatient(String patientId) {
@@ -69,6 +75,14 @@ public class CoverageService {
     return PageMapper.toPage(bundle, Coverage.class, coverageMapper::toResponse).items().stream()
         .findFirst()
         .orElse(null);
+  }
+
+  private Coverage findCoverage(String id) {
+    try {
+      return fhirClient.read().resource(Coverage.class).withId(id).execute();
+    } catch (ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException e) {
+      throw new ResourceNotFoundException("Coverage", id);
+    }
   }
 
   private String findOrCreatePayer(CoverageRequest request) {

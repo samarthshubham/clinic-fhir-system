@@ -861,6 +861,55 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+    put:
+      tags: [Coverages]
+      summary: Edit a patient's insurance
+      description: >-
+        Requires the `coverage:write` permission (ADMIN, CLINICIAN, FRONT_DESK).
+        Replaces the coverage with the request; `patientId` must match the stored
+        beneficiary. The payer Organization is found by `payerId` and created when missing.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CoverageRequest'
+            example:
+              patientId: "abc123"
+              payerId: "praxis-health-plan"
+              payerName: "Praxis Health Plan"
+              memberId: "PHP-10001"
+              planName: "Praxis Gold PPO"
+              status: "cancelled"
+              periodStart: "2026-01-01"
+              periodEnd: "2026-06-30"
+      responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '200':
+          description: Coverage updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoverageResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: The coverage belongs to a different patient
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: 422
+                message: "Referenced Coverage with id 'cov1' does not belong to Patient 'abc123'"
+
   # ── Diagnostic Reports ────────────────────────────────────────────────────
 
   /api/diagnostic-reports:

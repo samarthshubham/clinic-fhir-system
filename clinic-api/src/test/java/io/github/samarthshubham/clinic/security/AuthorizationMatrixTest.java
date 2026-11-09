@@ -128,6 +128,13 @@ class AuthorizationMatrixTest {
                "memberId":"PHP-10001","status":"active","periodStart":"2026-01-01"}
               """,
               EVERYONE),
+          put(
+              "/api/coverages/cov1",
+              """
+              {"patientId":"p1","payerId":"praxis-health-plan","payerName":"Praxis Health Plan",
+               "memberId":"PHP-10001","status":"cancelled","periodStart":"2026-01-01"}
+              """,
+              EVERYONE),
           get("/api/patients/p2", EVERYONE),
           get("/api/coverages?patientId=p2", EVERYONE),
           get("/api/patients/p2/snapshot", CLINICAL_STAFF),
@@ -226,6 +233,10 @@ class AuthorizationMatrixTest {
 
   private static Endpoint post(String uri, String body, Set<Role> allowed) {
     return new Endpoint(HttpMethod.POST, uri, body, allowed);
+  }
+
+  private static Endpoint put(String uri, String body, Set<Role> allowed) {
+    return new Endpoint(HttpMethod.PUT, uri, body, allowed);
   }
 
   record Endpoint(HttpMethod method, String uri, String body, Set<Role> allowed) {
