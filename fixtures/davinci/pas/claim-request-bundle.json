@@ -38,10 +38,7 @@
             }
           ]
         },
-        "use": "preauthorization",
-        "patient": {
-          "reference": "Patient/gerald-horton"
-        },
+        "use": "claim",
         "created": "2026-08-20T10:15:00-05:00",
         "insurer": {
           "reference": "Organization/praxis-health-plan"
