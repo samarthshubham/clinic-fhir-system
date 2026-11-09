@@ -91,9 +91,8 @@ care-platform/      Angular 21 Nx monorepo
   libs/e2e-support/     Shared Cucumber steps and cleanup tasks for the e2e suites (provider HAPI, and payer HAPI with sweepBeforeRun({ payer: true }))
 
 fixtures/davinci/       Golden Da Vinci fixtures per IG (provider, crd, dtr, pas, cdex, pdex, plan-net, formulary); test resources in both
-                        Maven modules, validated by the ig-validate CI job (.github/scripts/ig-validate.sh); provenance in its README
-
-fixtures/davinci/   Golden FHIR fixtures (clinic-api test resources); provider/ = US Core mapper output
+                        Maven modules, validated by the ig-validate CI job (.github/scripts/ig-validate.sh); provenance in its README;
+                        provider/ = clinic-api US Core mapper output
 
 infra/
   docker-compose.yml    HAPI FHIR (rest-hook subscriptions on) + payer HAPI :8081 (Da Vinci IGs) + PostgreSQL 15 + Prometheus + Grafana
