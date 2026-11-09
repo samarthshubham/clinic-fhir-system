@@ -10,6 +10,12 @@ fhir:
     url: http://localhost:8081/fhir
 
 payer:
+  auth:
+    jwt-secret: ${PAYER_JWT_SECRET:}
+    issuer: payer-api
+    access-token-ttl: 15m
+    refresh-token-ttl: 7d
+    client-token-ttl: 5m
   implementation-guides:
     - url: http://hl7.org/fhir/us/core/ImplementationGuide/hl7.fhir.us.core
       version: 7.0.0
