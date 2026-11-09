@@ -385,7 +385,7 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 | Request field | FHIR path |
 |---|---|
 | `patientId` | `Coverage.beneficiary` |
-| `memberId` | `Coverage.identifier[system=http://praxis.clinic/fhir/identifier/member-id]` (type `v2-0203#MB`) + `Coverage.subscriberId` |
+| `memberId` | `Coverage.identifier[system=http://praxishealthplan.example/fhir/identifier/member-id]` (type `v2-0203#MB`) + `Coverage.subscriberId` |
 | `status` | `Coverage.status` |
 | `relationship` *(optional, default `self`)* | `Coverage.relationship` (subscriber-relationship) |
 | `periodStart` / `periodEnd` *(optional)* | `Coverage.period.start` / `.end` |

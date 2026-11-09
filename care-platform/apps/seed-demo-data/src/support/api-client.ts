@@ -3,7 +3,7 @@ const HAPI_FHIR = 'http://localhost:8080';
 const DEFAULT_SEED_USERNAME = 'clinician';
 const DEFAULT_SEED_PASSWORD = 'Clinician#2026';
 const MRN_SYSTEM = 'http://praxis.clinic/fhir/identifier/mrn';
-const MEMBER_ID_SYSTEM = 'http://praxis.clinic/fhir/identifier/member-id';
+const MEMBER_ID_SYSTEM = 'http://praxishealthplan.example/fhir/identifier/member-id';
 
 export interface CreatedResource {
   id: string;

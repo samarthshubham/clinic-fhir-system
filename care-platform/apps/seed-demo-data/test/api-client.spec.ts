@@ -217,7 +217,7 @@ describe('ensureCoverage', () => {
     periodStart: '2026-01-01',
   };
   const memberSearch = `${HAPI}/Coverage?_count=100&_elements=id&identifier=${encodeURIComponent(
-    'http://praxis.clinic/fhir/identifier/member-id|PHP-10001',
+    'http://praxishealthplan.example/fhir/identifier/member-id|PHP-10001',
   )}`;
 
   it('keeps the coverage that already has the member id', async () => {
