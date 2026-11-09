@@ -73,12 +73,14 @@ payer-api/          Payer Spring Boot service (Maven, port 9095), client of the 
     interop/        PayerFhirServer (HAPI RestfulServer at /fhir), ImplementationGuideCapabilityInterceptor,
                     ScopeInterceptor (SMART scopes + member compartment); auth per docs/15-payer-auth.md
     config/         FhirConfig, RestfulServerConfig, ImplementationGuideProperties (IGs listed in /fhir/metadata)
-    security/ controller/ service/ mapper/ dto/ exception/   same layout as clinic-api (filled by later stories)
+    controller/     AuthController, OAuthTokenController, MemberController (/api/members, docs/11-payer-architecture.md §3)
+    service/ mapper/ MemberService + MemberMapper (payer HAPI Patient, Coverage, InsurancePlan, preauthorization Claims)
+    security/ dto/ exception/   same layout as clinic-api
 
 care-platform/      Angular 21 Nx monorepo
   apps/clinician-app/   Clinician-facing UI: login, patient roster, 3-panel dashboard, Inbox
   apps/patient-app/     Patient-facing UI: login, home, vitals (charts + recording), messages, profile
-  apps/payer-app/       Payer UM reviewer UI: login, sidenav shell (Queue, Members, Directory, Metrics); proxies /api → payer-api :9095
+  apps/payer-app/       Payer UM reviewer UI: login, sidenav shell (Queue, Members search + /members/:id detail, Directory, Metrics); proxies /api → payer-api :9095
   apps/clinician-app-e2e/, apps/patient-app-e2e/, apps/payer-app-e2e/  Cypress + Cucumber e2e suites (@api, @ui, @journey)
   apps/seed-demo-data/  Cucumber-driven idempotent seed data (8 patient profiles)
     src/features/       patients.feature, marcus-webb.feature, priya-nair.feature, gerald-horton.feature,
@@ -623,7 +625,7 @@ color: #334155;
 ### Status
 - **clinician-app**: login, patient roster, 3-panel patient dashboard (snapshot, timeline, care panel with trend charts), alerts Inbox.
 - **patient-app**: login, home, vitals with charts and recording, messages (static), profile.
-- **payer-app**: login (`reviewer` / `payeradmin`, dev only), sidenav shell, empty Queue; Members, Directory and Metrics are placeholders until their roadmap stories.
+- **payer-app**: login (`reviewer` / `payeradmin`, dev only), sidenav shell, empty Queue, member search and detail (coverage, plan, prior auth history); Directory and Metrics are placeholders until their roadmap stories.
 - **libs/design-system, libs/ui, libs/shared**: Defined in `docs/08-design-system.md` but not yet created; each app keeps its own `styles.scss` tokens.
 
 ---

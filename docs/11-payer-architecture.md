@@ -61,6 +61,30 @@ clinic-api gets two additions:
 - A `client` package with `CrdClient`, `DtrClient`, `PasClient`, `CdexClient` and `PdexClient`, each calling payer-api. Calls are wrapped by services, and controllers still see DTOs only.
 - An `interop` package with one inbound FHIR endpoint, `POST /fhir/Task`, for CDex attachment requests, authenticated with a payer system token.
 
+### JSON endpoints for payer-app
+
+Staff bearer token from `POST /api/auth/login` ([15-payer-auth.md](15-payer-auth.md)). Errors are `{ "status", "message" }`: 404 for an unknown member, 503 when the payer HAPI is down, 502 when it answers with an error (its diagnostics are not passed on).
+
+| Method | Path | Permission | Returns |
+|---|---|---|---|
+| `GET` | `/api/members?name=&memberId=` | `member:read` | `PageResponse<MemberSummary>`: `{items, total}`, up to 100 members |
+| `GET` | `/api/members/{id}` | `member:read` | `MemberResponse` |
+
+How `MemberService` reads the payer HAPI:
+
+| DTO field | Payer HAPI query / FHIR path |
+|---|---|
+| search | `Patient?identifier=http://praxishealthplan.example/fhir/identifier/member-id\|{memberId}` (system only when `memberId` is blank, so only members match), `&name={name}`, `&_revinclude=Coverage:beneficiary` |
+| `id` | `Patient.id`, the path variable of the detail endpoint |
+| `memberId` | `Patient.identifier[system=…/member-id].value`; a Patient without one is not a member (404) |
+| `firstName`, `lastName`, `dateOfBirth`, `gender` | `Patient.name[0].given`, `.family`, `Patient.birthDate`, `Patient.gender` |
+| `planName`, `coverageStatus` (search) | the current Coverage: the newest `active` one, else the newest by `period.start`; `Coverage.class[type=plan].name`, `Coverage.status` |
+| `coverages[]` (detail) | `Coverage?beneficiary=Patient/{id}`, newest first: `status`, `period`, `payor[0].display`, `relationship` |
+| `coverages[].plan` | `InsurancePlan?identifier=…/insurance-plan\|{Coverage.class[type=plan].value}`: `id`, `name`, `plan[0].type.text`; falls back to the Coverage class when the plan is missing |
+| `priorAuths[]` (detail) | `Claim?patient=Patient/{id}&use=preauthorization&_revinclude=ClaimResponse:request&_sort=-created`: `Claim.status`, `created`, `item[0].productOrService`, and `ClaimResponse.outcome` / `preAuthRef`. Empty until PAS (E4) stores Claims. |
+
+payer-app shows the search at `/members` (a sortable, paged `mat-table`) and the detail at `/members/:id`.
+
 ## 4. What we reuse instead of building
 
 | Need | Reused |
