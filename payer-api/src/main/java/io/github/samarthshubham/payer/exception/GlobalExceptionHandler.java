@@ -1,5 +1,7 @@
 package io.github.samarthshubham.payer.exception;
 
+import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
+import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException;
 import java.util.stream.Collectors;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
@@ -12,6 +14,24 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+  @ExceptionHandler(ResourceNotFoundException.class)
+  public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        .body(new ErrorResponse(404, ex.getMessage()));
+  }
+
+  @ExceptionHandler(FhirClientConnectionException.class)
+  public ResponseEntity<ErrorResponse> handleFhirConnectionError(FhirClientConnectionException ex) {
+    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+        .body(new ErrorResponse(503, "Payer FHIR server unavailable"));
+  }
+
+  @ExceptionHandler(BaseServerResponseException.class)
+  public ResponseEntity<ErrorResponse> handleFhirError(BaseServerResponseException ex) {
+    return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+        .body(new ErrorResponse(502, "Payer FHIR server returned HTTP " + ex.getStatusCode()));
+  }
 
   @ExceptionHandler(AuthenticationException.class)
   public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex) {
