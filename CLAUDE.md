@@ -83,9 +83,10 @@ care-platform/      Angular 21 Nx monorepo
   apps/seed-demo-data/  Cucumber-driven idempotent seed data (8 patient profiles)
     src/features/       patients.feature, marcus-webb.feature, priya-nair.feature, gerald-horton.feature,
                         sandra-okafor.feature, ramon-castillo.feature, aisha-chen.feature,
-                        robert-osei.feature, tony-stark.feature
+                        robert-osei.feature, tony-stark.feature,
+                        payer/payer-plans.feature, payer/payer-members.feature (payer HAPI :8081)
     src/step-definitions/  background.steps.ts, patient.steps.ts, encounter.steps.ts,
-                           vitals.steps.ts, clinical.steps.ts
+                           vitals.steps.ts, clinical.steps.ts, coverage.steps.ts, payer.steps.ts
     src/support/        api-client.ts, world.ts, date-helpers.ts
   libs/auth/            @care-platform/auth: shared login, token interceptor, guards (provideAuth per app)
   libs/e2e-support/     Shared Cucumber steps and cleanup tasks for the e2e suites (provider HAPI, and payer HAPI with sweepBeforeRun({ payer: true }))
@@ -393,7 +394,7 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 | Request field | FHIR path |
 |---|---|
 | `patientId` | `Coverage.beneficiary` |
-| `memberId` | `Coverage.identifier[system=http://praxis.clinic/fhir/identifier/member-id]` (type `v2-0203#MB`) + `Coverage.subscriberId` |
+| `memberId` | `Coverage.identifier[system=http://praxishealthplan.example/fhir/identifier/member-id]` (type `v2-0203#MB`) + `Coverage.subscriberId` |
 | `status` | `Coverage.status` |
 | `relationship` *(optional, default `self`)* | `Coverage.relationship` (subscriber-relationship) |
 | `periodStart` / `periodEnd` *(optional)* | `Coverage.period.start` / `.end` |

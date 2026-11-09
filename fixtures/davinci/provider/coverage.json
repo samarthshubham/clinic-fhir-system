@@ -11,7 +11,7 @@
         "display": "Member Number"
       } ]
     },
-    "system": "http://praxis.clinic/fhir/identifier/member-id",
+    "system": "http://praxishealthplan.example/fhir/identifier/member-id",
     "value": "PHP-10001"
   } ],
   "status": "active",

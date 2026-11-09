@@ -19,12 +19,6 @@ Feature: Seed Patient — Gerald Horton (sleep apnea, improving SpO2)
       | email       | gerald.horton@example.com |
       | mrn         | PX-10000003               |
 
-    And the patient is covered by Praxis Health Plan:
-      | memberId       | PHP-10003       |
-      | planName       | Praxis Gold PPO |
-      | status         | active          |
-      | startedDaysAgo | 365             |
-
     # Sleep study ordered at first visit
     And a service request is placed with code "Polysomnography" category "procedure" authored 75 days ago
 

@@ -1,5 +1,5 @@
 import { DataTable, Given } from '@cucumber/cucumber';
-import { apiClient } from '../support/api-client';
+import { CreateCoverageBody, apiClient } from '../support/api-client';
 import { daysAgo } from '../support/date-helpers';
 import { SeedWorld } from '../support/world';
 
@@ -14,7 +14,7 @@ Given(
     if (!this.currentPatientId) throw new Error('No currentPatientId');
     const row = dataTable.rowsHash() as Record<string, string>;
     const ended = row['endedDaysAgo'];
-    const result = await apiClient.ensureCoverage({
+    const coverage: CreateCoverageBody = {
       patientId: this.currentPatientId,
       ...PRAXIS_HEALTH_PLAN,
       memberId: row['memberId'],
@@ -22,7 +22,9 @@ Given(
       status: row['status'],
       periodStart: daysAgo(Number(row['startedDaysAgo'])),
       ...(ended && { periodEnd: daysAgo(Number(ended)) }),
-    });
+    };
+    const result = await apiClient.ensureCoverage(coverage);
+    this.currentCoverage = coverage;
     this.log(`Coverage ${result.id} (${row['memberId']}, ${row['status']})`);
   },
 );

@@ -19,12 +19,6 @@ Feature: Seed Patient — Ramon Castillo (T2DM + hypertension + CKD)
       | email       | ramon.castillo@example.com |
       | mrn         | PX-10000002                |
 
-    And the patient is covered by Praxis Health Plan:
-      | memberId       | PHP-10002       |
-      | planName       | Praxis Gold PPO |
-      | status         | active          |
-      | startedDaysAgo | 365             |
-
     # HbA1c ordered at the 30-day visit (will be completed by a report below)
     And a service request is placed with code "HbA1c Panel" category "laboratory" authored 30 days ago
 

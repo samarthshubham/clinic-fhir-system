@@ -19,12 +19,6 @@ Feature: Seed Patient — Robert Osei (acute hypertension, critical alerts)
       | email       | robert.osei@example.com |
       | mrn         | PX-10000007             |
 
-    And the patient is covered by Praxis Health Plan:
-      | memberId       | PHP-10007       |
-      | planName       | Praxis Gold PPO |
-      | status         | active          |
-      | startedDaysAgo | 365             |
-
     # Encounter 1 — ER presentation, critical vitals
     When an encounter is recorded 10 days ago with reason "Emergency: chest tightness and severe hypertension" and status "finished"
     And vitals are recorded for that encounter:
