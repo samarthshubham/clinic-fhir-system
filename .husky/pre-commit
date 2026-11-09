@@ -6,14 +6,17 @@ ROOT=$(git rev-parse --show-toplevel)
 # ── Java (Spotless via Maven) ─────────────────────────────────────────────────
 JAVA_STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep '\.java$' || true)
 
-if [ -n "$JAVA_STAGED" ]; then
-  echo "[pre-commit] Formatting Java files with Spotless..."
-  (cd "$ROOT/clinic-api" && ./mvnw spotless:apply -q)
-  echo "$JAVA_STAGED" | while IFS= read -r file; do
-    git add "$ROOT/$file"
-  done
-  echo "[pre-commit] Java formatting done."
-fi
+for MODULE in clinic-api payer-api; do
+  MODULE_STAGED=$(echo "$JAVA_STAGED" | grep "^$MODULE/" || true)
+  if [ -n "$MODULE_STAGED" ]; then
+    echo "[pre-commit] Formatting $MODULE Java files with Spotless..."
+    (cd "$ROOT/$MODULE" && ./mvnw spotless:apply -q)
+    echo "$MODULE_STAGED" | while IFS= read -r file; do
+      git add "$ROOT/$file"
+    done
+    echo "[pre-commit] $MODULE Java formatting done."
+  fi
+done
 
 # ── Angular / TypeScript (Prettier) ──────────────────────────────────────────
 WEB_DIR="$ROOT/care-platform"

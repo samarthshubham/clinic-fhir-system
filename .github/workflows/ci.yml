@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       backend: ${{ steps.areas.outputs.backend }}
+      payer: ${{ steps.areas.outputs.payer }}
       frontend: ${{ steps.areas.outputs.frontend }}
     steps:
       - uses: actions/checkout@v4
@@ -64,6 +65,45 @@ jobs:
         with:
           name: backend-coverage
           path: clinic-api/target/site/jacoco/
+
+  payer-api:
+    needs: changes
+    if: needs.changes.outputs.payer == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: payer-api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Check formatting
+        run: ./mvnw -B spotless:check
+
+      - name: Build, test and measure coverage
+        run: ./mvnw -B verify
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import xml.etree.ElementTree as ET
+          root = ET.parse('target/site/jacoco/jacoco.xml').getroot()
+          line = next(c for c in root.findall('counter') if c.get('type') == 'LINE')
+          missed, covered = int(line.get('missed')), int(line.get('covered'))
+          print(f"### payer-api line coverage: {covered / (missed + covered):.1%} ({covered}/{missed + covered})")
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: payer-api-coverage
+          path: payer-api/target/site/jacoco/
 
   frontend:
     needs: changes
@@ -131,13 +171,13 @@ jobs:
 
   coverage-gate:
     if: github.event_name == 'pull_request' && !cancelled()
-    needs: [changes, backend, frontend]
+    needs: [changes, backend, payer-api, frontend]
     runs-on: ubuntu-latest
     steps:
       - name: Upstream jobs must not have failed
         if: contains(needs.*.result, 'failure')
         run: |
-          echo "::error::changes=${{ needs.changes.result }} backend=${{ needs.backend.result }} frontend=${{ needs.frontend.result }}"
+          echo "::error::changes=${{ needs.changes.result }} backend=${{ needs.backend.result }} payer-api=${{ needs.payer-api.result }} frontend=${{ needs.frontend.result }}"
           exit 1
 
       - uses: actions/checkout@v4
@@ -160,6 +200,22 @@ jobs:
             --compare-branch="origin/${{ github.base_ref }}" --fail-under=70 \
             --format markdown:backend.md || status=1
           { echo "## Backend changed-line coverage"; cat backend.md; } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+
+      - uses: actions/download-artifact@v4
+        if: needs.payer-api.result == 'success'
+        with:
+          name: payer-api-coverage
+          path: reports/payer-api
+
+      - name: payer-api changed lines must be at least 70% covered
+        if: needs.payer-api.result == 'success'
+        run: |
+          status=0
+          diff-cover reports/payer-api/jacoco.xml --src-roots payer-api/src/main/java \
+            --compare-branch="origin/${{ github.base_ref }}" --fail-under=70 \
+            --format markdown:payer-api.md || status=1
+          { echo "## payer-api changed-line coverage"; cat payer-api.md; } >> "$GITHUB_STEP_SUMMARY"
           exit $status
 
       - uses: actions/download-artifact@v4
@@ -194,7 +250,8 @@ jobs:
           exit $status
 
       - name: Note skipped areas
-        if: needs.backend.result != 'success' || needs.frontend.result != 'success'
+        if: needs.backend.result != 'success' || needs.payer-api.result != 'success' || needs.frontend.result != 'success'
         run: |
           [ "${{ needs.backend.result }}" = success ] || echo "Backend: skipped, no backend changes." >> "$GITHUB_STEP_SUMMARY"
+          [ "${{ needs.payer-api.result }}" = success ] || echo "payer-api: skipped, no payer-api changes." >> "$GITHUB_STEP_SUMMARY"
           [ "${{ needs.frontend.result }}" = success ] || echo "Frontend: skipped, no frontend changes." >> "$GITHUB_STEP_SUMMARY"
