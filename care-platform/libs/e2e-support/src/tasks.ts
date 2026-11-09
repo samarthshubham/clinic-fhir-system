@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { apiClient } from '../../../apps/seed-demo-data/src/support/api-client';
 
 const HAPI = 'http://localhost:8080/fhir';
+const PAYER_HAPI = 'http://localhost:8081/fhir';
 const HAPI_CONTAINER = 'clinic-hapi-fhir';
 const TEST_FAMILY_PREFIX = 'E2E-';
 const LOGIN_PATIENT_IDS = ['e2e-patient-1', 'e2e-patient-2'];
@@ -10,6 +11,11 @@ const LOGIN_PATIENT_IDS = ['e2e-patient-1', 'e2e-patient-2'];
 export interface TrackedData {
   patientIds?: string[];
   practitionerIds?: string[];
+  payerResources?: string[];
+}
+
+export interface SweepOptions {
+  payer?: boolean;
 }
 
 export interface TestPatient {
@@ -23,15 +29,17 @@ export interface TestPatient {
 const tracked = {
   patientIds: new Set<string>(),
   practitionerIds: new Set<string>(),
+  payerResources: new Set<string>(),
 };
 let fhirStopped = false;
 
 async function searchIds(
   resourceType: string,
   query: string,
+  base = HAPI,
 ): Promise<string[]> {
   const response = await fetch(
-    `${HAPI}/${resourceType}?${query}&_count=100&_elements=id`,
+    `${base}/${resourceType}?${query}&_count=100&_elements=id`,
     {
       headers: { Accept: 'application/fhir+json' },
     },
@@ -54,10 +62,13 @@ async function deletePractitioner(id: string): Promise<void> {
 }
 
 // A resource written moments before (e.g. an alert Flag from the BP rest-hook) can make HAPI refuse the delete with 409.
-async function deletePatient(id: string, attempts = 3): Promise<void> {
+async function retryOnConflict(
+  remove: () => Promise<void>,
+  attempts = 3,
+): Promise<void> {
   for (let attempt = 1; ; attempt++) {
     try {
-      await apiClient.cascadeDeletePatient(id);
+      await remove();
       return;
     } catch (e) {
       if (attempt >= attempts || !String(e).includes('[409]')) throw e;
@@ -66,9 +77,35 @@ async function deletePatient(id: string, attempts = 3): Promise<void> {
   }
 }
 
+function deletePatient(id: string): Promise<void> {
+  return retryOnConflict(() => apiClient.cascadeDeletePatient(id));
+}
+
+function deletePayerResource(reference: string): Promise<void> {
+  return retryOnConflict(async () => {
+    const response = await fetch(`${PAYER_HAPI}/${reference}?_cascade=delete`, {
+      method: 'DELETE',
+    });
+    if (!response.ok && response.status !== 404) {
+      throw new Error(`DELETE payer ${reference} failed [${response.status}]`);
+    }
+  });
+}
+
 async function deleteData(data: TrackedData): Promise<void> {
   for (const id of data.patientIds ?? []) await deletePatient(id);
   for (const id of data.practitionerIds ?? []) await deletePractitioner(id);
+  for (const reference of data.payerResources ?? [])
+    await deletePayerResource(reference);
+}
+
+async function sweepPayerTestData(): Promise<void> {
+  const memberIds = await searchIds(
+    'Patient',
+    `family=${TEST_FAMILY_PREFIX}`,
+    PAYER_HAPI,
+  );
+  await deleteData({ payerResources: memberIds.map((id) => `Patient/${id}`) });
 }
 
 async function sweepTestData(): Promise<void> {
@@ -113,6 +150,9 @@ export const e2eTasks = {
   trackTestData(data: TrackedData): null {
     data.patientIds?.forEach((id) => tracked.patientIds.add(id));
     data.practitionerIds?.forEach((id) => tracked.practitionerIds.add(id));
+    data.payerResources?.forEach((reference) =>
+      tracked.payerResources.add(reference),
+    );
     return null;
   },
   async upsertTestPatient(patient: TestPatient): Promise<null> {
@@ -132,8 +172,11 @@ export const e2eTasks = {
   },
 };
 
-export async function sweepBeforeRun(): Promise<void> {
+export async function sweepBeforeRun(
+  options: SweepOptions = {},
+): Promise<void> {
   await sweepTestData();
+  if (options.payer) await sweepPayerTestData();
 }
 
 export async function cleanUpAfterSpec(failures: number): Promise<void> {
@@ -141,9 +184,11 @@ export async function cleanUpAfterSpec(failures: number): Promise<void> {
   const data = {
     patientIds: [...tracked.patientIds],
     practitionerIds: [...tracked.practitionerIds],
+    payerResources: [...tracked.payerResources],
   };
   tracked.patientIds.clear();
   tracked.practitionerIds.clear();
+  tracked.payerResources.clear();
   if (failures > 0) {
     console.log(
       `Kept e2e data for inspection (spec had failures): ${JSON.stringify(data)}`,

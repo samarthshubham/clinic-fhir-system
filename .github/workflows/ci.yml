@@ -16,6 +16,7 @@ jobs:
       backend: ${{ steps.areas.outputs.backend }}
       payer: ${{ steps.areas.outputs.payer }}
       frontend: ${{ steps.areas.outputs.frontend }}
+      igvalidate: ${{ steps.areas.outputs.igvalidate }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -66,6 +67,12 @@ jobs:
           name: backend-coverage
           path: clinic-api/target/site/jacoco/
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clinic-api-fhir-out
+          path: clinic-api/target/fhir-out/
+          if-no-files-found: ignore
+
   payer-api:
     needs: changes
     if: needs.changes.outputs.payer == 'true'
@@ -104,6 +111,43 @@ jobs:
         with:
           name: payer-api-coverage
           path: payer-api/target/site/jacoco/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: payer-api-fhir-out
+          path: payer-api/target/fhir-out/
+          if-no-files-found: ignore
+
+  ig-validate:
+    needs: [changes, backend, payer-api]
+    if: needs.changes.outputs.igvalidate == 'true' && !cancelled() && !contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Cache the HL7 validator and FHIR packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/hl7-validator
+            ~/.fhir/packages
+          key: hl7-validator-${{ hashFiles('.github/scripts/ig-validate*', 'infra/docker-compose.yml') }}
+          restore-keys: hl7-validator-
+
+      - name: Download FHIR written by mapper tests
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-fhir-out'
+          path: fhir-out
+
+      - name: Validate golden fixtures and mapper output
+        run: bash .github/scripts/ig-validate.sh fixtures/davinci fhir-out
 
   frontend:
     needs: changes
@@ -151,6 +195,9 @@ jobs:
       - name: Test the auth library with coverage
         run: npx nx test auth --coverage --watch=false
 
+      - name: Test the e2e-support library with coverage
+        run: npx nx test e2e-support --coverage
+
       - name: Build
         run: npx nx run-many -t build -p clinician-app payer-app
 
@@ -177,6 +224,12 @@ jobs:
         with:
           name: auth-coverage
           path: care-platform/coverage/auth/lcov.info
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-support-coverage
+          path: care-platform/coverage/e2e-support/lcov.info
 
   coverage-gate:
     if: github.event_name == 'pull_request' && !cancelled()
@@ -251,6 +304,12 @@ jobs:
           name: auth-coverage
           path: reports/auth
 
+      - uses: actions/download-artifact@v4
+        if: needs.frontend.result == 'success'
+        with:
+          name: e2e-support-coverage
+          path: reports/e2e-support
+
       - name: Frontend changed lines must be at least 70% covered
         if: needs.frontend.result == 'success'
         run: |
@@ -258,8 +317,9 @@ jobs:
           sed 's|^SF:apps/|SF:care-platform/apps/|' reports/payer-app/lcov.info > reports/payer-app/lcov-repo.info
           sed 's|^SF:apps/|SF:care-platform/apps/|' reports/seed-demo-data/lcov.info > reports/seed-demo-data/lcov-repo.info
           sed 's|^SF:libs/|SF:care-platform/libs/|' reports/auth/lcov.info > reports/auth/lcov-repo.info
+          sed 's|^SF:libs/|SF:care-platform/libs/|' reports/e2e-support/lcov.info > reports/e2e-support/lcov-repo.info
           status=0
-          diff-cover reports/frontend/lcov-repo.info reports/payer-app/lcov-repo.info reports/seed-demo-data/lcov-repo.info reports/auth/lcov-repo.info \
+          diff-cover reports/frontend/lcov-repo.info reports/payer-app/lcov-repo.info reports/seed-demo-data/lcov-repo.info reports/auth/lcov-repo.info reports/e2e-support/lcov-repo.info \
             --compare-branch="origin/${{ github.base_ref }}" --fail-under=70 \
             --format markdown:frontend.md || status=1
           { echo "## Frontend changed-line coverage"; cat frontend.md; } >> "$GITHUB_STEP_SUMMARY"

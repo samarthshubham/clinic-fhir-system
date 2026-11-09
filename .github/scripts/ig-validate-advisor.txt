@@ -1,0 +1,3 @@
+# Validator messages ig-validate suppresses. One rule per line: -<message id>@<path>, a leading ^ makes the path a regex.
+# HRex 1.2.0's required hrex-consent-policy codes are page anchors (…hrex-consent.html#regular), which the validator tries and fails to resolve.
+-Type_Specific_Checks_DT_URL_Resolve@^.*Consent.*\.policy\[\d+\]\.uri
