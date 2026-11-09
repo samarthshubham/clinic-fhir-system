@@ -107,7 +107,8 @@ token.roles = ["FRONT_DESK"]
       │  RolePermissions (server-side, Map<Role, Set<Permission>>)
       ▼
 authorities = ROLE_FRONT_DESK, patient:read, patient:write,
-              appointment:read, appointment:write, practitioner:read
+              appointment:read, appointment:write, practitioner:read,
+              coverage:read, coverage:write
       │
       ▼
 @PreAuthorize("hasAuthority('vitals:write')")  →  missing  →  403

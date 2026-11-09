@@ -48,6 +48,8 @@ tags:
     description: Scheduled appointments
   - name: Service Requests
     description: Lab and imaging orders
+  - name: Coverages
+    description: Patient insurance (FHIR Coverage) and the payer Organization
   - name: Diagnostic Reports
     description: Lab and imaging results
   - name: Care Plans
@@ -214,7 +216,7 @@ paths:
   /api/patients/{id}/snapshot:
     get:
       tags: [Experience APIs]
-      summary: At-a-glance snapshot — active conditions, meds, latest vitals, alerts
+      summary: At-a-glance snapshot — active conditions, meds, latest vitals, alerts, active coverage
       description: Requires the `clinical:read` permission (ADMIN, CLINICIAN).
       parameters:
         - $ref: '#/components/parameters/ResourceId'
@@ -709,7 +711,9 @@ paths:
               $ref: '#/components/schemas/ServiceRequestRequest'
             example:
               patientId: "abc123"
-              code: "HbA1c"
+              display: "HbA1c"
+              codeSystem: "http://loinc.org"
+              code: "4548-4"
               category: "Laboratory"
               status: "active"
               priority: "routine"
@@ -774,6 +778,86 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServiceRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Coverages ─────────────────────────────────────────────────────────────
+
+  /api/coverages:
+    post:
+      tags: [Coverages]
+      summary: Record a patient's insurance
+      description: >-
+        Requires the `coverage:write` permission (ADMIN, CLINICIAN, FRONT_DESK).
+        The payer Organization is found by `payerId` and created when missing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CoverageRequest'
+            example:
+              patientId: "abc123"
+              payerId: "praxis-health-plan"
+              payerName: "Praxis Health Plan"
+              memberId: "PHP-10001"
+              planName: "Praxis Gold PPO"
+              status: "active"
+              periodStart: "2026-01-01"
+      responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '201':
+          description: Coverage created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoverageResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+    get:
+      tags: [Coverages]
+      summary: List a patient's coverages
+      description: Requires the `coverage:read` permission (ADMIN, CLINICIAN, FRONT_DESK), or a PATIENT token for their own record.
+      parameters:
+        - name: patientId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '200':
+          description: Page of Coverage responses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoveragePage'
+
+  /api/coverages/{id}:
+    get:
+      tags: [Coverages]
+      summary: Get coverage by ID
+      description: Requires the `coverage:read` permission (ADMIN, CLINICIAN, FRONT_DESK).
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '200':
+          description: Coverage found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoverageResponse'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -1230,6 +1314,10 @@ components:
           type: boolean
           nullable: true
           example: true
+        mrn:
+          type: string
+          nullable: true
+          example: "PX-10000004"
 
     EncounterResponse:
       type: object
@@ -1443,10 +1531,18 @@ components:
           type: string
           nullable: true
           example: "pract1"
-        code:
+        display:
           type: string
           nullable: true
           example: "Lipid Panel"
+        codeSystem:
+          type: string
+          nullable: true
+          example: "http://loinc.org"
+        code:
+          type: string
+          nullable: true
+          example: "57698-3"
         category:
           type: string
           nullable: true
@@ -1688,6 +1784,67 @@ components:
           type: integer
           example: 1
 
+    CoverageResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "cov1"
+        patientId:
+          type: string
+          nullable: true
+          example: "abc123"
+        payerOrganizationId:
+          type: string
+          nullable: true
+          example: "org1"
+        payerId:
+          type: string
+          nullable: true
+          example: "praxis-health-plan"
+        payerName:
+          type: string
+          nullable: true
+          example: "Praxis Health Plan"
+        memberId:
+          type: string
+          nullable: true
+          example: "PHP-10001"
+        planName:
+          type: string
+          nullable: true
+          example: "Praxis Gold PPO"
+        status:
+          type: string
+          nullable: true
+          example: "active"
+        periodStart:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-01-01"
+        periodEnd:
+          type: string
+          format: date
+          nullable: true
+          example: null
+        relationship:
+          type: string
+          nullable: true
+          example: "self"
+
+    CoveragePage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CoverageResponse'
+        total:
+          type: integer
+          example: 1
+
     ServiceRequestPage:
       type: object
       required: [items, total]
@@ -1762,6 +1919,46 @@ components:
           type: string
           format: email
           example: "marcus.webb@example.com"
+        mrn:
+          type: string
+          description: Medical record number. Generated (`PX-` + 8 digits) when missing.
+          example: "PX-10000004"
+
+    CoverageRequest:
+      type: object
+      required: [patientId, payerId, payerName, memberId, status, periodStart]
+      properties:
+        patientId:
+          type: string
+          example: "abc123"
+        payerId:
+          type: string
+          example: "praxis-health-plan"
+        payerName:
+          type: string
+          example: "Praxis Health Plan"
+        memberId:
+          type: string
+          example: "PHP-10001"
+        planName:
+          type: string
+          example: "Praxis Gold PPO"
+        status:
+          type: string
+          enum: [active, cancelled, draft, entered-in-error]
+          example: "active"
+        periodStart:
+          type: string
+          format: date
+          example: "2026-01-01"
+        periodEnd:
+          type: string
+          format: date
+          example: "2026-12-31"
+        relationship:
+          type: string
+          description: Subscriber relationship code; defaults to `self`
+          example: "self"
 
     EncounterRequest:
       type: object
@@ -1920,7 +2117,7 @@ components:
 
     ServiceRequestRequest:
       type: object
-      required: [patientId, code, category, status, priority, authoredOn]
+      required: [patientId, display, category, status, priority, authoredOn]
       properties:
         patientId:
           type: string
@@ -1931,9 +2128,18 @@ components:
         practitionerId:
           type: string
           example: "prac456"
+        display:
+          type: string
+          description: Order text, stored as `ServiceRequest.code.text`
+          example: "HbA1c"
+        codeSystem:
+          type: string
+          description: Code system of the optional coding; give it together with `code`
+          example: "http://loinc.org"
         code:
           type: string
-          example: "HbA1c"
+          description: Code of the optional coding; give it together with `codeSystem`
+          example: "4548-4"
         category:
           type: string
           example: "Laboratory"
@@ -2118,6 +2324,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AlertItem'
+        coverage:
+          allOf:
+            - $ref: '#/components/schemas/CoverageResponse'
+          nullable: true
+          description: The patient's active coverage, or null when there is none
 
     DataPoint:
       type: object

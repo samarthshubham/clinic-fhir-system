@@ -71,6 +71,11 @@ Tokens carry **roles**; on each request the server expands them into **permissio
 | `order:write` | `POST /api/service-requests`, `POST /api/diagnostic-reports` | | ✓ | ✓ | |
 | `careplan:write` | `POST /api/care-plans`, `POST /api/goals` | | ✓ | ✓ | |
 | `alert:read` / `alert:write` | `GET /api/alerts` / `POST /api/alerts/{id}/acknowledge` | | ✓ | ✓ | |
+| `coverage:read` | `GET /api/coverages/{id}` | ✓ | ✓ | ✓ | |
+| `coverage:read` | `GET /api/coverages?patientId=` | ✓ | ✓ | ✓ | own |
+| `coverage:write` | `POST /api/coverages` | ✓ | ✓ | ✓ | |
+
+The front desk records insurance at registration and check-in, and clinicians need it when they order (CRD and prior auth later), so both get `coverage:read` and `coverage:write`.
 
 **own**: a `PATIENT` has no permissions of its own. These endpoints add `or @patientAccess.isSelf(#id)`, which is true only when the token's `patient_id` claim matches the patient in the request. Tony can read his own snapshot, but gets `403` for Priya's and for the patient list
 
@@ -96,9 +101,12 @@ Request-body validation (`@Valid`) runs before the permission check, so an inval
   "dateOfBirth": "1990-05-15",
   "gender": "male",
   "phone": "9876543210",
-  "email": "john.doe@email.com"
+  "email": "john.doe@email.com",
+  "mrn": "PX-00012345"
 }
 ```
+
+`mrn` is optional. Without it, clinic-api generates one (`PX-` + 8 random digits) and stores it as `Patient.identifier` with system `http://praxis.clinic/fhir/identifier/mrn` and type `MR`.
 
 **Response `201 Created` — `PatientResponse`:**
 ```json
@@ -110,7 +118,8 @@ Request-body validation (`@Valid`) runs before the permission check, so an inval
   "gender": "male",
   "phone": "9876543210",
   "email": "john.doe@email.com",
-  "active": null
+  "active": null,
+  "mrn": "PX-00012345"
 }
 ```
 
@@ -120,7 +129,7 @@ Request-body validation (`@Valid`) runs before the permission check, so an inval
 ```json
 {
   "items": [
-    { "id": "123", "firstName": "John", "lastName": "Doe", "dateOfBirth": "1990-05-15", "gender": "male", "phone": "9876543210", "email": "john.doe@email.com", "active": null }
+    { "id": "123", "firstName": "John", "lastName": "Doe", "dateOfBirth": "1990-05-15", "gender": "male", "phone": "9876543210", "email": "john.doe@email.com", "active": null, "mrn": "PX-00012345" }
   ],
   "total": 1
 }
@@ -293,12 +302,35 @@ Send only the vitals you have — null fields are skipped. Each non-null vital i
 
 ### POST /api/service-requests
 ```json
-{ "patientId": "123", "encounterId": "456", "practitionerId": "pract-01", "code": "Basic Metabolic Panel", "category": "laboratory", "status": "active", "priority": "routine", "authoredOn": "2026-04-14" }
+{ "patientId": "123", "encounterId": "456", "practitionerId": "pract-01", "display": "Basic Metabolic Panel", "codeSystem": "http://loinc.org", "code": "51990-0", "category": "laboratory", "status": "active", "priority": "routine", "authoredOn": "2026-04-14" }
 ```
+
+`display` is the order's text and is required. `codeSystem` and `code` are an optional coding (LOINC, SNOMED, HCPCS or CPT); give both or neither, otherwise the request gets `400`.
 
 **Response `201 Created` — `ServiceRequestResponse`:** the same fields plus `id`. The list returns `PageResponse<ServiceRequestResponse>`.
 
 **Note:** When a DiagnosticReport is created with `serviceRequestId`, the linked ServiceRequest is automatically marked `completed`.
+
+---
+
+## Coverage APIs
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/coverages` | Record a patient's insurance |
+| `GET` | `/api/coverages/{id}` | Get coverage |
+| `GET` | `/api/coverages?patientId={id}` | List a patient's coverages |
+
+### POST /api/coverages
+```json
+{ "patientId": "123", "payerId": "praxis-health-plan", "payerName": "Praxis Health Plan", "memberId": "PHP-10001", "planName": "Praxis Gold PPO", "status": "active", "periodStart": "2026-01-01", "periodEnd": null, "relationship": "self" }
+```
+
+`planName`, `periodEnd` and `relationship` (default `self`) are optional. `status` is `active`, `cancelled`, `draft` or `entered-in-error`.
+
+The payer is a FHIR `Organization` found by its identifier (`http://praxis.clinic/fhir/identifier/payer|{payerId}`). If none exists, clinic-api creates it, so every coverage of one payer points at the same `Organization`.
+
+**Response `201 Created` — `CoverageResponse`:** the same fields plus `id` and `payerOrganizationId`. The list returns `PageResponse<CoverageResponse>`.
 
 ---
 
@@ -385,7 +417,7 @@ Single aggregated response for the 3-panel clinical dashboard. Partial-failure s
 
 At-a-glance clinical state. Lighter than `/dashboard` — use for panel refreshes.
 
-**Response `200 OK`:** active conditions, current medications, latest vital per type, computed alerts.
+**Response `200 OK`:** active conditions, current medications, latest vital per type, computed alerts, and `coverage`: the patient's most recently updated `active` coverage as a `CoverageResponse`, or `null` when there is none.
 
 ---
 

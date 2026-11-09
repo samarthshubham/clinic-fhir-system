@@ -35,11 +35,11 @@ clinic-api/         Spring Boot backend (Maven)
                     PractitionerController, ConditionController, MedicationController,
                     AppointmentController, ServiceRequestController,
                     DiagnosticReportController, CarePlanController, GoalController,
-                    DashboardController, AlertController, AuthController
+                    CoverageController, DashboardController, AlertController, AuthController
     service/        PatientService, EncounterService, VitalsService,
                     PractitionerService, ConditionService, MedicationService,
                     AppointmentService, ServiceRequestService, DiagnosticReportService,
-                    CarePlanService, GoalService,
+                    CarePlanService, GoalService, CoverageService,
                     SnapshotService, TrendsService, TimelineService,
                     DashboardService, ConditionEvaluationService,
                     HighBpAlertService, Notifier, LoggingSmsNotifier, FlagNotifier, AlertService,
@@ -47,16 +47,17 @@ clinic-api/         Spring Boot backend (Maven)
     mapper/         PatientMapper, EncounterMapper, ObservationMapper,
                     PractitionerMapper, ConditionMapper, MedicationMapper,
                     AppointmentMapper, ServiceRequestMapper, DiagnosticReportMapper,
-                    CarePlanMapper, GoalMapper, FlagMapper, PageMapper (search result → PageResponse),
-                    FhirValues
+                    CarePlanMapper, GoalMapper, CoverageMapper, FlagMapper,
+                    PageMapper (search result → PageResponse), FhirValues,
+                    UsCoreProfiles (US Core 7.0.0 meta.profile URLs)
     dto/            PatientRequest, EncounterRequest, VitalsRequest,
                     PractitionerRequest, ConditionRequest, MedicationRequest,
                     AppointmentRequest, ServiceRequestRequest, DiagnosticReportRequest,
-                    CarePlanRequest, GoalRequest,
+                    CarePlanRequest, GoalRequest, CoverageRequest,
                     PatientResponse, EncounterResponse, ObservationResponse,
                     PractitionerResponse, ConditionResponse, MedicationResponse,
                     AppointmentResponse, ServiceRequestResponse, DiagnosticReportResponse,
-                    CarePlanResponse, GoalResponse, PageResponse<T>,
+                    CarePlanResponse, GoalResponse, CoverageResponse, PageResponse<T>,
                     SnapshotResponse, TrendsResponse, TimelineEvent, DashboardResponse,
                     AlertItem, VitalReading, LatestVitals, GoalProgress,
                     DataPoint, BpSeries, SimpleSeries, ClinicianAlert, AlertResponse,
@@ -80,6 +81,8 @@ care-platform/      Angular 21 Nx monorepo
     src/support/        api-client.ts, world.ts, date-helpers.ts
   libs/auth/            @care-platform/auth: shared login, token interceptor, guards (provideAuth per app)
   libs/e2e-support/     Shared Cucumber steps and cleanup tasks for the e2e suites
+
+fixtures/davinci/   Golden FHIR fixtures (clinic-api test resources); provider/ = US Core mapper output
 
 infra/
   docker-compose.yml    HAPI FHIR (rest-hook subscriptions on) + payer HAPI :8081 (Da Vinci IGs) + PostgreSQL 15 + Prometheus + Grafana
@@ -231,6 +234,8 @@ All endpoints return plain JSON (`Content-Type: application/json`) via Spring's 
 
 All resources use **FHIR R4**. FHIR server: `http://localhost:8080/fhir` (configured in `application.yaml` as `fhir.server.url`).
 
+Mappers set the **US Core 7.0.0** `meta.profile` on Patient, Practitioner, Encounter, Condition (`us-core-condition-problems-health-concerns`), ServiceRequest, Coverage and the payer Organization (`UsCoreProfiles`), and fill what the profile requires. Mapper tests compare their output with the golden files in `fixtures/davinci/provider/` (see `docs/03-fhir-mapping.md`). Date-only fields are stored at day precision.
+
 ### Patient
 | Request field | FHIR path |
 |---|---|
@@ -239,6 +244,7 @@ All resources use **FHIR R4**. FHIR server: `http://localhost:8080/fhir` (config
 | `gender` | `Patient.gender` (AdministrativeGender enum) |
 | `phone` | `Patient.telecom[system=phone]` |
 | `email` | `Patient.telecom[system=email]` |
+| `mrn` *(optional; generated `PX-########` when missing)* | `Patient.identifier[system=http://praxis.clinic/fhir/identifier/mrn]` (type `v2-0203#MR`) |
 
 ### Encounter
 | Request field | FHIR path |
@@ -269,6 +275,7 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 | `status` | `Encounter.status` |
 | `practitionerId` *(optional)* | `Encounter.participant[type=ATND].individual` → `Practitioner/{id}` |
 | `note` *(optional)* | `Encounter.extension[url=http://praxis.clinic/fhir/extension/encounter-note].valueString` |
+| *(fixed)* | `Encounter.class` = `v3-ActCode#AMB`, `Encounter.type[0]` = SNOMED `308335008` |
 
 ### Condition
 | Request field | FHIR path |
@@ -279,6 +286,7 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 | `display` | `Condition.code.text` |
 | `clinicalStatus` | `Condition.clinicalStatus` (system: `http://terminology.hl7.org/CodeSystem/condition-clinical`) |
 | `onsetDate` | `Condition.onsetDateTime` |
+| *(fixed)* | `Condition.category[0]` = `condition-category#problem-list-item` |
 
 ### MedicationStatement
 | Request field | FHIR path |
@@ -304,11 +312,13 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 | `patientId` | `ServiceRequest.subject` |
 | `encounterId` *(optional)* | `ServiceRequest.encounter` |
 | `practitionerId` *(optional)* | `ServiceRequest.requester` |
-| `code` | `ServiceRequest.code.text` |
+| `display` | `ServiceRequest.code.text` |
+| `codeSystem` + `code` *(optional, both or neither)* | `ServiceRequest.code.coding[0].system` / `.code` |
 | `category` | `ServiceRequest.category[0].text` |
 | `status` | `ServiceRequest.status` (`active` → `completed` when DiagnosticReport is created) |
 | `priority` | `ServiceRequest.priority` |
 | `authoredOn` | `ServiceRequest.authoredOn` |
+| *(fixed)* | `ServiceRequest.intent` = `order` |
 
 ### DiagnosticReport
 | Request field | FHIR path |
@@ -352,6 +362,17 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 | `npi` *(optional)* | `Practitioner.identifier[system=NPI]` |
 | `email` *(optional)* | `Practitioner.telecom[system=email]` |
 
+### Coverage
+| Request field | FHIR path |
+|---|---|
+| `patientId` | `Coverage.beneficiary` |
+| `memberId` | `Coverage.identifier[system=http://praxis.clinic/fhir/identifier/member-id]` (type `v2-0203#MB`) + `Coverage.subscriberId` |
+| `status` | `Coverage.status` |
+| `relationship` *(optional, default `self`)* | `Coverage.relationship` (subscriber-relationship) |
+| `periodStart` / `periodEnd` *(optional)* | `Coverage.period.start` / `.end` |
+| `planName` *(optional)* | `Coverage.class[type=plan]` |
+| `payerId` + `payerName` | `Coverage.payor[0]` → payer `Organization` found by `identifier=http://praxis.clinic/fhir/identifier/payer|{payerId}`, created when missing |
+
 ### Alert thresholds (`ClinicalThresholds` config, `application.yaml`)
 | Property | Default | Meaning |
 |---|---|---|
@@ -379,7 +400,7 @@ Base URL: `http://localhost:9090`
 | `POST` | `/api/auth/login` | `{username, password}` → `TokenResponse` (access 15 min + refresh 7 days) |
 | `POST` | `/api/auth/refresh` | `{refreshToken}` → new `TokenResponse` |
 
-Every other `/api/**` endpoint needs `Authorization: Bearer <accessToken>` (except the alert webhook). Each controller method has `@PreAuthorize("hasAuthority('<permission>')")`; `RolePermissions` maps roles to permissions — see `docs/10-auth.md`. New endpoints must get a `@PreAuthorize` and a row in `AuthorizationMatrixTest`. `@WebMvcTest` controller tests use `@Import(SecurityConfig.class)` + `@WithRole(Role.ADMIN)`. Endpoints a patient may use for **their own** record add `or @patientAccess.isSelf(#id)` (`security/PatientAccess`, `patient_id` claim); `PATIENT` has no permissions of its own. Frontend auth (service, interceptor, guards) lives in `care-platform/libs/auth` (`@care-platform/auth`), configured per app with `provideAuth({...})`.
+Every other `/api/**` endpoint needs `Authorization: Bearer <accessToken>` (except the alert webhook). Each controller method has `@PreAuthorize("hasAuthority('<permission>')")`; `RolePermissions` maps roles to permissions — see `docs/10-auth.md`; `coverage:read` / `coverage:write` go to FRONT_DESK and CLINICIAN (and ADMIN). New endpoints must get a `@PreAuthorize` and a row in `AuthorizationMatrixTest`. `@WebMvcTest` controller tests use `@Import(SecurityConfig.class)` + `@WithRole(Role.ADMIN)`. Endpoints a patient may use for **their own** record add `or @patientAccess.isSelf(#id)` (`security/PatientAccess`, `patient_id` claim); `PATIENT` has no permissions of its own. Frontend auth (service, interceptor, guards) lives in `care-platform/libs/auth` (`@care-platform/auth`), configured per app with `provideAuth({...})`.
 
 ### CRUD — return response DTOs (`application/json`)
 
@@ -412,13 +433,16 @@ Every other `/api/**` endpoint needs `Authorization: Bearer <accessToken>` (exce
 | `GET` | `/api/care-plans?patientId={id}` | List care plans |
 | `POST` | `/api/goals` | Create goal |
 | `GET` | `/api/goals?patientId={id}` | List goals |
+| `POST` | `/api/coverages` | Record insurance (`coverage:write`; finds or creates the payer Organization) |
+| `GET` | `/api/coverages/{id}` | Get coverage (`coverage:read`) |
+| `GET` | `/api/coverages?patientId={id}` | List coverages (`coverage:read` or the patient themself) |
 
 ### Experience APIs — return `application/json` (flat DTOs, not FHIR)
 
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/api/dashboard/{patientId}` | Full clinical dashboard — partial-failure safe, `_warnings[]` on degraded sections |
-| `GET` | `/api/patients/{id}/snapshot` | At-a-glance: active conditions, meds, latest vitals, alerts |
+| `GET` | `/api/patients/{id}/snapshot` | At-a-glance: active conditions, meds, latest vitals, alerts, active `coverage` (null when none) |
 | `GET` | `/api/patients/{id}/trends?type=bp,spo2,weight&period=30d` | Chart-ready vitals series; `bp` returns paired systolic+diastolic |
 | `GET` | `/api/patients/{id}/timeline?limit=20&before=2026-05-01&types=encounter,report` | Unified chronological event feed with cursor pagination |
 
@@ -577,7 +601,7 @@ color: #334155;
 
 ## Project Status (as of 2026-10-27)
 
-**Backend (clinic-api):** 11 FHIR resource types, 4 experience APIs, clinical intelligence layer (auto-condition detection, goal progress), JWT auth with role → permission RBAC and patient self-access, high BP alerts via FHIR Subscriptions stored as `Flag`s, Prometheus metrics.
+**Backend (clinic-api):** 12 FHIR resource types (Coverage added for the payer work, with US Core profiles on the mappers), 4 experience APIs, clinical intelligence layer (auto-condition detection, goal progress), JWT auth with role → permission RBAC and patient self-access, high BP alerts via FHIR Subscriptions stored as `Flag`s, Prometheus metrics.
 
 **Frontend (care-platform):** clinician-app and patient-app both implemented, sharing `libs/auth`. Cucumber e2e suites cover the API and both apps.
 
