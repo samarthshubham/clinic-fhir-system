@@ -6,6 +6,7 @@ import static io.github.samarthshubham.clinic.support.FhirDates.date;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.samarthshubham.clinic.config.ClinicalThresholds;
 import io.github.samarthshubham.clinic.dto.AlertItem;
 import io.github.samarthshubham.clinic.dto.LatestVitals;
@@ -76,6 +77,19 @@ class SnapshotServiceTest {
     assertThat(snapshot.coverage().id()).isEqualTo("cov1");
     assertThat(fhir.lastSearchCriteria(Coverage.class))
         .contains("beneficiary=Patient/p1", "status=active");
+  }
+
+  @Test
+  void coverageFailureLeavesTheRestOfTheSnapshot() {
+    Condition hypertension = new Condition();
+    hypertension.setId("c1");
+    fhir.givenSearchResult(Condition.class, bundleOf(hypertension));
+    fhir.givenSearchFails(Coverage.class, new InternalErrorException("FHIR server error"));
+
+    SnapshotResponse snapshot = service.getSnapshot("p1");
+
+    assertThat(snapshot.coverage()).isNull();
+    assertThat(snapshot.activeConditions()).hasSize(1);
   }
 
   @Test

@@ -12,6 +12,7 @@ import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.PatientMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
 import java.time.LocalDate;
+import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Patient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,6 +57,37 @@ class PatientServiceTest {
     assertThat(patient.mrn()).matches("PX-\\d{8}");
     assertThat(fhir.stored(Patient.class, "1").getIdentifierFirstRep().getSystem())
         .isEqualTo(PatientMapper.MRN_SYSTEM);
+  }
+
+  @Test
+  void generatedMrnThatIsAlreadyTakenIsReplaced() {
+    Patient taken = new Patient();
+    taken.setId("other");
+    fhir.givenSearchResult(Patient.class, bundleOf(taken), new Bundle());
+
+    PatientResponse patient =
+        service.createPatient(
+            new PatientRequest(
+                "Priya", "Nair", LocalDate.of(1985, 3, 14), "female", null, null, null));
+
+    assertThat(fhir.searchCount(Patient.class)).isEqualTo(2);
+    assertThat(fhir.lastSearchCriteria(Patient.class).get(0))
+        .startsWith("identifier=" + PatientMapper.MRN_SYSTEM + "|PX-");
+    assertThat(patient.mrn()).matches("PX-\\d{8}");
+  }
+
+  @Test
+  void createFailsWhenEveryGeneratedMrnIsTaken() {
+    Patient taken = new Patient();
+    taken.setId("other");
+    fhir.givenSearchResult(Patient.class, bundleOf(taken));
+    PatientRequest request =
+        new PatientRequest("Priya", "Nair", LocalDate.of(1985, 3, 14), "female", null, null, null);
+
+    assertThatThrownBy(() -> service.createPatient(request))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("No unused MRN after 5 attempts");
+    assertThat(fhir.created()).isEmpty();
   }
 
   @Test

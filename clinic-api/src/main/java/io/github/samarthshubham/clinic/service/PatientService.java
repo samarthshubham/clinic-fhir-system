@@ -3,6 +3,7 @@ package io.github.samarthshubham.clinic.service;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.DateClientParam;
 import ca.uhn.fhir.rest.gclient.StringClientParam;
+import ca.uhn.fhir.rest.gclient.TokenClientParam;
 import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.dto.PatientRequest;
 import io.github.samarthshubham.clinic.dto.PatientResponse;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 public class PatientService {
 
   private static final SecureRandom MRN_RANDOM = new SecureRandom();
+  private static final int MRN_ATTEMPTS = 5;
 
   private final IGenericClient fhirClient;
   private final PatientMapper patientMapper;
@@ -38,7 +40,27 @@ public class PatientService {
     return "PX-%08d".formatted(MRN_RANDOM.nextInt(100_000_000));
   }
 
-  private static PatientRequest withMrn(PatientRequest request) {
+  private String unusedMrn() {
+    for (int attempt = 0; attempt < MRN_ATTEMPTS; attempt++) {
+      String mrn = newMrn();
+      Bundle existing =
+          fhirClient
+              .search()
+              .forResource(Patient.class)
+              .where(
+                  new TokenClientParam("identifier")
+                      .exactly()
+                      .systemAndCode(PatientMapper.MRN_SYSTEM, mrn))
+              .returnBundle(Bundle.class)
+              .execute();
+      if (!existing.hasEntry()) {
+        return mrn;
+      }
+    }
+    throw new IllegalStateException("No unused MRN after " + MRN_ATTEMPTS + " attempts");
+  }
+
+  private PatientRequest withMrn(PatientRequest request) {
     if (request.mrn() != null && !request.mrn().isBlank()) {
       return request;
     }
@@ -49,7 +71,7 @@ public class PatientService {
         request.gender(),
         request.phone(),
         request.email(),
-        newMrn());
+        unusedMrn());
   }
 
   public PatientResponse getPatient(String id) {

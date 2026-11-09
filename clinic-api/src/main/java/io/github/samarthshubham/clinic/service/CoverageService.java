@@ -11,7 +11,6 @@ import io.github.samarthshubham.clinic.mapper.CoverageMapper;
 import io.github.samarthshubham.clinic.mapper.PageMapper;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Coverage;
-import org.hl7.fhir.r4.model.Organization;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -73,22 +72,11 @@ public class CoverageService {
   }
 
   private String findOrCreatePayer(CoverageRequest request) {
-    Bundle existing =
-        fhirClient
-            .search()
-            .forResource(Organization.class)
-            .where(
-                new TokenClientParam("identifier")
-                    .exactly()
-                    .systemAndCode(CoverageMapper.PAYER_SYSTEM, request.payerId()))
-            .returnBundle(Bundle.class)
-            .execute();
-    if (existing.hasEntry()) {
-      return existing.getEntryFirstRep().getResource().getIdElement().getIdPart();
-    }
     return fhirClient
         .create()
         .resource(coverageMapper.toPayerOrganization(request))
+        .conditionalByUrl(
+            "Organization?identifier=" + CoverageMapper.PAYER_SYSTEM + "|" + request.payerId())
         .execute()
         .getId()
         .getIdPart();

@@ -108,6 +108,27 @@ class CoverageControllerTest {
   }
 
   @Test
+  void createWithUnknownStatusOrRelationshipReturnsBadRequest() {
+    assertThat(
+            mvc.post()
+                .uri("/api/coverages")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"patientId":"p1","payerId":"praxis-health-plan","payerName":"Praxis Health Plan",
+                     "memberId":"PHP-10001","status":"lapsed","periodStart":"2026-01-01",
+                     "relationship":"cousin"}
+                    """))
+        .hasStatus(HttpStatus.BAD_REQUEST)
+        .bodyJson()
+        .extractingPath("$.message")
+        .asString()
+        .contains("status must be active, cancelled, draft or entered-in-error")
+        .contains("relationship must be a subscriber-relationship code");
+    verifyNoInteractions(coverageService);
+  }
+
+  @Test
   void getReturnsCoverageById() {
     when(coverageService.getCoverage("cov1")).thenReturn(PRIYA_COVERAGE);
 

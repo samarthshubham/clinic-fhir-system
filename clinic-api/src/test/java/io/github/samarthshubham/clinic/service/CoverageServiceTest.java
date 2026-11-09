@@ -12,7 +12,6 @@ import io.github.samarthshubham.clinic.mapper.CoverageMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
 import java.time.LocalDate;
 import org.hl7.fhir.r4.model.Coverage;
-import org.hl7.fhir.r4.model.Organization;
 import org.hl7.fhir.r4.model.Reference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,8 +46,9 @@ class CoverageServiceTest {
     assertThat(fhir.created())
         .extracting(resource -> resource.getClass().getSimpleName())
         .containsExactly("Organization", "Coverage");
-    assertThat(fhir.lastSearchCriteria(Organization.class))
-        .containsExactly("identifier=" + CoverageMapper.PAYER_SYSTEM + "|praxis-health-plan");
+    assertThat(fhir.conditionalCreates())
+        .containsExactly(
+            "Organization?identifier=" + CoverageMapper.PAYER_SYSTEM + "|praxis-health-plan");
     assertThat(coverage.id()).isEqualTo("2");
     assertThat(coverage.payerOrganizationId()).isEqualTo("1");
     assertThat(coverage.memberId()).isEqualTo("PHP-10001");
@@ -56,9 +56,9 @@ class CoverageServiceTest {
 
   @Test
   void createReusesAnExistingPayer() {
-    Organization payer = new Organization();
-    payer.setId("seed-praxis-health-plan");
-    fhir.givenSearchResult(Organization.class, bundleOf(payer));
+    fhir.givenConditionalCreateMatches(
+        "Organization?identifier=" + CoverageMapper.PAYER_SYSTEM + "|praxis-health-plan",
+        "seed-praxis-health-plan");
 
     CoverageResponse coverage = service.createCoverage(REQUEST);
 
