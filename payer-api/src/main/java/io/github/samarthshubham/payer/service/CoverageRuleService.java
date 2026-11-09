@@ -47,7 +47,9 @@ public class CoverageRuleService {
   private static List<CoverageRule> load(Resource rulesFile) {
     CoverageRules file;
     try (InputStream input = rulesFile.getInputStream()) {
-      Object yaml = new Yaml(new SafeConstructor(new LoaderOptions())).load(input);
+      LoaderOptions options = new LoaderOptions();
+      options.setAllowDuplicateKeys(false);
+      Object yaml = new Yaml(new SafeConstructor(options)).load(input);
       file = RULES_MAPPER.convertValue(yaml, CoverageRules.class);
     } catch (IllegalArgumentException e) {
       throw invalid(rulesFile.getDescription(), describe(e));

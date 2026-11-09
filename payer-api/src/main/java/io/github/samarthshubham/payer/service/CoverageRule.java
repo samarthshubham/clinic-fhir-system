@@ -26,6 +26,6 @@ public record CoverageRule(
   }
 
   public boolean priorAuthRequired(OrderPriority priority) {
-    return paNeeded && !(emergencyExempt && priority.isEmergency());
+    return paNeeded && !(emergencyExempt && priority != null && priority.isEmergency());
   }
 }

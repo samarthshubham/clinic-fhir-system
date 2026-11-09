@@ -101,6 +101,11 @@ class CoverageRuleServiceTest {
   }
 
   @Test
+  void missingPriorityIsNotAnEmergency() {
+    assertThat(service.findRule(SNOMED, "276341003").priorAuthRequired(null)).isTrue();
+  }
+
+  @Test
   void unknownCodeIsLookedUpBySystemAndCode() {
     CoverageRule rule = service.findRule(SNOMED, "58410-2");
 
@@ -149,6 +154,9 @@ class CoverageRuleServiceTest {
     return Stream.of(
         Arguments.of("rules: [", "while parsing"),
         Arguments.of("", "the file has no rules"),
+        Arguments.of(
+            valid.replace("docNeeded: false", "docNeeded: false\n    paNeeded: true"),
+            "found duplicate key paNeeded"),
         Arguments.of("rules: []", "the file has no rules"),
         Arguments.of("rules:\n  -", "rule 1 is empty"),
         Arguments.of(
