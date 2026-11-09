@@ -1,0 +1,6 @@
+rules:
+  - system: http://www.ama-assn.org/go/cpt
+    code: "72148"
+    paNeeded: true
+    docNeeded: true
+    emergencyExempt: false
