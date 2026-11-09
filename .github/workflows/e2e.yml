@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - 'clinic-api/**'
+      - 'payer-api/**'
       - 'care-platform/**'
       - 'infra/docker-compose.yml'
       - '.github/workflows/e2e.yml'
@@ -16,7 +17,7 @@ concurrency:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -32,9 +33,9 @@ jobs:
           cache: npm
           cache-dependency-path: care-platform/package-lock.json
 
-      - name: Start PostgreSQL and HAPI FHIR
+      - name: Start PostgreSQL and both HAPI FHIR servers
         run: |
-          docker compose -f infra/docker-compose.yml up -d postgres hapi-fhir
+          docker compose -f infra/docker-compose.yml up -d postgres hapi-fhir hapi-fhir-payer
           for i in $(seq 1 60); do
             curl -sf http://localhost:8080/fhir/metadata > /dev/null && exit 0
             sleep 5
@@ -54,15 +55,33 @@ jobs:
           cat "$RUNNER_TEMP/clinic-api.log"
           exit 1
 
+      - name: Start payer-api
+        working-directory: payer-api
+        run: |
+          nohup ./mvnw -B spring-boot:run -Dspring.output.ansi.enabled=NEVER > "$RUNNER_TEMP/payer-api.log" 2>&1 &
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:9095/actuator/health || true)
+            [ "$code" != "000" ] && exit 0
+            sleep 3
+          done
+          cat "$RUNNER_TEMP/payer-api.log"
+          exit 1
+
       - name: Install frontend dependencies
         working-directory: care-platform
         run: |
           npm ci
           npx cypress install
 
+      - name: Wait for the payer HAPI to load its IG packages
+        run: |
+          WAIT_SECONDS=600 bash infra/payer/smoke.sh && exit 0
+          docker compose -f infra/docker-compose.yml logs hapi-fhir-payer
+          exit 1
+
       - name: Run e2e suites
         working-directory: care-platform
-        run: npx nx run-many -t e2e -p clinician-app-e2e patient-app-e2e --parallel=1
+        run: npx nx run-many -t e2e -p clinician-app-e2e patient-app-e2e payer-app-e2e --parallel=1
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -76,5 +95,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: clinic-api-log
-          path: ${{ runner.temp }}/clinic-api.log
+          name: api-logs
+          path: |
+            ${{ runner.temp }}/clinic-api.log
+            ${{ runner.temp }}/payer-api.log
