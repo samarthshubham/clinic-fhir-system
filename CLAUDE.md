@@ -77,7 +77,8 @@ payer-api/          Payer Spring Boot service (Maven, port 9095), client of the 
 care-platform/      Angular 21 Nx monorepo
   apps/clinician-app/   Clinician-facing UI: login, patient roster, 3-panel dashboard, Inbox
   apps/patient-app/     Patient-facing UI: login, home, vitals (charts + recording), messages, profile
-  apps/clinician-app-e2e/, apps/patient-app-e2e/  Cypress + Cucumber e2e suites (@api, @ui, @journey)
+  apps/payer-app/       Payer UM reviewer UI: login, sidenav shell (Queue, Members, Directory, Metrics); proxies /api → payer-api :9095
+  apps/clinician-app-e2e/, apps/patient-app-e2e/, apps/payer-app-e2e/  Cypress + Cucumber e2e suites (@api, @ui, @journey)
   apps/seed-demo-data/  Cucumber-driven idempotent seed data (8 patient profiles)
     src/features/       patients.feature, marcus-webb.feature, priya-nair.feature, gerald-horton.feature,
                         sandra-okafor.feature, ramon-castillo.feature, aisha-chen.feature,
@@ -165,12 +166,15 @@ docker compose -f infra/docker-compose.yml down -v  # stop + wipe data
 ```bash
 npx nx serve clinician-app    # dev server — proxies /api → localhost:9090
 npx nx serve patient-app
+npx nx serve payer-app        # port 4400 — proxies /api → localhost:9095 (payer-api)
+npx nx test payer-app --coverage --watch=false
 npx nx build clinician-app
 npx nx test clinician-app
 npx nx test clinician-app --coverage --watch=false   # lcov + report in coverage/clinician-app/
 npx nx test seed-demo-data --coverage
 npx nx test auth --coverage --watch=false
 NX_DAEMON=false npx nx run-many -t e2e -p clinician-app-e2e patient-app-e2e --parallel=1   # needs the stack running
+NX_DAEMON=false npx nx e2e payer-app-e2e   # needs payer-api (dev profile) and the provider HAPI for cleanup
 ```
 
 ### Seed data
@@ -586,6 +590,7 @@ color: #334155;
 ### Status
 - **clinician-app**: login, patient roster, 3-panel patient dashboard (snapshot, timeline, care panel with trend charts), alerts Inbox.
 - **patient-app**: login, home, vitals with charts and recording, messages (static), profile.
+- **payer-app**: login (`reviewer` / `payeradmin`, dev only), sidenav shell, empty Queue; Members, Directory and Metrics are placeholders until their roadmap stories.
 - **libs/design-system, libs/ui, libs/shared**: Defined in `docs/08-design-system.md` but not yet created; each app keeps its own `styles.scss` tokens.
 
 ---
@@ -594,7 +599,7 @@ color: #334155;
 
 **Backend (clinic-api):** 11 FHIR resource types, 4 experience APIs, clinical intelligence layer (auto-condition detection, goal progress), JWT auth with role → permission RBAC and patient self-access, high BP alerts via FHIR Subscriptions stored as `Flag`s, Prometheus metrics.
 
-**Frontend (care-platform):** clinician-app and patient-app both implemented, sharing `libs/auth`. Cucumber e2e suites cover the API and both apps.
+**Frontend (care-platform):** clinician-app and patient-app both implemented, payer-app skeleton, all sharing `libs/auth`. Cucumber e2e suites cover the API and both apps.
 
 **Seed data:** `apps/seed-demo-data` — 8 idempotent patient profiles, each in its own `.feature` file.
 
