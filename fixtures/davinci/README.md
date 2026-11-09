@@ -1,6 +1,6 @@
 # Golden Da Vinci fixtures
 
-Shared wire-format examples for clinic-api and payer-api ([test strategy §2](../../docs/16-payer-test-strategy.md)). Both Maven modules put `fixtures/` on the test classpath, so tests load them as `/fixtures/davinci/<folder>/<file>.json`. The CI job `ig-validate` (`.github/scripts/ig-validate.sh`) validates every file here, plus the FHIR that mapper tests write to `target/fhir-out/`, against the IG packages in `infra/docker-compose.yml`.
+Shared wire-format examples for clinic-api and payer-api ([test strategy §2](../../docs/16-payer-test-strategy.md)). Both Maven modules put `fixtures/` on the test classpath, so tests load them as `/fixtures/davinci/<folder>/<file>.json`. The CI job `ig-validate` (`.github/scripts/ig-validate.sh`) validates every file here, plus the FHIR that mapper tests write to `target/fhir-out/`, against the IG packages in `infra/docker-compose.yml`, checking codes with tx.fhir.org. The few validator messages it suppresses are listed, with the reason, in `.github/scripts/ig-validate-advisor.txt`.
 
 Changing a golden file is a contract change; say so in the PR.
 

@@ -4,7 +4,8 @@
   "meta": {
     "profile": [
       "http://hl7.org/fhir/us/davinci-drug-formulary/StructureDefinition/usdf-Formulary"
-    ]
+    ],
+    "lastUpdated": "2026-01-01T00:00:00Z"
   },
   "identifier": [
     {

@@ -4,7 +4,8 @@
   "meta": {
     "profile": [
       "http://hl7.org/fhir/us/davinci-drug-formulary/StructureDefinition/usdf-FormularyDrug"
-    ]
+    ],
+    "lastUpdated": "2026-01-01T00:00:00Z"
   },
   "code": {
     "coding": [
@@ -12,6 +13,11 @@
         "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
         "code": "861007",
         "display": "metformin hydrochloride 500 MG Oral Tablet"
+      },
+      {
+        "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+        "code": "1161611",
+        "display": "metformin Pill"
       }
     ]
   },
