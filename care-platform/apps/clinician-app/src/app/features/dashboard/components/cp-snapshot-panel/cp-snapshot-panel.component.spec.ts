@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { AuthService } from '@care-platform/auth';
 import { CpSnapshotPanelComponent } from './cp-snapshot-panel.component';
 import {
   LatestVitals,
@@ -41,6 +42,7 @@ const snapshot: SnapshotResponse = {
   alerts: [
     { severity: 'critical', type: 'bp', message: 'BP high', resourceId: 'o1' },
   ],
+  coverage: null,
 };
 
 describe('CpSnapshotPanelComponent', () => {
@@ -49,6 +51,7 @@ describe('CpSnapshotPanelComponent', () => {
     vi.setSystemTime(new Date('2024-06-15T12:00:00'));
     await TestBed.configureTestingModule({
       imports: [CpSnapshotPanelComponent],
+      providers: [{ provide: AuthService, useValue: { hasRole: () => true } }],
     }).compileComponents();
   });
 
@@ -59,6 +62,7 @@ describe('CpSnapshotPanelComponent', () => {
   async function render(s: SnapshotResponse) {
     const fixture = TestBed.createComponent(CpSnapshotPanelComponent);
     fixture.componentRef.setInput('snapshot', s);
+    fixture.componentRef.setInput('patientId', 'p1');
     await fixture.whenStable();
     return fixture;
   }
@@ -154,6 +158,20 @@ describe('CpSnapshotPanelComponent', () => {
     expect(el.querySelector('.cond-meta')?.textContent).toContain('Mar 20');
     expect(el.querySelectorAll('.med-row').length).toBe(2);
     expect(el.querySelectorAll('.med-dosage').length).toBe(1);
+  });
+
+  it('should render the coverage card and re-emit a saved coverage', async () => {
+    const fixture = await render(snapshot);
+    const saved: unknown[] = [];
+    fixture.componentInstance.coverageSaved.subscribe((c) => saved.push(c));
+    const card = fixture.debugElement.query(
+      (d) => d.name === 'cp-coverage-card',
+    );
+
+    card.componentInstance.saved.emit({ id: 'cov1' });
+
+    expect(card).not.toBeNull();
+    expect(saved).toEqual([{ id: 'cov1' }]);
   });
 
   it('should hide the alerts card when there are no alerts', async () => {

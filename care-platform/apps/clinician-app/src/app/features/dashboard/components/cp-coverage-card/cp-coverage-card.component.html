@@ -1,0 +1,36 @@
+<section class="px-card" aria-labelledby="cp-coverage-card-title">
+  <div class="px-card-head">
+    <span class="px-card-title" id="cp-coverage-card-title">Coverage</span>
+    @if (canEdit()) {
+      <button
+        mat-button
+        type="button"
+        [attr.aria-label]="coverage() ? 'Edit coverage' : 'Add coverage'"
+        (click)="openDialog()"
+      >
+        {{ coverage() ? 'Edit' : 'Add coverage' }}
+      </button>
+    }
+  </div>
+
+  @if (coverage(); as c) {
+    <dl class="app-coverage-card__details">
+      <dt>Payer</dt>
+      <dd class="app-coverage-card__payer">{{ c.payerName ?? '–' }}</dd>
+      <dt>Plan</dt>
+      <dd class="app-coverage-card__plan">{{ c.planName ?? '–' }}</dd>
+      <dt>Member ID</dt>
+      <dd class="app-coverage-card__member cp-font-mono">
+        {{ c.memberId ?? '–' }}
+      </dd>
+      <dt>Status</dt>
+      <dd>
+        <span class="cp-status-badge" [class]="statusBadge()">{{
+          c.status
+        }}</span>
+      </dd>
+    </dl>
+  } @else {
+    <p class="app-coverage-card__empty">No active coverage on file.</p>
+  }
+</section>

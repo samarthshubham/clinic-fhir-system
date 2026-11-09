@@ -35,11 +35,53 @@ export interface MedicationSummary {
   status: string;
 }
 
+export type CoverageStatus =
+  | 'active'
+  | 'cancelled'
+  | 'draft'
+  | 'entered-in-error';
+
+export type CoverageRelationship =
+  | 'self'
+  | 'spouse'
+  | 'child'
+  | 'parent'
+  | 'common'
+  | 'injured'
+  | 'other';
+
+export interface CoverageRequest {
+  patientId: string;
+  payerId: string;
+  payerName: string;
+  memberId: string;
+  planName: string | null;
+  status: CoverageStatus;
+  periodStart: string;
+  periodEnd: string | null;
+  relationship: CoverageRelationship;
+}
+
+export interface CoverageResponse {
+  id: string;
+  patientId: string;
+  payerOrganizationId: string | null;
+  payerId: string | null;
+  payerName: string | null;
+  memberId: string | null;
+  planName: string | null;
+  status: CoverageStatus | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  relationship: CoverageRelationship | null;
+}
+
 export interface SnapshotResponse {
   activeConditions: ConditionSummary[];
   currentMedications: MedicationSummary[];
   latestVitals: LatestVitals | null;
   alerts: AlertItem[];
+  coverage: CoverageResponse | null;
 }
 
 export interface GoalProgress {
