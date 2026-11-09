@@ -7,7 +7,11 @@ import java.time.LocalDate;
 
 public record CoverageRequest(
     @NotBlank String patientId,
-    @NotBlank String payerId,
+    @NotBlank
+        @Pattern(
+            regexp = "[A-Za-z0-9._-]+",
+            message = "payerId may only contain letters, digits, '.', '_' and '-'")
+        String payerId,
     @NotBlank String payerName,
     @NotBlank String memberId,
     String planName,

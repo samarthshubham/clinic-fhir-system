@@ -129,6 +129,24 @@ class CoverageControllerTest {
   }
 
   @Test
+  void createWithQuerySyntaxInPayerIdReturnsBadRequest() {
+    assertThat(
+            mvc.post()
+                .uri("/api/coverages")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"patientId":"p1","payerId":"a&_id=x","payerName":"Praxis Health Plan",
+                     "memberId":"PHP-10001","status":"active","periodStart":"2026-01-01"}
+                    """))
+        .hasStatus(HttpStatus.BAD_REQUEST)
+        .bodyJson()
+        .extractingPath("$.message")
+        .isEqualTo("payerId may only contain letters, digits, '.', '_' and '-'");
+    verifyNoInteractions(coverageService);
+  }
+
+  @Test
   void getReturnsCoverageById() {
     when(coverageService.getCoverage("cov1")).thenReturn(PRIYA_COVERAGE);
 
