@@ -41,13 +41,13 @@ The two sides share nothing but HTTP. A patient in the clinic and a member at th
 
 ```
 payer-api/src/main/java/.../payer/
-  interop/     HAPI RestfulServer + resource/operation providers: FHIR in, FHIR out
+  interop/     HAPI RestfulServer + resource/operation providers: FHIR in, FHIR out; ScopeInterceptor
   cdshooks/    CRD discovery and hook handlers (CDS Hooks JSON with FHIR resources inside)
   controller/  JSON endpoints for payer-app (DTOs only)
   service/     business logic: CoverageRuleService, Adjudicator, SlaClock, MemberService, …
   mapper/      FHIR ↔ DTO
   dto/         Java records
-  security/    staff roles, SMART scopes, ScopeInterceptor, member compartment
+  security/    staff roles and permissions, SMART scope parsing (see 15-payer-auth.md)
   config/      FhirConfig (payer HAPI client), RestfulServerConfig, SecurityConfig
 ```
 

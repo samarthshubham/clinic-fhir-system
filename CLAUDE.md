@@ -69,7 +69,8 @@ clinic-api/         Spring Boot backend (Maven)
 
 payer-api/          Payer Spring Boot service (Maven, port 9095), client of the payer HAPI :8081
   src/main/java/io/github/samarthshubham/payer/
-    interop/        PayerFhirServer (HAPI RestfulServer at /fhir), ImplementationGuideCapabilityInterceptor
+    interop/        PayerFhirServer (HAPI RestfulServer at /fhir), ImplementationGuideCapabilityInterceptor,
+                    ScopeInterceptor (SMART scopes + member compartment); auth per docs/15-payer-auth.md
     config/         FhirConfig, RestfulServerConfig, ImplementationGuideProperties (IGs listed in /fhir/metadata)
     security/ controller/ service/ mapper/ dto/ exception/   same layout as clinic-api (filled by later stories)
 
@@ -107,6 +108,7 @@ docs/
   09-bp-alerts-demo.md  High BP subscription alerts + scripted demo
   10-auth.md            JWT authentication + role → permission RBAC
   11-payer-architecture.md  Payer side: payer-api, payer HAPI, Da Vinci calls (planned)
+  15-payer-auth.md      payer-api staff login, /oauth/token client_credentials, SMART scope enforcement
   16-payer-test-strategy.md Test levels and test data for the payer work
   roadmap/payer-davinci.md  Payer + Da Vinci roadmap: goal, NFRs, backlog with AC
   adr/                  Architecture decision records (payer work)
