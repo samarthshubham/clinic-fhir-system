@@ -1,5 +1,6 @@
 package io.github.samarthshubham.clinic.mapper;
 
+import static io.github.samarthshubham.clinic.support.GoldenFhir.assertMatchesGolden;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
@@ -23,7 +24,13 @@ class PatientMapperTest {
     Patient patient =
         mapper.toFhir(
             new PatientRequest(
-                "Priya", "Nair", LocalDate.of(1985, 3, 14), "female", "+1-555-0100", "p@x.org"));
+                "Priya",
+                "Nair",
+                LocalDate.of(1985, 3, 14),
+                "female",
+                "+1-555-0100",
+                "p@x.org",
+                null));
 
     assertThat(patient.getNameFirstRep().getFamily()).isEqualTo("Nair");
     assertThat(patient.getNameFirstRep().getGivenAsSingleString()).isEqualTo("Priya");
@@ -40,7 +47,8 @@ class PatientMapperTest {
   void genderIsCaseInsensitive() {
     Patient patient =
         mapper.toFhir(
-            new PatientRequest("Tony", "Stark", LocalDate.of(1970, 5, 29), "MALE", null, null));
+            new PatientRequest(
+                "Tony", "Stark", LocalDate.of(1970, 5, 29), "MALE", null, null, null));
 
     assertThat(patient.getGender()).isEqualTo(AdministrativeGender.MALE);
   }
@@ -49,7 +57,8 @@ class PatientMapperTest {
   void omitsTelecomWhenNoContactsGiven() {
     Patient patient =
         mapper.toFhir(
-            new PatientRequest("Tony", "Stark", LocalDate.of(1970, 5, 29), "male", null, null));
+            new PatientRequest(
+                "Tony", "Stark", LocalDate.of(1970, 5, 29), "male", null, null, null));
 
     assertThat(patient.getTelecom()).isEmpty();
   }
@@ -59,7 +68,7 @@ class PatientMapperTest {
     Patient patient =
         mapper.toFhir(
             new PatientRequest(
-                "Tony", "Stark", LocalDate.of(1970, 5, 29), "male", null, "t@x.org"));
+                "Tony", "Stark", LocalDate.of(1970, 5, 29), "male", null, "t@x.org", null));
 
     assertThat(patient.getTelecom())
         .extracting(ContactPoint::getSystem)
@@ -70,7 +79,8 @@ class PatientMapperTest {
   void onlyPhoneIsMappedAsPhone() {
     Patient patient =
         mapper.toFhir(
-            new PatientRequest("Tony", "Stark", LocalDate.of(1970, 5, 29), "male", "555", null));
+            new PatientRequest(
+                "Tony", "Stark", LocalDate.of(1970, 5, 29), "male", "555", null, null));
 
     assertThat(patient.getTelecom())
         .extracting(ContactPoint::getSystem)
@@ -80,7 +90,7 @@ class PatientMapperTest {
   @Test
   void unknownGenderIsRejected() {
     PatientRequest request =
-        new PatientRequest("Tony", "Stark", LocalDate.of(1970, 5, 29), "robot", null, null);
+        new PatientRequest("Tony", "Stark", LocalDate.of(1970, 5, 29), "robot", null, null, null);
 
     assertThatThrownBy(() -> mapper.toFhir(request)).isInstanceOf(FHIRException.class);
   }
@@ -90,14 +100,28 @@ class PatientMapperTest {
     Patient patient =
         mapper.toFhir(
             new PatientRequest(
-                "Priya", "Nair", LocalDate.of(1985, 3, 14), "female", "+1-555-0100", "p@x.org"));
+                "Priya",
+                "Nair",
+                LocalDate.of(1985, 3, 14),
+                "female",
+                "+1-555-0100",
+                "p@x.org",
+                null));
     patient.setActive(false);
     patient.setId("p1");
 
     assertThat(mapper.toResponse(patient))
         .isEqualTo(
             new PatientResponse(
-                "p1", "Priya", "Nair", "1985-03-14", "female", "+1-555-0100", "p@x.org", false));
+                "p1",
+                "Priya",
+                "Nair",
+                "1985-03-14",
+                "female",
+                "+1-555-0100",
+                "p@x.org",
+                false,
+                null));
   }
 
   @Test
@@ -106,18 +130,51 @@ class PatientMapperTest {
     patient.setId("p1");
 
     assertThat(mapper.toResponse(patient))
-        .isEqualTo(new PatientResponse("p1", null, null, null, null, null, null, null));
+        .isEqualTo(new PatientResponse("p1", null, null, null, null, null, null, null, null));
   }
 
   @Test
   void toSummaryUsesTheIdAsMrn() {
     Patient patient =
         mapper.toFhir(
-            new PatientRequest("Priya", "Nair", LocalDate.of(1985, 3, 14), "female", null, "p@x"));
+            new PatientRequest(
+                "Priya", "Nair", LocalDate.of(1985, 3, 14), "female", null, "p@x", null));
     patient.setId("p1");
 
     assertThat(mapper.toSummary(patient))
         .isEqualTo(
             new PatientSummary("p1", "Priya", "Nair", "1985-03-14", "female", "p1", null, "p@x"));
+  }
+
+  @Test
+  void setsTheUsCoreProfileAndTheMrnIdentifier() {
+    Patient patient =
+        mapper.toFhir(
+            new PatientRequest(
+                "Priya", "Nair", LocalDate.of(1985, 3, 14), "female", null, null, "PX-1"));
+
+    assertThat(patient.getMeta().hasProfile(UsCoreProfiles.PATIENT)).isTrue();
+    assertThat(patient.getIdentifierFirstRep().getSystem()).isEqualTo(PatientMapper.MRN_SYSTEM);
+    assertThat(patient.getIdentifierFirstRep().getValue()).isEqualTo("PX-1");
+    assertThat(patient.getIdentifierFirstRep().getType().getCodingFirstRep().getCode())
+        .isEqualTo("MR");
+    patient.setId("p1");
+    assertThat(mapper.toResponse(patient).mrn()).isEqualTo("PX-1");
+    assertThat(mapper.toSummary(patient).mrn()).isEqualTo("PX-1");
+  }
+
+  @Test
+  void patientMatchesTheGoldenFixture() {
+    assertMatchesGolden(
+        mapper.toFhir(
+            new PatientRequest(
+                "Priya",
+                "Nair",
+                LocalDate.of(1992, 7, 28),
+                "female",
+                "5551002002",
+                "priya.nair@example.com",
+                "PX-10000001")),
+        "provider/patient.json");
   }
 }

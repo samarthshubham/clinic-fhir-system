@@ -36,6 +36,8 @@ class ServiceRequestControllerTest {
           "e1",
           "pr1",
           "Lipid panel",
+          "http://loinc.org",
+          "57698-3",
           "laboratory",
           "active",
           "routine",
@@ -44,8 +46,8 @@ class ServiceRequestControllerTest {
   private static final String LIPID_PANEL_JSON =
       """
       {"id":"sr1","patientId":"p1","encounterId":"e1","practitionerId":"pr1",
-       "code":"Lipid panel","category":"laboratory","status":"active","priority":"routine",
-       "authoredOn":"2024-05-01"}
+       "display":"Lipid panel","codeSystem":"http://loinc.org","code":"57698-3",
+       "category":"laboratory","status":"active","priority":"routine","authoredOn":"2024-05-01"}
       """;
 
   @Autowired private MockMvcTester mvc;
@@ -63,8 +65,9 @@ class ServiceRequestControllerTest {
                 .content(
                     """
                     {"patientId":"p1","encounterId":"e1","practitionerId":"pr1",
-                     "code":"Lipid panel","category":"laboratory","status":"active",
-                     "priority":"routine","authoredOn":"2024-05-01"}
+                     "display":"Lipid panel","codeSystem":"http://loinc.org","code":"57698-3",
+                     "category":"laboratory","status":"active","priority":"routine",
+                     "authoredOn":"2024-05-01"}
                     """))
         .hasStatus(HttpStatus.CREATED)
         .hasContentType(MediaType.APPLICATION_JSON)
@@ -77,6 +80,8 @@ class ServiceRequestControllerTest {
                 "e1",
                 "pr1",
                 "Lipid panel",
+                "http://loinc.org",
+                "57698-3",
                 "laboratory",
                 "active",
                 "routine",
@@ -91,13 +96,32 @@ class ServiceRequestControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
-                    {"patientId":"p1","code":"Lipid panel","category":"laboratory",
+                    {"patientId":"p1","display":"Lipid panel","category":"laboratory",
                      "status":"active","authoredOn":"2024-05-01"}
                     """))
         .hasStatus(HttpStatus.BAD_REQUEST)
         .bodyJson()
         .extractingPath("$.message")
         .isEqualTo("must not be blank");
+    verifyNoInteractions(serviceRequestService);
+  }
+
+  @Test
+  void createWithCodeButNoCodeSystemReturnsBadRequest() {
+    assertThat(
+            mvc.post()
+                .uri("/api/service-requests")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"patientId":"p1","display":"Lipid panel","code":"57698-3",
+                     "category":"laboratory","status":"active","priority":"routine",
+                     "authoredOn":"2024-05-01"}
+                    """))
+        .hasStatus(HttpStatus.BAD_REQUEST)
+        .bodyJson()
+        .extractingPath("$.message")
+        .isEqualTo("codeSystem and code must be given together");
     verifyNoInteractions(serviceRequestService);
   }
 

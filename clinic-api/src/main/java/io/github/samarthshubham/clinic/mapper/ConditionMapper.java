@@ -2,8 +2,6 @@ package io.github.samarthshubham.clinic.mapper;
 
 import io.github.samarthshubham.clinic.dto.ConditionRequest;
 import io.github.samarthshubham.clinic.dto.ConditionResponse;
-import java.time.ZoneId;
-import java.util.Date;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Condition;
@@ -16,9 +14,19 @@ public class ConditionMapper {
 
   private static final String CLINICAL_STATUS_SYSTEM =
       "http://terminology.hl7.org/CodeSystem/condition-clinical";
+  private static final String CATEGORY_SYSTEM =
+      "http://terminology.hl7.org/CodeSystem/condition-category";
 
   public Condition toFhir(ConditionRequest request) {
     Condition condition = new Condition();
+    condition.getMeta().addProfile(UsCoreProfiles.CONDITION_PROBLEMS);
+    condition.addCategory(
+        new CodeableConcept()
+            .addCoding(
+                new Coding()
+                    .setSystem(CATEGORY_SYSTEM)
+                    .setCode("problem-list-item")
+                    .setDisplay("Problem List Item")));
     condition.setSubject(new Reference("Patient/" + request.patientId()));
     if (request.encounterId() != null) {
       condition.setEncounter(new Reference("Encounter/" + request.encounterId()));
@@ -31,8 +39,7 @@ public class ConditionMapper {
         new CodeableConcept()
             .addCoding(
                 new Coding().setSystem(CLINICAL_STATUS_SYSTEM).setCode(request.clinicalStatus())));
-    Date onset = Date.from(request.onsetDate().atStartOfDay(ZoneId.systemDefault()).toInstant());
-    condition.setOnset(new DateTimeType(onset));
+    condition.setOnset(new DateTimeType(request.onsetDate().toString()));
     return condition;
   }
 

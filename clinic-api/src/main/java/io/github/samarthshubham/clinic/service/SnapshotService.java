@@ -41,10 +41,13 @@ public class SnapshotService {
 
   private final IGenericClient fhirClient;
   private final ClinicalThresholds thresholds;
+  private final CoverageService coverageService;
 
-  public SnapshotService(IGenericClient fhirClient, ClinicalThresholds thresholds) {
+  public SnapshotService(
+      IGenericClient fhirClient, ClinicalThresholds thresholds, CoverageService coverageService) {
     this.fhirClient = fhirClient;
     this.thresholds = thresholds;
+    this.coverageService = coverageService;
   }
 
   public SnapshotResponse getSnapshot(String patientId) {
@@ -52,7 +55,8 @@ public class SnapshotService {
     List<Map<String, Object>> medications = fetchActiveMedications(patientId);
     LatestVitals vitals = fetchLatestVitals(patientId);
     List<AlertItem> alerts = computeAlerts(vitals);
-    return new SnapshotResponse(conditions, medications, vitals, alerts);
+    return new SnapshotResponse(
+        conditions, medications, vitals, alerts, coverageService.findActiveCoverage(patientId));
   }
 
   private List<Map<String, Object>> fetchActiveConditions(String patientId) {

@@ -1,5 +1,6 @@
 package io.github.samarthshubham.clinic.mapper;
 
+import static io.github.samarthshubham.clinic.support.GoldenFhir.assertMatchesGolden;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.samarthshubham.clinic.dto.PractitionerRequest;
@@ -80,5 +81,24 @@ class PractitionerMapperTest {
     assertThat(username.getValue()).isEqualTo("clinician");
     assertThat(practitioner.getQualificationFirstRep().getCode().getText())
         .isEqualTo("Internal Medicine");
+  }
+
+  @Test
+  void setsTheUsCoreProfile() {
+    assertThat(
+            mapper
+                .toFhir(new PractitionerRequest("Gregory", "House", "Diagnostics", null, null))
+                .getMeta()
+                .hasProfile(UsCoreProfiles.PRACTITIONER))
+        .isTrue();
+  }
+
+  @Test
+  void practitionerMatchesTheGoldenFixture() {
+    assertMatchesGolden(
+        mapper.toFhir(
+            new PractitionerRequest(
+                "Aisha", "Patel", "Internal Medicine", "1234567893", "aisha.patel@example.com")),
+        "provider/practitioner.json");
   }
 }

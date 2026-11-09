@@ -1,6 +1,7 @@
 package io.github.samarthshubham.clinic.mapper;
 
 import static io.github.samarthshubham.clinic.support.FhirDates.localDate;
+import static io.github.samarthshubham.clinic.support.GoldenFhir.assertMatchesGolden;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -132,5 +133,30 @@ class EncounterMapperTest {
     encounter.addExtension().setUrl(EncounterMapper.NOTE_EXTENSION_URL);
 
     assertThat(mapper.note(encounter)).isNull();
+  }
+
+  @Test
+  void setsTheUsCoreProfileAmbulatoryClassAndType() {
+    Encounter encounter =
+        mapper.toFhir(new EncounterRequest("p1", VISIT, null, "finished", null, null));
+
+    assertThat(encounter.getMeta().hasProfile(UsCoreProfiles.ENCOUNTER)).isTrue();
+    assertThat(encounter.getClass_().getCode()).isEqualTo("AMB");
+    assertThat(encounter.getTypeFirstRep().getCodingFirstRep().getCode()).isEqualTo("308335008");
+    assertThat(encounter.getPeriod().getStartElement().getValueAsString()).isEqualTo("2026-05-01");
+  }
+
+  @Test
+  void encounterMatchesTheGoldenFixture() {
+    assertMatchesGolden(
+        mapper.toFhir(
+            new EncounterRequest(
+                "seed-priya-nair",
+                VISIT,
+                "Annual wellness exam",
+                "finished",
+                "seed-default-practitioner",
+                null)),
+        "provider/encounter.json");
   }
 }

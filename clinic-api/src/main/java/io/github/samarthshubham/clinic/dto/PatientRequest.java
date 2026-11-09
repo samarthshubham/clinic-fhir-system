@@ -10,4 +10,5 @@ public record PatientRequest(
     @NotNull LocalDate dateOfBirth,
     @NotBlank String gender,
     String phone,
-    String email) {}
+    String email,
+    String mrn) {}

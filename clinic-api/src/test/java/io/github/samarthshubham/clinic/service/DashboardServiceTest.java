@@ -77,7 +77,7 @@ class DashboardServiceTest {
   private FhirClientStub fhir;
   private DashboardService service;
   private final SnapshotResponse snapshot =
-      new SnapshotResponse(List.of(), List.of(), null, List.of());
+      new SnapshotResponse(List.of(), List.of(), null, List.of(), null);
 
   @BeforeEach
   void setUp() {
@@ -551,7 +551,8 @@ class DashboardServiceTest {
                     LocalDate.of(1985, 3, 14),
                     "female",
                     "+1-555-0100",
-                    "p@x.org"));
+                    "p@x.org",
+                    null));
     patient.setId("p1");
     return patient;
   }
@@ -596,6 +597,8 @@ class DashboardServiceTest {
                     null,
                     null,
                     "Lipid panel",
+                    null,
+                    null,
                     "laboratory",
                     "active",
                     "routine",

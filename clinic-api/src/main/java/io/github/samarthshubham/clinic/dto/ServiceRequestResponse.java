@@ -7,6 +7,8 @@ public record ServiceRequestResponse(
     String patientId,
     String encounterId,
     String practitionerId,
+    String display,
+    String codeSystem,
     String code,
     String category,
     String status,

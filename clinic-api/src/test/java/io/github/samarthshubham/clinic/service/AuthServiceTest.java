@@ -84,7 +84,7 @@ class AuthServiceTest {
     when(patientService.getPatient(TestAuth.OWN_PATIENT_ID))
         .thenReturn(
             new PatientResponse(
-                TestAuth.OWN_PATIENT_ID, "Anthony", "Stark", null, null, null, null, true));
+                TestAuth.OWN_PATIENT_ID, "Anthony", "Stark", null, null, null, null, true, null));
 
     TokenResponse tokens = authService.login(new LoginRequest("tony", TestAuth.PASSWORD));
 
