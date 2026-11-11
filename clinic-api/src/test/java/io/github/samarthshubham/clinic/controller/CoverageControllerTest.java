@@ -225,6 +225,26 @@ class CoverageControllerTest {
   }
 
   @Test
+  void updateWithBlankIdReturnsBadRequest() {
+    assertThat(
+            mvc.put()
+                .uri("/api/coverages/{id}", " ")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"patientId":"p1","payerId":"praxis-health-plan","payerName":"Praxis Health Plan",
+                     "memberId":"PHP-10001","status":"active","periodStart":"2026-01-01"}
+                    """))
+        .hasStatus(HttpStatus.BAD_REQUEST)
+        .bodyJson()
+        .isStrictlyEqualTo(
+            """
+            {"status":400,"message":"id must not be blank"}
+            """);
+    verifyNoInteractions(coverageService);
+  }
+
+  @Test
   void updateUnknownCoverageReturnsNotFound() {
     when(coverageService.updateCoverage(eq("missing"), any()))
         .thenThrow(new ResourceNotFoundException("Coverage", "missing"));
