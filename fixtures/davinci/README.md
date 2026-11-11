@@ -20,6 +20,8 @@ Each file starts from an example in the published IG package (all CC0-1.0) and i
 | `crd/appointment-book-response-pa-needed.json` | `Binary/CRDServiceResponse3`, payer-api's answer to `appointment-book-request.json` | hl7.fhir.us.davinci-crd#2.2.1 |
 | `crd/encounter-start-request.json` | `crd/order-sign-request.json` with an in-progress MRI `Encounter` (`profile-encounter`) in `prefetch.encounter` | hl7.fhir.us.davinci-crd#2.2.1 |
 | `crd/encounter-start-response-pa-needed.json` | `Binary/CRDServiceResponse3`, payer-api's answer to `encounter-start-request.json` | hl7.fhir.us.davinci-crd#2.2.1 |
+| `crd/order-dispatch-request.json` | `crd/order-sign-request.json` with the MRI order active and dispatched to an imaging center, in `prefetch.dispatchedOrders` | hl7.fhir.us.davinci-crd#2.2.1 |
+| `crd/order-dispatch-response-pa-needed.json` | `Binary/CRDServiceResponse3`, payer-api's answer to `order-dispatch-request.json` | hl7.fhir.us.davinci-crd#2.2.1 |
 | `dtr/questionnaire-package-input.json` | `Parameters/QuestionnairePackageInputParamsExample` | hl7.fhir.us.davinci-dtr#2.2.0 |
 | `pas/claim-request-bundle.json` | `Bundle/ReferralAuthorizationBundleExample` | hl7.fhir.us.davinci-pas#2.2.1 |
 | `pas/claim-response-pended-bundle.json` | `Bundle/ReferralPendingAuthorizationResponseBundleExample` | hl7.fhir.us.davinci-pas#2.2.1 |
@@ -36,7 +38,7 @@ Each file starts from an example in the published IG package (all CC0-1.0) and i
 
 `provider/` holds what clinic-api builds for its own FHIR server (E0-S5).
 
-The `crd/order-sign-*`, `crd/appointment-book-*` and `crd/encounter-start-*` files are CDS Hooks JSON, not FHIR resources. `GoldenFixturesTest` and `ig-validate` check the FHIR resources inside them (draft orders, prefetch and the updated orders in `systemActions`). `CdsHooksInteropTest` posts each request to payer-api and expects exactly the matching response; it writes what payer-api answered to `payer-api/target/cds-out/` for diffing. The responses are dated 2026-11-11, the test's fixed clock.
+The `crd/order-sign-*`, `crd/order-dispatch-*`, `crd/appointment-book-*` and `crd/encounter-start-*` files are CDS Hooks JSON, not FHIR resources. `GoldenFixturesTest` and `ig-validate` check the FHIR resources inside them (draft orders, prefetch and the updated orders in `systemActions`). `CdsHooksInteropTest` posts each request to payer-api and expects exactly the matching response; it writes what payer-api answered to `payer-api/target/cds-out/` for diffing. The responses are dated 2026-11-11, the test's fixed clock.
 
 ## Running the validator locally
 

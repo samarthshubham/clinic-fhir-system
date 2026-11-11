@@ -98,21 +98,30 @@ class CdsHooksInteropTest {
 
     assertThat(response.statusCode()).isEqualTo(200);
     JsonNode services = objectMapper.readTree(response.body()).path("services");
-    assertThat(services).hasSize(4);
+    assertThat(services).hasSize(5);
     assertThat(services.findValuesAsText("id"))
         .containsExactly(
-            "order-sign-crd", "order-select-crd", "appointment-book-crd", "encounter-start-crd");
+            "order-sign-crd",
+            "order-select-crd",
+            "appointment-book-crd",
+            "encounter-start-crd",
+            "order-dispatch-crd");
     assertThat(services.findValuesAsText("hook"))
-        .containsExactly("order-sign", "order-select", "appointment-book", "encounter-start");
+        .containsExactly(
+            "order-sign", "order-select", "appointment-book", "encounter-start", "order-dispatch");
     assertThat(services.get(3).path("prefetch").path("encounter").asText())
         .isEqualTo("Encounter/{{context.encounterId}}");
     assertThat(services.get(0).path("prefetch").has("encounter")).isFalse();
+    assertThat(services.get(4).path("prefetch").path("dispatchedOrders").asText())
+        .isEqualTo("ServiceRequest?_id={{context.dispatchedOrders.ServiceRequest.id}}");
+    assertThat(services.get(0).path("prefetch").path("practitioner").asText())
+        .isEqualTo("{{context.userId}}");
+    assertThat(services.get(4).path("prefetch").has("practitioner")).isFalse();
     for (JsonNode service : services) {
       JsonNode prefetch = service.path("prefetch");
       assertThat(prefetch.path("patient").asText()).isEqualTo("Patient/{{context.patientId}}");
       assertThat(prefetch.path("coverage").asText())
           .isEqualTo("Coverage?patient={{context.patientId}}&status=active");
-      assertThat(prefetch.path("practitioner").asText()).isEqualTo("{{context.userId}}");
       assertThat(service.path("extension").path("davinci-crd.version").get(0).asText())
           .isEqualTo("2.2");
     }
@@ -193,6 +202,36 @@ class CdsHooksInteropTest {
         .set("encounter", request.path("prefetch").path("patient"));
 
     assertOperationOutcome(post("/cds-services/encounter-start-crd", request, clinicApi()), 400);
+  }
+
+  @Test
+  void orderDispatchForAnMriAnswersTheGoldenPaNeededResponse() throws Exception {
+    givenPayerCoverage("PHP-10005", Coverage.CoverageStatus.ACTIVE, "2025-11-11", null);
+
+    HttpResponse<String> response =
+        post(
+            "/cds-services/order-dispatch-crd",
+            fixture("order-dispatch-request.json"),
+            clinicApi());
+
+    assertMatchesGolden(response, "order-dispatch-response-pa-needed.json");
+  }
+
+  @Test
+  void orderDispatchWithoutDispatchedOrdersIsABadRequest() throws Exception {
+    ObjectNode request = (ObjectNode) objectMapper.readTree(fixture("order-dispatch-request.json"));
+    ((ObjectNode) request.path("context")).remove("dispatchedOrders");
+
+    assertOperationOutcome(post("/cds-services/order-dispatch-crd", request, clinicApi()), 400);
+  }
+
+  @Test
+  void orderDispatchWithAPatientAsTheOrdersPrefetchIsABadRequest() throws Exception {
+    ObjectNode request = (ObjectNode) objectMapper.readTree(fixture("order-dispatch-request.json"));
+    ((ObjectNode) request.path("prefetch"))
+        .set("dispatchedOrders", request.path("prefetch").path("patient"));
+
+    assertOperationOutcome(post("/cds-services/order-dispatch-crd", request, clinicApi()), 400);
   }
 
   @Test

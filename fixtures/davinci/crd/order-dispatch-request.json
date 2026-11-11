@@ -1,0 +1,180 @@
+{
+  "hookInstance": "e1f37a2c-8b64-4d09-b5c7-3a9d0e6f2b18",
+  "hook": "order-dispatch",
+  "context": {
+    "patientId": "seed-sandra-okafor",
+    "dispatchedOrders": [
+      "ServiceRequest/draft-mri-lumbar-spine"
+    ],
+    "performer": "Organization/seed-imaging-center"
+  },
+  "prefetch": {
+    "patient": {
+      "resourceType": "Patient",
+      "id": "seed-sandra-okafor",
+      "meta": {
+        "profile": [
+          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+        ]
+      },
+      "identifier": [
+        {
+          "use": "usual",
+          "type": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                "code": "MR",
+                "display": "Medical record number"
+              }
+            ]
+          },
+          "system": "http://praxis.clinic/fhir/identifier/mrn",
+          "value": "PX-10000005"
+        }
+      ],
+      "name": [
+        {
+          "family": "Okafor",
+          "given": [
+            "Sandra"
+          ]
+        }
+      ],
+      "gender": "female",
+      "birthDate": "1980-02-19"
+    },
+    "coverage": {
+      "resourceType": "Bundle",
+      "type": "searchset",
+      "total": 1,
+      "entry": [
+        {
+          "fullUrl": "http://praxis.clinic/fhir/Coverage/coverage-sandra-okafor",
+          "resource": {
+            "resourceType": "Coverage",
+            "id": "coverage-sandra-okafor",
+            "meta": {
+              "profile": [
+                "http://hl7.org/fhir/us/davinci-crd/StructureDefinition/profile-coverage"
+              ]
+            },
+            "identifier": [
+              {
+                "type": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                      "code": "MB"
+                    }
+                  ]
+                },
+                "system": "http://praxishealthplan.example/fhir/identifier/member-id",
+                "value": "PHP-10005"
+              }
+            ],
+            "status": "active",
+            "subscriberId": "PHP-10005",
+            "beneficiary": {
+              "reference": "Patient/seed-sandra-okafor"
+            },
+            "relationship": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+                  "code": "self"
+                }
+              ]
+            },
+            "period": {
+              "start": "2025-11-11"
+            },
+            "payor": [
+              {
+                "reference": "Organization/seed-praxis-health-plan",
+                "identifier": {
+                  "system": "http://praxis.clinic/fhir/identifier/payer",
+                  "value": "praxis-health-plan"
+                },
+                "display": "Praxis Health Plan"
+              }
+            ],
+            "class": [
+              {
+                "type": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/coverage-class",
+                      "code": "plan"
+                    }
+                  ]
+                },
+                "value": "Praxis Gold PPO",
+                "name": "Praxis Gold PPO"
+              }
+            ]
+          },
+          "search": {
+            "mode": "match"
+          }
+        }
+      ]
+    },
+    "dispatchedOrders": {
+      "resourceType": "Bundle",
+      "type": "searchset",
+      "total": 1,
+      "entry": [
+        {
+          "fullUrl": "http://praxis.clinic/fhir/ServiceRequest/draft-mri-lumbar-spine",
+          "resource": {
+            "resourceType": "ServiceRequest",
+            "id": "draft-mri-lumbar-spine",
+            "meta": {
+              "profile": [
+                "http://hl7.org/fhir/us/davinci-crd/StructureDefinition/profile-servicerequest"
+              ]
+            },
+            "status": "active",
+            "intent": "order",
+            "category": [
+              {
+                "text": "imaging"
+              }
+            ],
+            "priority": "routine",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://www.ama-assn.org/go/cpt",
+                  "code": "72148"
+                }
+              ],
+              "text": "MRI lumbar spine without contrast"
+            },
+            "subject": {
+              "reference": "Patient/seed-sandra-okafor"
+            },
+            "authoredOn": "2026-11-11",
+            "requester": {
+              "reference": "Practitioner/seed-default-practitioner"
+            },
+            "insurance": [
+              {
+                "reference": "Coverage/coverage-sandra-okafor"
+              }
+            ],
+            "performer": [
+              {
+                "reference": "Organization/seed-imaging-center"
+              }
+            ]
+          },
+          "search": {
+            "mode": "match"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -85,6 +85,30 @@ class PrefetchResolverTest {
   }
 
   @Test
+  void referenceTemplatesListTheIdsOfThatResourceType() throws Exception {
+    CdsHookRequest request =
+        request(
+            "{\"context\":{\"dispatchedOrders\":[\"ServiceRequest/a\",\"MedicationRequest/m\","
+                + "\"ServiceRequest/b\"]}}");
+
+    assertThat(
+            PrefetchResolver.render(
+                CrdHook.ORDER_DISPATCH.prefetch().get("dispatchedOrders"), request))
+        .isEqualTo("ServiceRequest?_id=a,b");
+  }
+
+  @Test
+  void referenceTemplatesRejectBadOrMissingIds() throws Exception {
+    String template = "ServiceRequest?_id={{context.dispatchedOrders.ServiceRequest.id}}";
+    CdsHookRequest injection =
+        request("{\"context\":{\"dispatchedOrders\":[\"ServiceRequest/a&_include=*\"]}}");
+    CdsHookRequest none = request("{\"context\":{\"dispatchedOrders\":[\"MedicationRequest/m\"]}}");
+
+    assertStatus(() -> PrefetchResolver.render(template, injection), 400);
+    assertStatus(() -> PrefetchResolver.render(template, none), 400);
+  }
+
+  @Test
   void contextValuesThatAreNotIdsAreRejected() throws Exception {
     CdsHookRequest injection =
         request("{\"context\":{\"patientId\":\"p1&_include=*\",\"userId\":\"../admin\"}}");

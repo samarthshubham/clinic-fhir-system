@@ -8,6 +8,7 @@ import ca.uhn.fhir.rest.client.interceptor.BearerTokenAuthInterceptor;
 import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.samarthshubham.payer.config.CrdProperties;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.hl7.fhir.instance.model.api.IBaseResource;
@@ -21,7 +22,8 @@ import org.springframework.stereotype.Component;
 public class PrefetchResolver {
 
   private static final Logger log = LoggerFactory.getLogger(PrefetchResolver.class);
-  private static final Pattern CONTEXT_TOKEN = Pattern.compile("\\{\\{context\\.(\\w+)}}");
+  private static final Pattern CONTEXT_TOKEN =
+      Pattern.compile("\\{\\{context\\.(\\w+)(?:\\.([A-Z][A-Za-z]+)\\.id)?}}");
   private static final Pattern ID_OR_REFERENCE =
       Pattern.compile("^([A-Z][A-Za-z]+/)?[A-Za-z0-9\\-.]{1,64}$");
 
@@ -92,17 +94,40 @@ public class PrefetchResolver {
     Matcher matcher = CONTEXT_TOKEN.matcher(template);
     StringBuilder rendered = new StringBuilder();
     while (matcher.find()) {
-      String value = request.contextValue(matcher.group(1));
-      if (value == null) {
-        throw CdsHookRequest.badRequest("The hook context has no " + matcher.group(1));
-      }
-      if (!ID_OR_REFERENCE.matcher(value).matches()) {
-        throw CdsHookRequest.badRequest(
-            "The hook context " + matcher.group(1) + " is not a FHIR id or reference");
-      }
+      String value =
+          matcher.group(2) == null
+              ? contextId(request, matcher.group(1))
+              : referencedIds(request, matcher.group(1), matcher.group(2));
       matcher.appendReplacement(rendered, Matcher.quoteReplacement(value));
     }
     matcher.appendTail(rendered);
     return rendered.toString();
+  }
+
+  private static String contextId(CdsHookRequest request, String name) {
+    String value = request.contextValue(name);
+    if (value == null) {
+      throw CdsHookRequest.badRequest("The hook context has no " + name);
+    }
+    if (!ID_OR_REFERENCE.matcher(value).matches()) {
+      throw CdsHookRequest.badRequest(
+          "The hook context " + name + " is not a FHIR id or reference");
+    }
+    return value;
+  }
+
+  private static String referencedIds(CdsHookRequest request, String name, String resourceType) {
+    List<String> ids =
+        request.contextReferences(name).stream()
+            .filter(reference -> reference.startsWith(resourceType + "/"))
+            .map(reference -> reference.substring(resourceType.length() + 1))
+            .toList();
+    if (ids.stream().anyMatch(id -> !ID_OR_REFERENCE.matcher(id).matches())) {
+      throw CdsHookRequest.badRequest("The hook context " + name + " has an invalid reference");
+    }
+    if (ids.isEmpty()) {
+      throw CdsHookRequest.badRequest("The hook context has no " + resourceType + " in " + name);
+    }
+    return String.join(",", ids);
   }
 }

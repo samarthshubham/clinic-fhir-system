@@ -123,6 +123,7 @@ public class CrdHookService {
           case APPOINTMENT_BOOK ->
               contextBundle(request.appointments(), "appointments", Appointment.class, parser);
           case ENCOUNTER_START -> List.of(encounter(request, parser));
+          case ORDER_DISPATCH -> dispatchedOrders(request, parser);
           case ORDER_SIGN, ORDER_SELECT -> draftOrders(hook, request, parser);
         };
     Coverage coverage = coverage(request, parser);
@@ -176,6 +177,25 @@ public class CrdHookService {
     }
     return orders.stream()
         .filter(order -> selections.contains("ServiceRequest/" + order.getIdElement().getIdPart()))
+        .toList();
+  }
+
+  private List<ServiceRequest> dispatchedOrders(CdsHookRequest request, IParser parser) {
+    List<String> dispatched = request.contextReferences("dispatchedOrders");
+    if (dispatched.isEmpty()) {
+      throw CdsHookRequest.badRequest("The order-dispatch context has no dispatchedOrders");
+    }
+    List<ServiceRequest> orders =
+        switch (prefetchResolver.resolve(request, CrdHook.DISPATCHED_ORDERS_PREFETCH, parser)) {
+          case Bundle bundle -> PageMapper.resources(bundle, ServiceRequest.class);
+          case ServiceRequest order -> List.of(order);
+          default ->
+              throw CdsHookRequest.badRequest(
+                  "Prefetch 'dispatchedOrders' is not a ServiceRequest Bundle");
+        };
+    return orders.stream()
+        .filter(order -> order.getIdElement().hasIdPart())
+        .filter(order -> dispatched.contains("ServiceRequest/" + order.getIdElement().getIdPart()))
         .toList();
   }
 

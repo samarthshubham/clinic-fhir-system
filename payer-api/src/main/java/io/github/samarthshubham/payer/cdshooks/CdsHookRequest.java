@@ -43,9 +43,13 @@ record CdsHookRequest(
   }
 
   List<String> selections() {
-    List<String> selections = new ArrayList<>();
-    context.path("selections").forEach(selection -> selections.add(selection.asText()));
-    return selections;
+    return contextReferences("selections");
+  }
+
+  List<String> contextReferences(String name) {
+    List<String> references = new ArrayList<>();
+    context.path(name).forEach(reference -> references.add(reference.asText()));
+    return references;
   }
 
   JsonNode prefetched(String key) {
