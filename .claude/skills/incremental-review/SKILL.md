@@ -1,6 +1,6 @@
 ---
 name: incremental-review
-description: Review a clinic-fhir-system pull request, but only the commits not reviewed before, against this repo's rules; posts inline findings and writes a summary file. Use in the claude-review CI job, or locally with "/incremental-review <pr-number>".
+description: Review a clinic-fhir-system pull request, but only the commits not reviewed before, against this repo's rules; posts an inline comment for each line-level finding and writes a summary file. Use in the claude-review CI job, or locally with "/incremental-review <pr-number>".
 ---
 
 # Incremental PR review
@@ -24,6 +24,8 @@ In local runs, **print** the review in the conversation. Do not post comments or
 - `mode=incremental`: run `git show --stat --patch <sha>` for each sha in `commits`. Merge commits are already excluded; they bring in `main`, which was reviewed in its own PRs.
 - `mode=full`: run `git diff <base> <head>`. This is the first review, or the branch was force-pushed or rebased.
 
+For `mode=full`, or any range over about 300 changed lines, start with `git diff --stat <base> <head>` and then go **file by file** (`git diff <base> <head> -- <file>`, or `git show <sha> -- <file>`). Read each changed production file in full with Read before you judge it. Don't review a large range from one combined diff.
+
 Open surrounding files with Read, Grep and Glob when you need context. Only lines **added or changed in the range** may receive findings.
 
 ## 2. Load what was already said
@@ -33,8 +35,11 @@ gh api --paginate repos/<repo>/pulls/<pr>/comments --jq '.[] | {path, line, body
 gh api --paginate repos/<repo>/issues/<pr>/comments --jq '.[] | select(.body | contains("<!-- claude-review summary -->")) | .body'
 ```
 
+Every earlier review run left its own summary comment, so read **all** of them, together with the inline comments and their replies.
+
 - **Do not re-raise** a finding that already exists on the same file and logic, even if its line number moved or the wording would differ.
 - If a commit in the range fixes an earlier finding, list it under **Resolved since last review** in the summary.
+- If an earlier finding is still open (not fixed, and with no reply giving a reason), list it under **Still open from earlier reviews** with its file and the comment it came from.
 
 ## 3. What to look for
 
@@ -61,19 +66,18 @@ Project rules, from `CLAUDE.md`:
 ## 4. Be explicit about depth
 
 A short review of a large range is only useful if it says what it skipped. While reviewing, keep track of:
-- files you **read closely**
-- files you only **skimmed** or **skipped**, and why (generated, lockfiles, Postman JSON, very large diffs)
+- every changed file, marked **read closely**, **skimmed** or **skipped**. For skimmed and skipped files, say why (generated, lockfiles, Postman JSON, very large diffs).
 - what you **could not verify** (tests not run, behaviour that needs a running stack)
 
 For ranges over ~1,500 changed lines, put security-sensitive and logic-heavy files first: auth, controllers, services, mappers, interceptors and guards. Then tests, then docs.
 
-## 5. Post inline findings (CI only, optional)
+## 5. Post inline findings (CI only)
 
-For findings tied to one line, also call `mcp__github_inline_comment__create_inline_comment` on that line. Start with the same severity tag and keep it to two to four sentences. The summary is the main output; inline comments only add to it.
+**Every** finding that points at a specific added or changed line also gets an inline comment: call `mcp__github_inline_comment__create_inline_comment` on that line. Start it with the same number and severity tag as in the summary (for example "**2. Bug:** …"), give the concrete failure and the fix, and keep it to two to four sentences. A finding about a whole file, or something missing (an untested branch, a missing `AuthorizationMatrixTest` row), stays in the summary only. Never post an inline comment for a finding you didn't put in the summary.
 
 ## 6. Write the summary (CI only)
 
-Write `review-summary.md` in the repository root. The workflow posts it as the single sticky PR comment and adds the "last reviewed" marker itself, so **do not** add any `<!-- … -->` markers.
+Write `review-summary.md` in the repository root. The workflow posts it as a **new** PR comment for this run (earlier runs keep theirs) and adds the "last reviewed" marker itself, so **do not** add any `<!-- … -->` markers.
 
 ```markdown
 ## Claude review: <incremental (N new commits) | full (N commits)>
@@ -102,8 +106,11 @@ Reviewed `<base short>..<head short>`.
 ### Resolved since last review
 - <earlier finding>: fixed in `<sha>`. (Omit the section on a first review.)
 
+### Still open from earlier reviews
+- <earlier finding, file>: not fixed and not answered. (Omit when there are none.)
+
 ### Not verified
 - <e.g. tests not run here; behaviour that needs the running stack>
 ```
 
-Number the findings and order them by severity. Each one names a file and line, a concrete failure and a fix. If the range has nothing to report, still write the file with the Scope, Rules and Not verified sections. The job fails without it.
+Number the findings and order them by severity. Each one names a file and line, a concrete failure and a fix, and says whether it was also posted inline. If the range has nothing to report, still write the file with the Scope, Rules and Not verified sections. The job fails without it.
