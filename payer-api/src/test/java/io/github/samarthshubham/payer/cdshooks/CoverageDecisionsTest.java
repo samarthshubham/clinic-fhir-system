@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.samarthshubham.payer.service.CoverageRuleService;
 import io.github.samarthshubham.payer.service.MemberCoverageCheck;
+import io.github.samarthshubham.payer.service.OrderPriority;
 import java.time.LocalDate;
 import java.util.List;
 import org.hl7.fhir.r4.model.CodeType;
 import org.hl7.fhir.r4.model.CodeableConcept;
+import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.ServiceRequest;
 import org.junit.jupiter.api.Test;
@@ -30,6 +32,9 @@ class CoverageDecisionsTest {
     "http://www.ama-assn.org/go/cpt, 72148, routine, ORDER_SIGN, true, true",
     "http://www.ama-assn.org/go/cpt, 72148, stat, ORDER_SIGN, true, true",
     "http://www.ama-assn.org/go/cpt, 72148, routine, ORDER_SELECT, true, false",
+    "http://www.ama-assn.org/go/cpt, 72148, routine, ORDER_DISPATCH, true, true",
+    "http://www.ama-assn.org/go/cpt, 72148, routine, APPOINTMENT_BOOK, true, true",
+    "http://www.ama-assn.org/go/cpt, 72148, routine, ENCOUNTER_START, true, true",
     "http://snomed.info/sct, 76746007, routine, ORDER_SIGN, true, false",
     "http://snomed.info/sct, 276341003, urgent, ORDER_SIGN, true, false",
     "http://snomed.info/sct, 276341003, stat, ORDER_SIGN, false, false",
@@ -61,6 +66,19 @@ class CoverageDecisionsTest {
 
     assertThat(decision.priorAuthNeeded()).isTrue();
     assertThat(decision.serviceName()).isEqualTo("MRI lumbar spine without contrast");
+  }
+
+  @Test
+  void appointmentAndEncounterCodesAreDecidedAsRoutine() {
+    CodeableConcept serviceType =
+        new CodeableConcept()
+            .addCoding(new Coding().setSystem("http://snomed.info/sct").setCode("276341003"));
+
+    CoverageDecision decision =
+        decisions.decide(CrdHook.APPOINTMENT_BOOK, serviceType, OrderPriority.ROUTINE, ACTIVE);
+
+    assertThat(decision.priorAuthNeeded()).isTrue();
+    assertThat(decision.priorAuthWaived()).isFalse();
   }
 
   @Test
