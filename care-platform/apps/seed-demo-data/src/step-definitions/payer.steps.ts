@@ -50,9 +50,11 @@ Given('the provider patient {string}', function (this: SeedWorld, id: string) {
 });
 
 Then(
-  'Praxis Health Plan has the patient as a member with the same coverage',
+  'Praxis Health Plan has the patient as a member:',
   PAYER_HAPI_WRITE,
-  async function (this: SeedWorld) {
+  async function (this: SeedWorld, dataTable: DataTable) {
+    const row = dataTable.rowsHash() as Record<string, string>;
+    const ended = row['endedDaysAgo'];
     const coverage = this.currentCoverage;
     const organizationId = this.payerOrganizationId;
     if (!coverage) throw new Error('No currentCoverage');
@@ -71,12 +73,12 @@ Then(
       payerName: coverage.payerName,
       memberId: coverage.memberId,
       plan,
-      status: coverage.status,
+      status: row['status'],
       periodStart: coverage.periodStart,
-      periodEnd: coverage.periodEnd,
+      periodEnd: ended ? daysAgo(Number(ended)) : undefined,
     });
     this.log(
-      `Member ${member.id} with payer coverage ${result.id} (${coverage.memberId}, ${coverage.status})`,
+      `Member ${member.id} with payer coverage ${result.id} (${coverage.memberId}, ${row['status']})`,
     );
   },
 );

@@ -84,12 +84,12 @@ An HTML report is written to `apps/seed-demo-data/reports/seed-data-report.html`
 | Feature | Seeds |
 |---|---|
 | `payer-plans.feature` | Praxis Health Plan (`Organization`) and two `InsurancePlan`s, Praxis Gold PPO and Praxis Silver HMO, in the payer HAPI |
-| `payer-members.feature` | for each of the 8 profiles: the provider `Coverage` (through clinic-api), and a member `Patient` + `Coverage` in the payer HAPI. Aisha Chen's coverage is `cancelled` |
+| `payer-members.feature` | for each of the 8 profiles: the provider `Coverage` (through clinic-api), and a member `Patient` + `Coverage` in the payer HAPI. Aisha Chen's payer `Coverage` is `cancelled` while her provider `Coverage` stays `active`, so CRD answers "Coverage could not be verified" for her |
 
 - Both `Coverage`s of a member carry the same identifier, `http://praxishealthplan.example/fhir/identifier/member-id|PHP-#####`. That's how the two sides match a member. The payer `Patient` copies its demographics from the provider `Patient`.
 - payer-api has no write endpoints yet, so payer resources go straight to the payer HAPI. They are identifier-based conditional creates (`If-None-Exist`), so a rerun leaves them as they are: no new resources and no new versions.
 - The profile features rebuild their provider patients on every run, which deletes the provider `Coverage`. `payer-members.feature` runs after them and creates it again.
-- Payer dates are set by the first run and stay fixed after that. Provider dates are recalculated on every run, so the payer and provider coverage periods drift apart by the days since the first seed. Wipe the payer HAPI (`docker compose down -v`) to realign them.
+- Payer dates are set by the first run and stay fixed after that. The provider `Coverage` reuses the payer `Coverage`'s start date (and its end date, when the provider row has one), so both sides keep the same period on every rerun.
 - Each payer scenario first gets a payer-api system token (`client_credentials`) and keeps it on the world as `payerApiToken`, for payer stories that will call payer-api. The defaults are the dev client `clinic-api` / `dev-only-clinic-api-client-secret` from payer-api's `application-dev.yaml`. Override them with `PAYER_CLIENT_ID` / `PAYER_CLIENT_SECRET`, and the URLs with `PAYER_FHIR_URL` (default `http://localhost:8081/fhir`) and `PAYER_API_URL` (default `http://localhost:9095`).
 
 ---

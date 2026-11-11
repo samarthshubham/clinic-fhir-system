@@ -187,6 +187,15 @@ interface FhirSearchBundle {
   entry?: Array<{ resource: { id: string } }>;
 }
 
+export interface CoveragePeriod {
+  start: string;
+  end?: string;
+}
+
+interface CoverageBundle {
+  entry?: Array<{ resource: { period?: { start?: string; end?: string } } }>;
+}
+
 interface InsurancePlanBundle {
   entry?: Array<{
     resource: { id: string; identifier?: FhirIdentifier[] };
@@ -453,6 +462,22 @@ class ApiClient {
     throw new Error(
       `Insurance plan "${name}" is not in the payer HAPI; run payer-plans.feature first`,
     );
+  }
+
+  async findMemberCoveragePeriod(
+    memberId: string,
+  ): Promise<CoveragePeriod | null> {
+    const query = `identifier=${encodeURIComponent(`${MEMBER_ID_SYSTEM}|${memberId}`)}`;
+    const response = await this.fetchWithRetry(
+      `${PAYER_FHIR}/Coverage?${query}`,
+      { headers: { Accept: 'application/fhir+json' } },
+    );
+    if (!response.ok)
+      throw new Error(`GET /fhir/Coverage failed [${response.status}]`);
+    const bundle = (await response.json()) as CoverageBundle;
+    const period = bundle.entry?.[0]?.resource.period;
+    if (!period?.start) return null;
+    return { start: period.start, ...(period.end && { end: period.end }) };
   }
 
   ensureMemberPatient(

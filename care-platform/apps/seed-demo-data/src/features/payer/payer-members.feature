@@ -4,7 +4,11 @@ Feature: Seed payer — members and their coverage on both sides
   through clinic-api; the member Patient and Coverage go to the payer HAPI as
   identifier-based conditional creates. Both Coverages carry the same member id
   (http://praxishealthplan.example/fhir/identifier/member-id), which is how the
-  two sides find each other. Aisha Chen's coverage has ended (roadmap §5).
+  two sides find each other, and the same start date.
+
+  Aisha Chen's plan has ended at the payer, but the clinic still has her
+  coverage as active, so CRD answers "Coverage could not be verified" for her
+  orders (roadmap §5).
 
   Runs after the profile features (cucumber.json): each profile feature rebuilds
   its provider patient, which deletes the provider Coverage.
@@ -18,18 +22,19 @@ Feature: Seed payer — members and their coverage on both sides
     And the patient is covered by Praxis Health Plan:
       | memberId       | <memberId>       |
       | planName       | <planName>       |
-      | status         | <status>         |
+      | status         | active           |
       | startedDaysAgo | <startedDaysAgo> |
-      | endedDaysAgo   | <endedDaysAgo>   |
-    Then Praxis Health Plan has the patient as a member with the same coverage
+    Then Praxis Health Plan has the patient as a member:
+      | status       | <payerStatus>  |
+      | endedDaysAgo | <endedDaysAgo> |
 
     Examples:
-      | patient             | memberId  | planName        | status    | startedDaysAgo | endedDaysAgo |
-      | seed-priya-nair     | PHP-10001 | Praxis Gold PPO | active    | 365            |              |
-      | seed-ramon-castillo | PHP-10002 | Praxis Gold PPO | active    | 365            |              |
-      | seed-gerald-horton  | PHP-10003 | Praxis Gold PPO | active    | 365            |              |
-      | seed-marcus-webb    | PHP-10004 | Praxis Gold PPO | active    | 365            |              |
-      | seed-sandra-okafor  | PHP-10005 | Praxis Gold PPO | active    | 365            |              |
-      | seed-tony-stark     | PHP-10006 | Praxis Gold PPO | active    | 365            |              |
-      | seed-robert-osei    | PHP-10007 | Praxis Gold PPO | active    | 365            |              |
-      | seed-aisha-chen     | PHP-10008 | Praxis Gold PPO | cancelled | 400            | 30           |
+      | patient             | memberId  | planName        | payerStatus | startedDaysAgo | endedDaysAgo |
+      | seed-priya-nair     | PHP-10001 | Praxis Gold PPO | active      | 365            |              |
+      | seed-ramon-castillo | PHP-10002 | Praxis Gold PPO | active      | 365            |              |
+      | seed-gerald-horton  | PHP-10003 | Praxis Gold PPO | active      | 365            |              |
+      | seed-marcus-webb    | PHP-10004 | Praxis Gold PPO | active      | 365            |              |
+      | seed-sandra-okafor  | PHP-10005 | Praxis Gold PPO | active      | 365            |              |
+      | seed-tony-stark     | PHP-10006 | Praxis Gold PPO | active      | 365            |              |
+      | seed-robert-osei    | PHP-10007 | Praxis Gold PPO | active      | 365            |              |
+      | seed-aisha-chen     | PHP-10008 | Praxis Gold PPO | cancelled   | 400            | 30           |
