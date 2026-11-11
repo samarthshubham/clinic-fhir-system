@@ -342,7 +342,7 @@ Labels: `payer` `davinci` `crd` `backend` · Size: L
   - [ ] If prefetch is missing, the service fetches the data through the FHIR server named in the hook request
   - [ ] Answers come from `CoverageRuleService`; inactive coverage gives a "could not verify" card
   - [ ] Hook latency is recorded as a metric
-- **Tests:** unit, interop server (HTTP against `/cds-services`), contract (golden hook request and response), conformance (Inferno CRD)
+- **Tests:** unit, interop server (HTTP against `/cds-services`), contract (golden hook request and response), conformance (Inferno CRD, run in E8-S1)
 - **Data:** `fixtures/davinci/crd/order-sign-request.json`, `order-sign-response-pa-needed.json`, `order-sign-response-covered.json`
 - **Refs:** ADR 0007, NFR-SEC-1, NFR-AUD-1, NFR-OBS-1, NFR-CONF-2
 - **Tasks**
@@ -398,7 +398,7 @@ Labels: `payer` `davinci` `dtr` `backend` · Size: M
 - **AC**
   - [ ] DTR Questionnaires for MRI lumbar spine, polysomnography, continuous glucose monitor and echocardiogram are stored in the payer HAPI
   - [ ] `Questionnaire/$questionnaire-package` returns a bundle with the Questionnaire and its Libraries and ValueSets for a given order and coverage
-- **Tests:** unit, interop server, contract, conformance (Inferno DTR, payer side)
+- **Tests:** unit, interop server, contract, conformance (Inferno DTR, payer side, run in E8-S1)
 - **Data:** `fixtures/davinci/dtr/*.json`; `payer-questionnaires.feature`
 - **Refs:** NFR-CONF-1, NFR-CONF-2
 - **Tasks**
@@ -485,7 +485,7 @@ Labels: `payer` `davinci` `pas` `backend` · Size: L
   - [ ] Stores the Claim and adjudicates with `CoverageRuleService` and the QuestionnaireResponse answers
   - [ ] Returns a `ClaimResponse` bundle: approved, denied (with a reason, NFR-REG-2) or pended, with a `preAuthRef`
   - [ ] Sets the decision deadline (NFR-REG-1) and writes an `AuditEvent` (NFR-AUD-1)
-- **Tests:** unit (adjudication table for every §5 outcome, fixed `Clock`), interop server, contract (golden responses), conformance (Inferno PAS)
+- **Tests:** unit (adjudication table for every §5 outcome, fixed `Clock`), interop server, contract (golden responses), conformance (Inferno PAS, run in E8-S1)
 - **Data:** `fixtures/davinci/pas/response-{approved,denied,pended}.json`
 - **Refs:** ADR 0003, ADR 0004, ADR 0007, NFR-REG-1, NFR-REG-2, NFR-REL-1, NFR-AUD-1, NFR-CONF-2
 - **Tasks**
@@ -620,7 +620,7 @@ Labels: `payer` `davinci` `pdex` `backend` `security` · Size: L
   - [ ] Read and search of Patient, Coverage, ExplanationOfBenefit (CARIN BB), prior auths (PDex prior authorization profile), Encounter, Condition, Observation and MedicationDispense
   - [ ] Results are limited to the member's compartment (NFR-SEC-2), and each access writes an `AuditEvent`
   - [ ] The CapabilityStatement lists the profiles and the SMART configuration
-- **Tests:** unit, interop server, authorization matrix (member A vs member B), conformance (Inferno PDex and CARIN BB)
+- **Tests:** unit, interop server, authorization matrix (member A vs member B), conformance (Inferno PDex and CARIN BB, run in E8-S1)
 - **Data:** `fixtures/davinci/pdex/*.json`
 - **Refs:** NFR-SEC-2, NFR-AUD-1, NFR-CONF-2
 - **Tasks**
@@ -684,7 +684,7 @@ Labels: `payer` `davinci` `pdex` `backend` `security` · Size: L
   - [ ] HRex `Patient/$member-match` takes the member Patient, old and new Coverage and a Consent, and returns the member identifier
   - [ ] No consent returns 422 (NFR-SEC-4), and a member-scoped `$export` follows the match
   - [ ] Demoed with a second payer organization as the "new payer"
-- **Tests:** unit, interop server, contract, conformance (Inferno PDex payer-to-payer)
+- **Tests:** unit, interop server, contract, conformance (Inferno PDex payer-to-payer, run in E8-S1)
 - **Data:** `fixtures/davinci/pdex/member-match-*.json`, second payer seed
 - **Refs:** NFR-SEC-4, NFR-CONF-2
 - **Tasks**
@@ -699,7 +699,7 @@ Labels: `payer` `davinci` `plan-net` `backend` · Size: M
 - **AC**
   - [ ] Public, unauthenticated read and search of Practitioner, PractitionerRole, Organization, Location, HealthcareService, InsurancePlan and Endpoint, with the Plan-Net search parameters
   - [ ] The directory includes the clinic's own practitioners
-- **Tests:** interop server, conformance (Inferno Plan-Net)
+- **Tests:** interop server, conformance (Inferno Plan-Net, run in E8-S1)
 - **Data:** `payer-directory.feature`, `fixtures/davinci/plan-net/*.json`
 - **Refs:** NFR-CONF-2
 - **Tasks**
@@ -722,7 +722,7 @@ Labels: `payer` `davinci` `plan-net` `frontend` · Size: M
 Labels: `payer` `davinci` `formulary` `backend` · Size: M
 - **AC**
   - [ ] Public search of the formulary `InsurancePlan`, FormularyItem `Basic` and `MedicationKnowledge`, with the Formulary IG search parameters
-- **Tests:** interop server, conformance (Inferno Formulary)
+- **Tests:** interop server, conformance (Inferno Formulary, run in E8-S1)
 - **Data:** `payer-formulary.feature`, covering the drugs in the seed profiles
 - **Refs:** NFR-CONF-2
 - **Tasks**
@@ -747,6 +747,7 @@ Labels: `payer` `davinci` `testing` · Size: M
 - **AC**
   - [ ] `infra/inferno/` runs the Da Vinci CRD, DTR, PAS, PDex, Plan-Net and Formulary test kits against payer-api, with a runbook
   - [ ] A nightly workflow runs them and uploads the reports. Each failure is either fixed or filed as an issue and listed in the test strategy.
+  - [ ] The CRD hooks also accept CDS Hooks client JWTs (trusted client JWKS) next to payer-api bearer tokens, so the Inferno CRD kit can call them; if not, the gap is filed and listed in the test strategy
 - **Tests:** this story is the tests
 - **Data:** n/a
 - **Refs:** NFR-CONF-2
