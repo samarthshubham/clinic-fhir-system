@@ -13,6 +13,8 @@ Each file starts from an example in the published IG package (all CC0-1.0) and i
 | `crd/coverage.json` | `Coverage/example` | hl7.fhir.us.davinci-crd#2.2.1 |
 | `crd/service-request.json` | `ServiceRequest/example` | hl7.fhir.us.davinci-crd#2.2.1 |
 | `dtr/questionnaire-package-input.json` | `Parameters/QuestionnairePackageInputParamsExample` | hl7.fhir.us.davinci-dtr#2.2.0 |
+| `dtr/questionnaire-package-output-cgm.json` | `Parameters/QuestionnairePackageOutputParamsExample`; payer-api's answer to `questionnaire-package-input.json` | hl7.fhir.us.davinci-dtr#2.2.0 |
+| `dtr/questionnaire-*.json`, `dtr/library-*.json`, `dtr/valueset-*.json` | `Questionnaire/home-o2-std-questionnaire`, written for the four §6 orders; SNOMED codes checked with tx.fhir.org | hl7.fhir.us.davinci-dtr#2.2.0 |
 | `pas/claim-request-bundle.json` | `Bundle/ReferralAuthorizationBundleExample` | hl7.fhir.us.davinci-pas#2.2.1 |
 | `pas/claim-response-pended-bundle.json` | `Bundle/ReferralPendingAuthorizationResponseBundleExample` | hl7.fhir.us.davinci-pas#2.2.1 |
 | `cdex/task-attachment-request.json` | `Task/cdex-task-example19` | hl7.fhir.us.davinci-cdex#2.1.0 |

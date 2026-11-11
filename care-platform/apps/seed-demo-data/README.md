@@ -85,6 +85,7 @@ An HTML report is written to `apps/seed-demo-data/reports/seed-data-report.html`
 |---|---|
 | `payer-plans.feature` | Praxis Health Plan (`Organization`) and two `InsurancePlan`s, Praxis Gold PPO and Praxis Silver HMO, in the payer HAPI |
 | `payer-members.feature` | for each of the 8 profiles: the provider `Coverage` (through clinic-api), and a member `Patient` + `Coverage` in the payer HAPI. Aisha Chen's coverage is `cancelled` |
+| `payer-questionnaires.feature` | the DTR `Questionnaire`s, CQL `Library`s and `ValueSet`s from `fixtures/davinci/dtr/` (MRI lumbar spine, polysomnography, CGM, echocardiogram), PUT under their fixed ids; then checks that payer-api's `$questionnaire-package` returns the right form for each order code |
 
 - Both `Coverage`s of a member carry the same identifier, `http://praxishealthplan.example/fhir/identifier/member-id|PHP-#####`. That's how the two sides match a member. The payer `Patient` copies its demographics from the provider `Patient`.
 - payer-api has no write endpoints yet, so payer resources go straight to the payer HAPI. They are identifier-based conditional creates (`If-None-Exist`), so a rerun leaves them as they are: no new resources and no new versions.
