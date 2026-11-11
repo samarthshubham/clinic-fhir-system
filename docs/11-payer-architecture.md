@@ -91,15 +91,20 @@ The `cdshooks` package serves [CRD 2.2.1](https://hl7.org/fhir/us/davinci-crd/ST
 
 | Method | Path | Auth | Returns |
 |---|---|---|---|
-| `GET` | `/cds-services` | public | discovery: `order-sign-crd` and `order-select-crd`, each with `davinci-crd.version: ["2.2"]` and the prefetch templates below |
+| `GET` | `/cds-services` | public | discovery: `order-sign-crd`, `order-select-crd`, `appointment-book-crd`, `encounter-start-crd` and `order-dispatch-crd`, each with `davinci-crd.version: ["2.2"]` and the prefetch templates below |
 | `POST` | `/cds-services/order-sign-crd` | system token with `system/Coverage.r` | cards + `systemActions` |
 | `POST` | `/cds-services/order-select-crd` | same | same, without documentation |
+| `POST` | `/cds-services/appointment-book-crd` | same | same as order-sign, for each `Appointment` in `context.appointments` (code: `serviceType[0]`) |
+| `POST` | `/cds-services/encounter-start-crd` | same | same as order-sign, for the `encounter` prefetch, which must be `context.encounterId` (code: `type[0]`) |
+| `POST` | `/cds-services/order-dispatch-crd` | same | same as order-sign, for the `ServiceRequest`s in the `dispatchedOrders` prefetch named in `context.dispatchedOrders` |
 
 | Prefetch key | Template |
 |---|---|
 | `patient` | `Patient/{{context.patientId}}` |
 | `coverage` | `Coverage?patient={{context.patientId}}&status=active` |
-| `practitioner` | `{{context.userId}}` |
+| `practitioner` | `{{context.userId}}` (not on order-dispatch, which has no `userId`) |
+| `encounter` | `Encounter/{{context.encounterId}}` (encounter-start only) |
+| `dispatchedOrders` | `ServiceRequest?_id={{context.dispatchedOrders.ServiceRequest.id}}` (order-dispatch only) |
 
 How a hook is answered:
 
