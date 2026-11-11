@@ -178,9 +178,21 @@ interface FhirIdentifier {
   value: string;
 }
 
-interface FhirResource {
+export interface FhirResource {
   resourceType: string;
   [element: string]: unknown;
+}
+
+export interface OrderCode {
+  system: string;
+  code: string;
+}
+
+interface QuestionnairePackageOutput {
+  parameter?: Array<{
+    name: string;
+    resource?: { entry?: Array<{ resource: { url?: string } }> };
+  }>;
 }
 
 interface FhirSearchBundle {
@@ -362,6 +374,67 @@ class ApiClient {
     }
     const created = (await response.json()) as CreatedResource;
     return { id: created.id };
+  }
+
+  async putPayerResource(resource: FhirResource): Promise<void> {
+    if (typeof resource['id'] !== 'string') {
+      throw new Error(`The ${resource.resourceType} has no id to PUT under`);
+    }
+    await this.put(
+      `${PAYER_FHIR}/${resource.resourceType}/${resource['id']}`,
+      resource,
+    );
+  }
+
+  async questionnairePackage(
+    token: string,
+    order: OrderCode,
+  ): Promise<string[]> {
+    const url = `${PAYER_API}/fhir/Questionnaire/$questionnaire-package`;
+    const response = await this.fetchWithRetry(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/fhir+json',
+        Accept: 'application/fhir+json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'coverage',
+            resource: {
+              resourceType: 'Coverage',
+              id: 'seed-dtr-check',
+              status: 'active',
+              beneficiary: { reference: 'Patient/seed-dtr-check' },
+              payor: [{ display: 'Praxis Health Plan' }],
+            },
+          },
+          {
+            name: 'order',
+            resource: {
+              resourceType: 'ServiceRequest',
+              id: 'seed-dtr-check',
+              status: 'draft',
+              intent: 'order',
+              subject: { reference: 'Patient/seed-dtr-check' },
+              code: { coding: [order] },
+            },
+          },
+        ],
+      }),
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(
+        `POST ${url} failed [${response.status}]: ${text.slice(0, 300)}`,
+      );
+    }
+    const output = (await response.json()) as QuestionnairePackageOutput;
+    return (output.parameter ?? [])
+      .filter((parameter) => parameter.name === 'packagebundle')
+      .map((parameter) => parameter.resource?.entry?.[0]?.resource.url ?? '');
   }
 
   async getProviderPatient(id: string): Promise<ProviderPatient> {

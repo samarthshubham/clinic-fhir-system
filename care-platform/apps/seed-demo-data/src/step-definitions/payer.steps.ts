@@ -1,10 +1,13 @@
 import { DataTable, Given, Then } from '@cucumber/cucumber';
-import { apiClient } from '../support/api-client';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { apiClient, FhirResource } from '../support/api-client';
 import { daysAgo } from '../support/date-helpers';
 import { SeedWorld } from '../support/world';
 
 // The payer HAPI loads its validation terminology on the first write after a start, which takes about 30s.
 const PAYER_HAPI_WRITE = { timeout: 60_000 };
+const DTR_FIXTURES = resolve(__dirname, '../../../../../fixtures/davinci/dtr');
 
 Given(
   'the seed has a payer-api system token',
@@ -78,5 +81,42 @@ Then(
     this.log(
       `Member ${member.id} with payer coverage ${result.id} (${coverage.memberId}, ${coverage.status})`,
     );
+  },
+);
+
+Given(
+  'the payer HAPI has these DTR fixtures:',
+  PAYER_HAPI_WRITE,
+  async function (this: SeedWorld, dataTable: DataTable) {
+    for (const { file } of dataTable.hashes()) {
+      const resource = JSON.parse(
+        readFileSync(resolve(DTR_FIXTURES, file), 'utf8'),
+      ) as FhirResource;
+      await apiClient.putPayerResource(resource);
+      this.log(`${resource.resourceType}/${String(resource['id'])} (${file})`);
+    }
+  },
+);
+
+Then(
+  'payer-api returns these questionnaire packages:',
+  async function (this: SeedWorld, dataTable: DataTable) {
+    const token = this.payerApiToken;
+    if (!token) throw new Error('No payerApiToken');
+    for (const row of dataTable.hashes()) {
+      const questionnaires = await apiClient.questionnairePackage(token, {
+        system: row['system'],
+        code: row['code'],
+      });
+      const expected = row['questionnaire'] ? [row['questionnaire']] : [];
+      if (JSON.stringify(questionnaires) !== JSON.stringify(expected)) {
+        throw new Error(
+          `${row['order']}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(questionnaires)}`,
+        );
+      }
+      this.log(
+        `${row['order']}: ${questionnaires.join(', ') || 'no documentation'}`,
+      );
+    }
   },
 );
