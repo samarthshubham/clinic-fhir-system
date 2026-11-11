@@ -13,10 +13,11 @@ import com.tngtech.archunit.lang.ArchRule;
 class ArchitectureTest {
 
   @ArchTest
-  static final ArchRule fhirTypesOnlyInInteropMapperAndService =
+  static final ArchRule fhirTypesOnlyInInteropCdsHooksMapperAndService =
       noClasses()
           .that()
-          .resideOutsideOfPackages("..payer.interop..", "..payer.mapper..", "..payer.service..")
+          .resideOutsideOfPackages(
+              "..payer.interop..", "..payer.cdshooks..", "..payer.mapper..", "..payer.service..")
           .should()
           .dependOnClassesThat()
           .resideInAPackage("org.hl7.fhir..");

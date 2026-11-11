@@ -23,7 +23,7 @@ public final class TestAuth {
   public static final String CLIENT_ID = "clinic-api";
   public static final String CLIENT_SECRET = "test-client-secret";
   public static final List<String> CLIENT_SCOPES =
-      List.of("system/Claim.c", "system/Questionnaire.r");
+      List.of("system/Claim.c", "system/Coverage.r", "system/Questionnaire.r");
   public static final SecretKey KEY =
       new SecretKeySpec(SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
 
