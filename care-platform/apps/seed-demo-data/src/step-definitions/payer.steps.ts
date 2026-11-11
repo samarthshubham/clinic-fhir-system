@@ -3,6 +3,9 @@ import { apiClient } from '../support/api-client';
 import { daysAgo } from '../support/date-helpers';
 import { SeedWorld } from '../support/world';
 
+// The payer HAPI loads its validation terminology on the first write after a start, which takes about 30s.
+const PAYER_HAPI_WRITE = { timeout: 60_000 };
+
 Given(
   'the seed has a payer-api system token',
   async function (this: SeedWorld) {
@@ -12,6 +15,7 @@ Given(
 
 Given(
   'payer organization {string} named {string} is in the payer HAPI',
+  PAYER_HAPI_WRITE,
   async function (this: SeedWorld, organizationId: string, name: string) {
     const result = await apiClient.ensurePayerOrganization({
       organizationId,
@@ -24,6 +28,7 @@ Given(
 
 Given(
   'the payer offers these insurance plans:',
+  PAYER_HAPI_WRITE,
   async function (this: SeedWorld, dataTable: DataTable) {
     const organizationId = this.payerOrganizationId;
     if (!organizationId) throw new Error('No payerOrganizationId');
@@ -46,6 +51,7 @@ Given('the provider patient {string}', function (this: SeedWorld, id: string) {
 
 Then(
   'Praxis Health Plan has the patient as a member with the same coverage',
+  PAYER_HAPI_WRITE,
   async function (this: SeedWorld) {
     const coverage = this.currentCoverage;
     const organizationId = this.payerOrganizationId;
