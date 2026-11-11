@@ -181,25 +181,31 @@ public class CrdHookService {
     if (coverages.isEmpty()) {
       throw CdsHookRequest.badRequest("The hook request has no active Coverage");
     }
-    if (coverages.size() > 1) {
+    List<Coverage> ours = coverages.stream().filter(this::mayBeOurs).toList();
+    if (ours.isEmpty()) {
       throw CdsHookRequest.badRequest(
-          "The hook request has more than one active Coverage; send the one for this payer");
+          "No Coverage in the hook request is with " + crdProperties.payerName());
     }
-    Coverage coverage = coverages.get(0);
+    if (ours.size() > 1) {
+      throw CdsHookRequest.badRequest(
+          "The hook request has more than one active Coverage with " + crdProperties.payerName());
+    }
+    Coverage coverage = ours.get(0);
     if (!coverage.getIdElement().hasIdPart()) {
       throw CdsHookRequest.badRequest("The Coverage needs an id");
     }
+    return coverage;
+  }
+
+  private boolean mayBeOurs(Coverage coverage) {
     List<Identifier> payerIdentifiers =
         coverage.getPayor().stream()
             .filter(Reference::hasIdentifier)
             .map(Reference::getIdentifier)
             .toList();
-    if (!payerIdentifiers.isEmpty()
-        && payerIdentifiers.stream()
-            .noneMatch(id -> crdProperties.isOurPayer(id.getSystem(), id.getValue()))) {
-      throw CdsHookRequest.badRequest("The Coverage is not with " + crdProperties.payerName());
-    }
-    return coverage;
+    return payerIdentifiers.isEmpty()
+        || payerIdentifiers.stream()
+            .anyMatch(id -> crdProperties.isOurPayer(id.getSystem(), id.getValue()));
   }
 
   private static String memberId(Coverage coverage) {

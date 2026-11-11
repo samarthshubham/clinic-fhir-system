@@ -240,12 +240,35 @@ class CdsHooksInteropTest {
   }
 
   @Test
-  void requestWithTwoCoveragesIs400() throws Exception {
+  void requestWithTwoPraxisCoveragesIs400() throws Exception {
     ObjectNode request = goldenRequest();
     ArrayNode entries = (ArrayNode) request.at("/prefetch/coverage/entry");
     entries.add(entries.get(0).deepCopy());
 
     assertOperationOutcome(post("/cds-services/order-sign-crd", request, clinicApi()), 400);
+  }
+
+  @Test
+  void anotherPayersCoverageNextToOursIsIgnored() throws Exception {
+    givenPayerCoverage("PHP-10005", Coverage.CoverageStatus.ACTIVE, "2025-11-11", null);
+    ObjectNode request = goldenRequest();
+    ArrayNode entries = (ArrayNode) request.at("/prefetch/coverage/entry");
+    ObjectNode secondary = entries.get(0).deepCopy();
+    secondary.put("fullUrl", "http://praxis.clinic/fhir/Coverage/secondary");
+    ObjectNode resource = (ObjectNode) secondary.path("resource");
+    resource.put("id", "secondary");
+    ((ObjectNode) resource.at("/payor/0/identifier")).put("value", "another-health-plan");
+    entries.insert(0, secondary);
+
+    JsonNode response = okJson(post("/cds-services/order-sign-crd", request, clinicApi()));
+
+    assertThat(
+            subExtension(coverageInformation(response), "coverage")
+                .at("/valueReference/reference")
+                .asText())
+        .isEqualTo("Coverage/coverage-sandra-okafor");
+    assertThat(subExtension(coverageInformation(response), "pa-needed").path("valueCode").asText())
+        .isEqualTo("auth-needed");
   }
 
   @Test
