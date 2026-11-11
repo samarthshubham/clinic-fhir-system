@@ -2,20 +2,47 @@ name: E2E
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'clinic-api/**'
+      - 'payer-api/**'
+      - 'care-platform/**'
+      - 'infra/**'
+      - '.github/workflows/e2e.yml'
+      - '.github/scripts/e2e-suites.sh'
   pull_request:
     paths:
       - 'clinic-api/**'
       - 'payer-api/**'
       - 'care-platform/**'
-      - 'infra/docker-compose.yml'
+      - 'infra/**'
       - '.github/workflows/e2e.yml'
+      - '.github/scripts/e2e-suites.sh'
 
 concurrency:
   group: e2e-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      suites: ${{ steps.suites.outputs.suites }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Pick the e2e suites this change can break
+        id: suites
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: bash .github/scripts/e2e-suites.sh
+
   e2e:
+    needs: changes
+    if: needs.changes.outputs.suites != ''
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -81,7 +108,7 @@ jobs:
 
       - name: Run e2e suites
         working-directory: care-platform
-        run: npx nx run-many -t e2e -p clinician-app-e2e patient-app-e2e payer-app-e2e --parallel=1
+        run: npx nx run-many -t e2e -p ${{ needs.changes.outputs.suites }} --parallel=1
 
       - uses: actions/upload-artifact@v4
         if: always()
