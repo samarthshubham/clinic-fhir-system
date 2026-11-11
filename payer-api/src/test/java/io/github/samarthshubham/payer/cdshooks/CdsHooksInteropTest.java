@@ -93,15 +93,16 @@ class CdsHooksInteropTest {
   }
 
   @Test
-  void discoveryIsPublicAndListsBothServicesWithPrefetchTemplates() throws Exception {
+  void discoveryIsPublicAndListsEveryServiceWithPrefetchTemplates() throws Exception {
     HttpResponse<String> response = get("/cds-services");
 
     assertThat(response.statusCode()).isEqualTo(200);
     JsonNode services = objectMapper.readTree(response.body()).path("services");
-    assertThat(services).hasSize(2);
+    assertThat(services).hasSize(3);
     assertThat(services.findValuesAsText("id"))
-        .containsExactly("order-sign-crd", "order-select-crd");
-    assertThat(services.findValuesAsText("hook")).containsExactly("order-sign", "order-select");
+        .containsExactly("order-sign-crd", "order-select-crd", "appointment-book-crd");
+    assertThat(services.findValuesAsText("hook"))
+        .containsExactly("order-sign", "order-select", "appointment-book");
     for (JsonNode service : services) {
       JsonNode prefetch = service.path("prefetch");
       assertThat(prefetch.path("patient").asText()).isEqualTo("Patient/{{context.patientId}}");
@@ -134,6 +135,28 @@ class CdsHooksInteropTest {
             clinicApi());
 
     assertMatchesGolden(response, "order-sign-response-covered.json");
+  }
+
+  @Test
+  void appointmentBookForAnMriAnswersTheGoldenPaNeededResponse() throws Exception {
+    givenPayerCoverage("PHP-10005", Coverage.CoverageStatus.ACTIVE, "2025-11-11", null);
+
+    HttpResponse<String> response =
+        post(
+            "/cds-services/appointment-book-crd",
+            fixture("appointment-book-request.json"),
+            clinicApi());
+
+    assertMatchesGolden(response, "appointment-book-response-pa-needed.json");
+  }
+
+  @Test
+  void appointmentBookWithoutAppointmentsIsABadRequest() throws Exception {
+    ObjectNode request =
+        (ObjectNode) objectMapper.readTree(fixture("appointment-book-request.json"));
+    ((ObjectNode) request.path("context")).remove("appointments");
+
+    assertOperationOutcome(post("/cds-services/appointment-book-crd", request, clinicApi()), 400);
   }
 
   @Test

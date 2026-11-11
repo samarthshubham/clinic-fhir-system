@@ -14,6 +14,7 @@ import io.github.samarthshubham.payer.mapper.PageMapper;
 import io.github.samarthshubham.payer.service.AuditEventService;
 import io.github.samarthshubham.payer.service.MemberCoverageCheck;
 import io.github.samarthshubham.payer.service.MemberCoverageService;
+import io.github.samarthshubham.payer.service.OrderPriority;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Clock;
@@ -21,8 +22,10 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import org.hl7.fhir.instance.model.api.IBaseResource;
+import org.hl7.fhir.r4.model.Appointment;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Coverage;
+import org.hl7.fhir.r4.model.DomainResource;
 import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.ServiceRequest;
@@ -114,7 +117,10 @@ public class CrdHookService {
       throw CdsHookRequest.badRequest("The hook context has no patientId");
     }
     IParser parser = fhirContext.newJsonParser();
-    List<ServiceRequest> orders = draftOrders(hook, request, parser);
+    List<? extends DomainResource> targets =
+        hook == CrdHook.APPOINTMENT_BOOK
+            ? contextBundle(request.appointments(), "appointments", Appointment.class, parser)
+            : draftOrders(hook, request, parser);
     Coverage coverage = coverage(request, parser);
     LocalDate today = LocalDate.now(clock);
     MemberCoverageCheck check = memberCoverageService.check(memberId(coverage), today);
@@ -126,37 +132,35 @@ public class CrdHookService {
     ArrayNode cards = response.putArray("cards");
     ArrayNode systemActions = response.putArray("systemActions");
     String coverageReference = "Coverage/" + coverage.getIdElement().getIdPart();
-    for (ServiceRequest order : orders) {
-      CoverageDecision decision = coverageDecisions.decide(hook, order, check);
-      String orderReference = "ServiceRequest/" + order.getIdElement().getIdPart();
-      String assertionId = CoverageDecisions.stableId(request.hookInstance(), orderReference);
-      ServiceRequest updated = order.copy();
+    for (DomainResource target : targets) {
+      CoverageDecision decision = decide(hook, target, check);
+      String targetReference = target.fhirType() + "/" + target.getIdElement().getIdPart();
+      String assertionId = CoverageDecisions.stableId(request.hookInstance(), targetReference);
+      DomainResource updated = target.copy();
       updated
           .getExtension()
           .removeIf(e -> CoverageDecisions.COVERAGE_INFORMATION.equals(e.getUrl()));
       updated.addExtension(
           coverageDecisions.coverageInformation(decision, coverageReference, today, assertionId));
       systemActions.add(systemAction(updated, parser));
-      cards.add(card(decision, request.hookInstance(), orderReference, today));
+      cards.add(card(decision, request.hookInstance(), targetReference, today));
     }
     return response;
   }
 
+  private CoverageDecision decide(CrdHook hook, DomainResource target, MemberCoverageCheck check) {
+    return switch (target) {
+      case ServiceRequest order -> coverageDecisions.decide(hook, order, check);
+      case Appointment appointment ->
+          coverageDecisions.decide(
+              hook, appointment.getServiceTypeFirstRep(), OrderPriority.ROUTINE, check);
+      default -> throw new IllegalStateException("No coverage decision for " + target.fhirType());
+    };
+  }
+
   private List<ServiceRequest> draftOrders(CrdHook hook, CdsHookRequest request, IParser parser) {
-    JsonNode draftOrders = request.draftOrders();
-    if (!draftOrders.isObject()) {
-      throw CdsHookRequest.badRequest("The hook context has no draftOrders Bundle");
-    }
-    Bundle bundle;
-    try {
-      bundle = parser.parseResource(Bundle.class, draftOrders.toString());
-    } catch (DataFormatException e) {
-      throw CdsHookRequest.badRequest("context.draftOrders is not a FHIR Bundle");
-    }
-    List<ServiceRequest> orders = PageMapper.resources(bundle, ServiceRequest.class);
-    if (orders.stream().anyMatch(order -> !order.getIdElement().hasIdPart())) {
-      throw CdsHookRequest.badRequest("Every draft order needs an id");
-    }
+    List<ServiceRequest> orders =
+        contextBundle(request.draftOrders(), "draftOrders", ServiceRequest.class, parser);
     if (hook.primary()) {
       return orders;
     }
@@ -167,6 +171,24 @@ public class CrdHookService {
     return orders.stream()
         .filter(order -> selections.contains("ServiceRequest/" + order.getIdElement().getIdPart()))
         .toList();
+  }
+
+  private static <T extends DomainResource> List<T> contextBundle(
+      JsonNode node, String name, Class<T> type, IParser parser) {
+    if (!node.isObject()) {
+      throw CdsHookRequest.badRequest("The hook context has no " + name + " Bundle");
+    }
+    Bundle bundle;
+    try {
+      bundle = parser.parseResource(Bundle.class, node.toString());
+    } catch (DataFormatException e) {
+      throw CdsHookRequest.badRequest("context." + name + " is not a FHIR Bundle");
+    }
+    List<T> resources = PageMapper.resources(bundle, type);
+    if (resources.stream().anyMatch(resource -> !resource.getIdElement().hasIdPart())) {
+      throw CdsHookRequest.badRequest("Every resource in context." + name + " needs an id");
+    }
+    return resources;
   }
 
   private Coverage coverage(CdsHookRequest request, IParser parser) {
@@ -220,11 +242,11 @@ public class CrdHookService {
         .orElse(coverage.getSubscriberId());
   }
 
-  private ObjectNode systemAction(ServiceRequest order, IParser parser) {
+  private ObjectNode systemAction(DomainResource resource, IParser parser) {
     ObjectNode action = objectMapper.createObjectNode();
     action.put("type", "update");
     action.put("description", "Add " + crdProperties.payerName() + " coverage information");
-    action.set("resource", toJson(parser.encodeResourceToString(order)));
+    action.set("resource", toJson(parser.encodeResourceToString(resource)));
     return action;
   }
 

@@ -38,6 +38,10 @@ record CdsHookRequest(
     return context.path("draftOrders");
   }
 
+  JsonNode appointments() {
+    return context.path("appointments");
+  }
+
   List<String> selections() {
     List<String> selections = new ArrayList<>();
     context.path("selections").forEach(selection -> selections.add(selection.asText()));

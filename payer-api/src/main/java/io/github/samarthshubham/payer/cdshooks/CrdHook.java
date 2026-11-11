@@ -20,7 +20,14 @@ public enum CrdHook {
       "Praxis Health Plan coverage requirements on order select",
       "Tells early whether the selected orders are covered and need prior authorization, and adds"
           + " the CRD coverage-information extension to each selected order.",
-      false);
+      false),
+  APPOINTMENT_BOOK(
+      "appointment-book-crd",
+      "appointment-book",
+      "Praxis Health Plan coverage requirements on appointment booking",
+      "Tells whether the booked appointments are covered and need prior authorization or"
+          + " documentation, and adds the CRD coverage-information extension to each appointment.",
+      true);
 
   public static final String PATIENT_PREFETCH = "patient";
   public static final String COVERAGE_PREFETCH = "coverage";
