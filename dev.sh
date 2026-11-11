@@ -26,7 +26,7 @@ check_port() {
 }
 
 wait_for_http() {
-  local name=$1 health_url=$2 display_url=$3 attempts=${4:-12}
+  local name=$1 health_url=$2 display_url=$3 attempts=${4:-12} log_hint=${5:-logs/docker.log}
   pending "Waiting for $name (up to $((attempts * 5))s)..."
   for i in $(seq 1 "$attempts"); do
     if curl -sf --connect-timeout 2 "$health_url" > /dev/null 2>&1; then
@@ -35,7 +35,7 @@ wait_for_http() {
     fi
     sleep 5
   done
-  err "$name did not respond in time — check logs/docker.log"
+  err "$name did not respond in time — check $log_hint"
   exit 1
 }
 
@@ -238,7 +238,8 @@ startup() {
 
   # The payer HAPI loads its IG packages on start, so it comes up last. The seed needs it.
   info "Payer HAPI FHIR (:8081)"
-  wait_for_http "Payer HAPI" "http://localhost:8081/fhir/metadata" "http://localhost:8081/fhir" 72
+  wait_for_http "Payer HAPI" "http://localhost:8081/fhir/metadata" "http://localhost:8081/fhir" 72 \
+    "docker compose -f infra/docker-compose.yml logs hapi-fhir-payer"
 
   echo ""
   echo -e "${BOLD}All services started.${NC}"
