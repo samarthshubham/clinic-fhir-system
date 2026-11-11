@@ -1,0 +1,269 @@
+{
+  "resourceType": "Parameters",
+  "meta": {
+    "profile": [ "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/dtr-qpackage-output-parameters" ]
+  },
+  "parameter": [ {
+    "name": "packagebundle",
+    "resource": {
+      "resourceType": "Bundle",
+      "meta": {
+        "profile": [ "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/DTR-QPackageBundle" ]
+      },
+      "type": "collection",
+      "entry": [ {
+        "fullUrl": "http://praxishealthplan.example/fhir/Questionnaire/continuous-glucose-monitor",
+        "resource": {
+          "resourceType": "Questionnaire",
+          "id": "continuous-glucose-monitor",
+          "meta": {
+            "profile": [ "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/dtr-std-questionnaire" ]
+          },
+          "extension": [ {
+            "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/questionnaireAudience",
+            "valueCode": "clinical"
+          }, {
+            "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/estimated-completion-time",
+            "extension": [ {
+              "url": "totalTime",
+              "valueCode": "under-3min"
+            }, {
+              "url": "clinicalTime",
+              "valueCode": "under-3min"
+            } ]
+          }, {
+            "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-launchContext",
+            "extension": [ {
+              "url": "name",
+              "valueCoding": {
+                "system": "http://hl7.org/fhir/uv/sdc/CodeSystem/launchContext",
+                "code": "patient"
+              }
+            }, {
+              "url": "type",
+              "valueCode": "Patient"
+            } ]
+          }, {
+            "url": "http://hl7.org/fhir/StructureDefinition/cqf-library",
+            "valueCanonical": "http://praxishealthplan.example/fhir/Library/continuous-glucose-monitor-prepopulation"
+          } ],
+          "url": "http://praxishealthplan.example/fhir/Questionnaire/continuous-glucose-monitor",
+          "name": "ContinuousGlucoseMonitor",
+          "title": "Continuous glucose monitor documentation",
+          "status": "active",
+          "subjectType": [ "Patient" ],
+          "date": "2026-11-01",
+          "publisher": "Praxis Health Plan",
+          "description": "Documentation Praxis Health Plan needs to review prior authorization for a continuous glucose monitor.",
+          "item": [ {
+            "linkId": "instructions",
+            "text": "Praxis Health Plan needs this documentation for a continuous glucose monitor (HCPCS E2103).",
+            "type": "display"
+          }, {
+            "linkId": "diagnosis",
+            "text": "Diagnosis",
+            "type": "group",
+            "item": [ {
+              "linkId": "diabetes-diagnosis",
+              "text": "Does the patient have a diagnosis of diabetes mellitus?",
+              "type": "boolean",
+              "required": true
+            }, {
+              "linkId": "diabetes-type",
+              "text": "Type of diabetes",
+              "type": "choice",
+              "enableWhen": [ {
+                "question": "diabetes-diagnosis",
+                "operator": "=",
+                "answerBoolean": true
+              } ],
+              "required": true,
+              "answerValueSet": "http://praxishealthplan.example/fhir/ValueSet/diabetes-types"
+            }, {
+              "linkId": "most-recent-hba1c",
+              "text": "Most recent HbA1c (%)",
+              "type": "decimal",
+              "enableWhen": [ {
+                "question": "diabetes-diagnosis",
+                "operator": "=",
+                "answerBoolean": true
+              } ]
+            }, {
+              "linkId": "hba1c-date",
+              "text": "Date of the most recent HbA1c",
+              "type": "date",
+              "enableWhen": [ {
+                "question": "diabetes-diagnosis",
+                "operator": "=",
+                "answerBoolean": true
+              } ]
+            } ]
+          }, {
+            "linkId": "treatment",
+            "text": "Treatment",
+            "type": "group",
+            "item": [ {
+              "linkId": "insulin-treated",
+              "text": "Is the patient treated with insulin?",
+              "type": "boolean",
+              "required": true
+            }, {
+              "extension": [ {
+                "url": "http://hl7.org/fhir/StructureDefinition/minValue",
+                "valueInteger": 0
+              }, {
+                "url": "http://hl7.org/fhir/StructureDefinition/maxValue",
+                "valueInteger": 12
+              } ],
+              "linkId": "insulin-injections-per-day",
+              "text": "Insulin injections per day (enter 0 for an insulin pump)",
+              "type": "integer",
+              "enableWhen": [ {
+                "question": "insulin-treated",
+                "operator": "=",
+                "answerBoolean": true
+              } ]
+            }, {
+              "extension": [ {
+                "url": "http://hl7.org/fhir/StructureDefinition/minValue",
+                "valueInteger": 0
+              }, {
+                "url": "http://hl7.org/fhir/StructureDefinition/maxValue",
+                "valueInteger": 20
+              } ],
+              "linkId": "glucose-checks-per-day",
+              "text": "Fingerstick glucose checks per day",
+              "type": "integer"
+            }, {
+              "linkId": "problematic-hypoglycemia",
+              "text": "Has the patient had problematic hypoglycemia?",
+              "type": "boolean"
+            } ]
+          }, {
+            "linkId": "clinical-notes",
+            "text": "Anything else the reviewer should know",
+            "type": "text"
+          } ]
+        }
+      }, {
+        "fullUrl": "urn:uuid:d85e0248-eb9a-3c99-8837-60898e23a153",
+        "resource": {
+          "resourceType": "QuestionnaireResponse",
+          "id": "d85e0248-eb9a-3c99-8837-60898e23a153",
+          "meta": {
+            "profile": [ "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/dtr-questionnaireresponse" ]
+          },
+          "extension": [ {
+            "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/qr-coverage",
+            "valueReference": {
+              "reference": "Coverage/coverage-ramon-castillo"
+            }
+          }, {
+            "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/intendedUse",
+            "valueCodeableConcept": {
+              "coding": [ {
+                "system": "http://hl7.org/fhir/us/davinci-crd/CodeSystem/coverage-information-codes",
+                "code": "withpa",
+                "display": "Include in prior authorization"
+              } ]
+            }
+          }, {
+            "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/qr-context",
+            "valueReference": {
+              "reference": "DeviceRequest/cgm-ramon-castillo"
+            }
+          } ],
+          "questionnaire": "http://praxishealthplan.example/fhir/Questionnaire/continuous-glucose-monitor",
+          "status": "in-progress",
+          "subject": {
+            "reference": "Patient/ramon-castillo"
+          }
+        }
+      }, {
+        "fullUrl": "http://praxishealthplan.example/fhir/Library/continuous-glucose-monitor-prepopulation",
+        "resource": {
+          "resourceType": "Library",
+          "id": "continuous-glucose-monitor-prepopulation",
+          "meta": {
+            "profile": [ "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-library" ]
+          },
+          "extension": [ {
+            "url": "http://hl7.org/fhir/StructureDefinition/artifact-versionAlgorithm",
+            "valueCoding": {
+              "system": "http://hl7.org/fhir/version-algorithm",
+              "code": "semver"
+            }
+          } ],
+          "url": "http://praxishealthplan.example/fhir/Library/continuous-glucose-monitor-prepopulation",
+          "version": "1.0.0",
+          "name": "ContinuousGlucoseMonitorPrepopulation",
+          "title": "Continuous glucose monitor prepopulation",
+          "status": "active",
+          "type": {
+            "coding": [ {
+              "system": "http://terminology.hl7.org/CodeSystem/library-type",
+              "code": "logic-library"
+            } ]
+          },
+          "date": "2026-11-01",
+          "publisher": "Praxis Health Plan",
+          "description": "CQL that prefills the continuous glucose monitor documentation from the patient's chart.",
+          "content": [ {
+            "contentType": "text/cql",
+            "data": "bGlicmFyeSBDb250aW51b3VzR2x1Y29zZU1vbml0b3JQcmVwb3B1bGF0aW9uIHZlcnNpb24gJzEuMC4wJwoKdXNpbmcgRkhJUiB2ZXJzaW9uICc0LjAuMScKCnZhbHVlc2V0ICJEaWFiZXRlcyBUeXBlcyI6ICdodHRwOi8vcHJheGlzaGVhbHRocGxhbi5leGFtcGxlL2ZoaXIvVmFsdWVTZXQvZGlhYmV0ZXMtdHlwZXMnCgpjb250ZXh0IFBhdGllbnQKCmRlZmluZSAiRGlhYmV0ZXMgQ29uZGl0aW9ucyI6CiAgW0NvbmRpdGlvbjogIkRpYWJldGVzIFR5cGVzIl0KCmRlZmluZSAiSGFzIERpYWJldGVzIERpYWdub3NpcyI6CiAgZXhpc3RzICJEaWFiZXRlcyBDb25kaXRpb25zIgoKZGVmaW5lICJEaWFiZXRlcyBUeXBlIjoKICBGaXJzdCgiRGlhYmV0ZXMgQ29uZGl0aW9ucyIpLmNvZGUK"
+          } ]
+        }
+      }, {
+        "fullUrl": "http://praxishealthplan.example/fhir/ValueSet/diabetes-types",
+        "resource": {
+          "resourceType": "ValueSet",
+          "id": "diabetes-types",
+          "meta": {
+            "profile": [ "http://hl7.org/fhir/StructureDefinition/shareablevalueset" ]
+          },
+          "url": "http://praxishealthplan.example/fhir/ValueSet/diabetes-types",
+          "version": "1.0.0",
+          "name": "DiabetesTypes",
+          "title": "Diabetes types",
+          "status": "active",
+          "experimental": false,
+          "date": "2026-11-01",
+          "publisher": "Praxis Health Plan",
+          "description": "Types of diabetes mellitus for continuous glucose monitor documentation.",
+          "compose": {
+            "include": [ {
+              "system": "http://snomed.info/sct",
+              "concept": [ {
+                "code": "46635009",
+                "display": "Type 1 diabetes mellitus"
+              }, {
+                "code": "44054006",
+                "display": "Type 2 diabetes mellitus"
+              }, {
+                "code": "11687002",
+                "display": "Gestational diabetes mellitus"
+              } ]
+            } ]
+          },
+          "expansion": {
+            "timestamp": "2026-11-01T00:00:00Z",
+            "total": 3,
+            "contains": [ {
+              "system": "http://snomed.info/sct",
+              "code": "46635009",
+              "display": "Type 1 diabetes mellitus"
+            }, {
+              "system": "http://snomed.info/sct",
+              "code": "44054006",
+              "display": "Type 2 diabetes mellitus"
+            }, {
+              "system": "http://snomed.info/sct",
+              "code": "11687002",
+              "display": "Gestational diabetes mellitus"
+            } ]
+          }
+        }
+      } ]
+    }
+  } ]
+}

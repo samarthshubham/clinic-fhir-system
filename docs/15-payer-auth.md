@@ -66,10 +66,11 @@ A member token has `scope=patient/*.r` and `patient=<payer Patient id>`. ADR 000
 | `system/X.u` / `.d` | update or patch X / delete X |
 | `system/*.…` | the same on every type |
 | `patient/X.r` + `patient` claim | read X **in the member's Patient compartment** |
-| extended operation | only if an `OperationScope` bean declares it, e.g. `new OperationScope("$submit", "Claim", CREATE)` |
+| extended operation | only if an `OperationScope` bean declares it, e.g. `new OperationScope("$submit", "Claim", CREATE)`; a `systemOnly` one (`new OperationScope(…, true)`) never for member tokens |
 
 - Anything without a rule is denied: 403 with an `OperationOutcome` (NFR-SEC-1).
-- Compartment checks are HAPI's. A member reading `Patient/B` or a `Claim` whose patient is B gets 403, including resources inside search results and operation responses (NFR-SEC-2).
+- Compartment checks are HAPI's. A member reading `Patient/B` or a `Claim` whose patient is B gets 403, including resources inside search results and the top-level resources of an operation response (NFR-SEC-2).
+- HAPI does not check resources nested deeper in an operation response, such as the Bundles inside the `Parameters` that `$questionnaire-package` returns. An operation whose response nests resources is declared `systemOnly`, so member tokens get 403 for it. `$questionnaire-package` (`system/Questionnaire.r`) is the first one: clinic-api calls it with its system token.
 - `patient/` scopes count only with a `patient` claim, and `system/` scopes only without one.
 - Batch and transaction Bundles get no rules and are denied, because the per-request `r`/`s`/`u` gating can't see the entries inside a Bundle.
 - SMART scopes say nothing about operations, so an operation needs an `OperationScope` naming the resource type and permission it requires. Operations without one are denied, so a new operation is closed until its story opens it.
@@ -96,5 +97,6 @@ Later stories register their providers as Spring beans (`IResourceProvider`) and
 | `AuthControllerTest`, `OAuthTokenControllerTest`, `SecurityConfigTest` | the JSON and OAuth2 error shapes, Basic and form client auth, 401s |
 | `ScopeInterceptorInteropTest` | over real HTTP: a wrong scope gets 403, member A reading member B gets 403, 401s are `OperationOutcome`s, metadata advertises SMART |
 | `AuthorizationMatrixTest` | every JSON endpoint and interop operation × anonymous, both staff roles, clinic-api, a system reader and two members |
+| `QuestionnairePackageInteropTest` | `$questionnaire-package` over real HTTP: the golden package for clinic-api, 400s for bad input, 403 for a member token |
 
 The interop rows use test-only providers (`support/TestInteropProviders`) until real ones exist. Each story that adds an endpoint or operation adds its row.
