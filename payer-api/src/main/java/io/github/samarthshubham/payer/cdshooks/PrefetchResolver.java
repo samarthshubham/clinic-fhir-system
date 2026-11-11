@@ -40,7 +40,7 @@ public class PrefetchResolver {
    * arbitrary URL.
    */
   IBaseResource resolve(CdsHookRequest request, String key, IParser parser) {
-    String template = CrdHook.PREFETCH.get(key);
+    String template = CrdHook.prefetchTemplate(key);
     if (template == null) {
       throw new IllegalArgumentException("No prefetch template named " + key);
     }

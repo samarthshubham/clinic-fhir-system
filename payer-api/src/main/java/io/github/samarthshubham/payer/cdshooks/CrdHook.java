@@ -27,13 +27,22 @@ public enum CrdHook {
       "Praxis Health Plan coverage requirements on appointment booking",
       "Tells whether the booked appointments are covered and need prior authorization or"
           + " documentation, and adds the CRD coverage-information extension to each appointment.",
+      true),
+  ENCOUNTER_START(
+      "encounter-start-crd",
+      "encounter-start",
+      "Praxis Health Plan coverage requirements on encounter start",
+      "Tells whether the starting encounter is covered and needs prior authorization or"
+          + " documentation, and adds the CRD coverage-information extension to the encounter.",
       true);
 
   public static final String PATIENT_PREFETCH = "patient";
   public static final String COVERAGE_PREFETCH = "coverage";
   public static final String PRACTITIONER_PREFETCH = "practitioner";
+  public static final String ENCOUNTER_PREFETCH = "encounter";
 
   static final Map<String, String> PREFETCH = prefetchTemplates();
+  private static final Map<String, String> ENCOUNTER_START_PREFETCH = encounterStartTemplates();
 
   private final String serviceId;
   private final String hook;
@@ -72,6 +81,20 @@ public enum CrdHook {
   /** A primary hook may ask for documentation; CRD 2.2 limits order-select to coverage and PA. */
   public boolean primary() {
     return primary;
+  }
+
+  public Map<String, String> prefetch() {
+    return this == ENCOUNTER_START ? ENCOUNTER_START_PREFETCH : PREFETCH;
+  }
+
+  static String prefetchTemplate(String key) {
+    return ENCOUNTER_START_PREFETCH.get(key);
+  }
+
+  private static Map<String, String> encounterStartTemplates() {
+    Map<String, String> templates = new LinkedHashMap<>(prefetchTemplates());
+    templates.put(ENCOUNTER_PREFETCH, "Encounter/{{context.encounterId}}");
+    return Collections.unmodifiableMap(templates);
   }
 
   private static Map<String, String> prefetchTemplates() {

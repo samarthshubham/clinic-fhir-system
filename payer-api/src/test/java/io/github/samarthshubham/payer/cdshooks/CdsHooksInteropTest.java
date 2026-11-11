@@ -98,11 +98,15 @@ class CdsHooksInteropTest {
 
     assertThat(response.statusCode()).isEqualTo(200);
     JsonNode services = objectMapper.readTree(response.body()).path("services");
-    assertThat(services).hasSize(3);
+    assertThat(services).hasSize(4);
     assertThat(services.findValuesAsText("id"))
-        .containsExactly("order-sign-crd", "order-select-crd", "appointment-book-crd");
+        .containsExactly(
+            "order-sign-crd", "order-select-crd", "appointment-book-crd", "encounter-start-crd");
     assertThat(services.findValuesAsText("hook"))
-        .containsExactly("order-sign", "order-select", "appointment-book");
+        .containsExactly("order-sign", "order-select", "appointment-book", "encounter-start");
+    assertThat(services.get(3).path("prefetch").path("encounter").asText())
+        .isEqualTo("Encounter/{{context.encounterId}}");
+    assertThat(services.get(0).path("prefetch").has("encounter")).isFalse();
     for (JsonNode service : services) {
       JsonNode prefetch = service.path("prefetch");
       assertThat(prefetch.path("patient").asText()).isEqualTo("Patient/{{context.patientId}}");
@@ -157,6 +161,38 @@ class CdsHooksInteropTest {
     ((ObjectNode) request.path("context")).remove("appointments");
 
     assertOperationOutcome(post("/cds-services/appointment-book-crd", request, clinicApi()), 400);
+  }
+
+  @Test
+  void encounterStartForAnMriAnswersTheGoldenPaNeededResponse() throws Exception {
+    givenPayerCoverage("PHP-10005", Coverage.CoverageStatus.ACTIVE, "2025-11-11", null);
+
+    HttpResponse<String> response =
+        post(
+            "/cds-services/encounter-start-crd",
+            fixture("encounter-start-request.json"),
+            clinicApi());
+
+    assertMatchesGolden(response, "encounter-start-response-pa-needed.json");
+  }
+
+  @Test
+  void encounterStartForAnotherEncounterThanTheContextIsABadRequest() throws Exception {
+    ObjectNode request =
+        (ObjectNode) objectMapper.readTree(fixture("encounter-start-request.json"));
+    ((ObjectNode) request.path("context")).put("encounterId", "other-encounter");
+
+    assertOperationOutcome(post("/cds-services/encounter-start-crd", request, clinicApi()), 400);
+  }
+
+  @Test
+  void encounterStartWithAPatientAsTheEncounterPrefetchIsABadRequest() throws Exception {
+    ObjectNode request =
+        (ObjectNode) objectMapper.readTree(fixture("encounter-start-request.json"));
+    ((ObjectNode) request.path("prefetch"))
+        .set("encounter", request.path("prefetch").path("patient"));
+
+    assertOperationOutcome(post("/cds-services/encounter-start-crd", request, clinicApi()), 400);
   }
 
   @Test

@@ -69,7 +69,7 @@ class PrefetchResolverTest {
   void unknownPrefetchKeyIsAProgrammingError() throws Exception {
     CdsHookRequest request = request("{\"context\":{}}");
 
-    assertThatThrownBy(() -> resolver.resolve(request, "encounter", parser))
+    assertThatThrownBy(() -> resolver.resolve(request, "medications", parser))
         .isInstanceOf(IllegalArgumentException.class);
   }
 

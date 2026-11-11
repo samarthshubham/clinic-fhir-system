@@ -26,6 +26,7 @@ import org.hl7.fhir.r4.model.Appointment;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Coverage;
 import org.hl7.fhir.r4.model.DomainResource;
+import org.hl7.fhir.r4.model.Encounter;
 import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.ServiceRequest;
@@ -118,9 +119,12 @@ public class CrdHookService {
     }
     IParser parser = fhirContext.newJsonParser();
     List<? extends DomainResource> targets =
-        hook == CrdHook.APPOINTMENT_BOOK
-            ? contextBundle(request.appointments(), "appointments", Appointment.class, parser)
-            : draftOrders(hook, request, parser);
+        switch (hook) {
+          case APPOINTMENT_BOOK ->
+              contextBundle(request.appointments(), "appointments", Appointment.class, parser);
+          case ENCOUNTER_START -> List.of(encounter(request, parser));
+          case ORDER_SIGN, ORDER_SELECT -> draftOrders(hook, request, parser);
+        };
     Coverage coverage = coverage(request, parser);
     LocalDate today = LocalDate.now(clock);
     MemberCoverageCheck check = memberCoverageService.check(memberId(coverage), today);
@@ -154,6 +158,8 @@ public class CrdHookService {
       case Appointment appointment ->
           coverageDecisions.decide(
               hook, appointment.getServiceTypeFirstRep(), OrderPriority.ROUTINE, check);
+      case Encounter encounter ->
+          coverageDecisions.decide(hook, encounter.getTypeFirstRep(), OrderPriority.ROUTINE, check);
       default -> throw new IllegalStateException("No coverage decision for " + target.fhirType());
     };
   }
@@ -171,6 +177,18 @@ public class CrdHookService {
     return orders.stream()
         .filter(order -> selections.contains("ServiceRequest/" + order.getIdElement().getIdPart()))
         .toList();
+  }
+
+  private Encounter encounter(CdsHookRequest request, IParser parser) {
+    if (!(prefetchResolver.resolve(request, CrdHook.ENCOUNTER_PREFETCH, parser)
+            instanceof Encounter encounter)
+        || !encounter.getIdElement().hasIdPart()) {
+      throw CdsHookRequest.badRequest("Prefetch 'encounter' is not an Encounter with an id");
+    }
+    if (!encounter.getIdElement().getIdPart().equals(request.contextValue("encounterId"))) {
+      throw CdsHookRequest.badRequest("Prefetch 'encounter' is not the context encounterId");
+    }
+    return encounter;
   }
 
   private static <T extends DomainResource> List<T> contextBundle(

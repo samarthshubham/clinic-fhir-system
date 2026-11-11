@@ -19,7 +19,7 @@ public record CdsDiscovery(List<Service> services) {
                         hook.title(),
                         hook.description(),
                         hook.serviceId(),
-                        CrdHook.PREFETCH,
+                        hook.prefetch(),
                         Map.of(CRD_VERSION_EXTENSION, List.of(CRD_VERSION))))
             .toList());
   }

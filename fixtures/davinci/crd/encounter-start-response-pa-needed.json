@@ -1,0 +1,88 @@
+{
+  "cards" : [ {
+    "uuid" : "e38e7807-4258-36e6-8099-874a9efcc956",
+    "summary" : "Prior authorization needed: MRI lumbar spine without contrast",
+    "indicator" : "warning",
+    "detail" : "Praxis Health Plan needs prior authorization for this order. Complete the documentation questionnaire, then submit the prior authorization request.",
+    "source" : {
+      "label" : "Praxis Health Plan",
+      "topic" : {
+        "system" : "http://terminology.hl7.org/CodeSystem/cdshooks-card-type",
+        "code" : "coverage-info",
+        "display" : "Coverage Information"
+      }
+    },
+    "extension" : {
+      "davinci-crd.associated-resource" : [ {
+        "reference" : "Encounter/mri-encounter"
+      } ]
+    }
+  } ],
+  "systemActions" : [ {
+    "type" : "update",
+    "description" : "Add Praxis Health Plan coverage information",
+    "resource" : {
+      "resourceType" : "Encounter",
+      "id" : "mri-encounter",
+      "meta" : {
+        "profile" : [ "http://hl7.org/fhir/us/davinci-crd/StructureDefinition/profile-encounter" ]
+      },
+      "extension" : [ {
+        "url" : "http://hl7.org/fhir/us/davinci-crd/StructureDefinition/ext-coverage-information",
+        "extension" : [ {
+          "url" : "coverage",
+          "valueReference" : {
+            "reference" : "Coverage/coverage-sandra-okafor"
+          }
+        }, {
+          "url" : "covered",
+          "valueCode" : "covered"
+        }, {
+          "url" : "pa-needed",
+          "valueCode" : "auth-needed"
+        }, {
+          "url" : "doc-needed",
+          "valueCode" : "clinical"
+        }, {
+          "url" : "reason",
+          "valueCodeableConcept" : {
+            "text" : "Clinical documentation is needed for the prior authorization request"
+          }
+        }, {
+          "url" : "questionnaire",
+          "valueCanonical" : "http://praxishealthplan.example/fhir/Questionnaire/mri-lumbar-spine"
+        }, {
+          "url" : "date",
+          "valueDate" : "2026-11-11"
+        }, {
+          "url" : "coverage-assertion-id",
+          "valueString" : "3e7dbfc7-5748-3080-918d-55cbd5bb62b9"
+        } ]
+      } ],
+      "status" : "in-progress",
+      "class" : {
+        "system" : "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+        "code" : "AMB",
+        "display" : "ambulatory"
+      },
+      "type" : [ {
+        "coding" : [ {
+          "system" : "http://www.ama-assn.org/go/cpt",
+          "code" : "72148"
+        } ],
+        "text" : "MRI lumbar spine without contrast"
+      } ],
+      "subject" : {
+        "reference" : "Patient/seed-sandra-okafor"
+      },
+      "participant" : [ {
+        "individual" : {
+          "reference" : "Practitioner/seed-default-practitioner"
+        }
+      } ],
+      "period" : {
+        "start" : "2026-11-11T09:30:00Z"
+      }
+    }
+  } ]
+}
