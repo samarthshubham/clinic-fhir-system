@@ -14,14 +14,20 @@ Given(
     if (!this.currentPatientId) throw new Error('No currentPatientId');
     const row = dataTable.rowsHash() as Record<string, string>;
     const ended = row['endedDaysAgo'];
+    // The payer Coverage keeps the dates of its first seed run; reuse them so both sides agree.
+    const payerPeriod = await apiClient.findMemberCoveragePeriod(
+      row['memberId'],
+    );
     const coverage: CreateCoverageBody = {
       patientId: this.currentPatientId,
       ...PRAXIS_HEALTH_PLAN,
       memberId: row['memberId'],
       planName: row['planName'],
       status: row['status'],
-      periodStart: daysAgo(Number(row['startedDaysAgo'])),
-      ...(ended && { periodEnd: daysAgo(Number(ended)) }),
+      periodStart: payerPeriod?.start ?? daysAgo(Number(row['startedDaysAgo'])),
+      ...(ended && {
+        periodEnd: payerPeriod?.end ?? daysAgo(Number(ended)),
+      }),
     };
     const result = await apiClient.ensureCoverage(coverage);
     this.currentCoverage = coverage;

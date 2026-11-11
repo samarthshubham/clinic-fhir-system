@@ -43,7 +43,7 @@ class AuthProfilesTest {
                   .extracting(AuthProperties.User::role)
                   .containsExactlyInAnyOrder(Role.UM_REVIEWER, Role.PAYER_ADMIN);
               assertThat(properties.findClient("clinic-api").orElseThrow().scopes())
-                  .containsExactly("system/Claim.c", "system/Questionnaire.r");
+                  .containsExactly("system/Claim.c", "system/Coverage.r", "system/Questionnaire.r");
             });
   }
 

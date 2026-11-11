@@ -539,6 +539,56 @@ describe('payer HAPI and provider HAPI reads', () => {
     );
   });
 
+  it('reads the period of the member coverage already in the payer HAPI', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        entry: [
+          { resource: { period: { start: '2025-10-07', end: '2026-10-12' } } },
+        ],
+      }),
+    );
+
+    await expect(
+      apiClient.findMemberCoveragePeriod('PHP-10008'),
+    ).resolves.toEqual({ start: '2025-10-07', end: '2026-10-12' });
+    expect(calls()[0].url).toBe(
+      `${PAYER_HAPI}/Coverage?identifier=${encodeURIComponent(`${MEMBER_ID_SYSTEM}|PHP-10008`)}`,
+    );
+  });
+
+  it('leaves the end out of an open member coverage period', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        entry: [{ resource: { period: { start: '2025-11-11' } } }],
+      }),
+    );
+
+    await expect(
+      apiClient.findMemberCoveragePeriod('PHP-10001'),
+    ).resolves.toEqual({ start: '2025-11-11' });
+  });
+
+  it('has no member coverage period before the first seed run', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ resourceType: 'Bundle' }))
+      .mockResolvedValueOnce(jsonResponse({ entry: [{ resource: {} }] }));
+
+    await expect(
+      apiClient.findMemberCoveragePeriod('PHP-10001'),
+    ).resolves.toBeNull();
+    await expect(
+      apiClient.findMemberCoveragePeriod('PHP-10001'),
+    ).resolves.toBeNull();
+  });
+
+  it('fails when the member coverage search is rejected', async () => {
+    fetchMock.mockResolvedValueOnce(textResponse('', 503));
+
+    await expect(
+      apiClient.findMemberCoveragePeriod('PHP-10001'),
+    ).rejects.toThrow('GET /fhir/Coverage failed [503]');
+  });
+
   it('fails when the plan has not been seeded', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ resourceType: 'Bundle' }));
 

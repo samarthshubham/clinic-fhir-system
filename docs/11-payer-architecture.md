@@ -85,6 +85,45 @@ How `MemberService` reads the payer HAPI:
 
 payer-app shows the search at `/members` (a sortable, paged `mat-table`) and the detail at `/members/:id`.
 
+### CDS Hooks for CRD
+
+The `cdshooks` package serves [CRD 2.2.1](https://hl7.org/fhir/us/davinci-crd/STU2.2/) over CDS Hooks. Bodies are CDS Hooks JSON with FHIR R4 resources inside; errors are an `OperationOutcome` with the HTTP status.
+
+| Method | Path | Auth | Returns |
+|---|---|---|---|
+| `GET` | `/cds-services` | public | discovery: `order-sign-crd` and `order-select-crd`, each with `davinci-crd.version: ["2.2"]` and the prefetch templates below |
+| `POST` | `/cds-services/order-sign-crd` | system token with `system/Coverage.r` | cards + `systemActions` |
+| `POST` | `/cds-services/order-select-crd` | same | same, without documentation |
+
+| Prefetch key | Template |
+|---|---|
+| `patient` | `Patient/{{context.patientId}}` |
+| `coverage` | `Coverage?patient={{context.patientId}}&status=active` |
+| `practitioner` | `{{context.userId}}` |
+
+How a hook is answered:
+
+1. The request needs `hook` (matching the service), `hookInstance`, `context.patientId` and a `context.draftOrders` Bundle; order-select also needs `context.selections` and answers only for the selected orders. Draft orders other than `ServiceRequest` are ignored for now.
+2. The `coverage` prefetch must hold exactly one Coverage. When it is missing, payer-api runs the template against the hook's `fhirServer` with `fhirAuthorization.access_token`, but only for servers on `payer.crd.prefetch-fhir-servers` (empty by default, so hooks can't make payer-api call any URL). Otherwise the answer is 412.
+3. The Coverage must name Praxis Health Plan when its `payor` carries an identifier (`payer.crd.payer-identifiers`), else 400. Its member id (`identifier[system=…/member-id]`, else `subscriberId`) is looked up in the payer HAPI (`Coverage?identifier=…`). The member is verified when one of their Coverages is `active` and its period covers today.
+4. Each order's code goes to `CoverageRuleService` (§6) with the order's `priority`.
+
+Each order gets a `systemActions` entry of type `update`: the draft order with the `ext-coverage-information` extension added.
+
+| Case | `covered` | `pa-needed` | Also | Card |
+|---|---|---|---|---|
+| no PA (or waived for `stat`) | `covered` | `no-auth` | | info, "Covered, no prior authorization needed: …" |
+| PA, no documentation | `covered` | `auth-needed` | | warning, "Prior authorization needed: …" |
+| PA + documentation (order-sign only) | `covered` | `auth-needed` | `doc-needed=clinical`, `reason`, `questionnaire` | warning, "Prior authorization needed: …" |
+| member not found / no active coverage | `not-covered` | | `reason` = CRD `temp#no-member-found` / `no-active-coverage` | warning, "Coverage could not be verified" |
+
+Every extension also has `coverage` (the client's Coverage), `date` and a `coverage-assertion-id`. Card and assertion ids are UUIDs derived from `hookInstance` and the order, so a retried hook gets the same ids.
+
+- `doc-purpose` is left out. `withpa` is the right code, but CRD 2.2.1's invariant `crd-ci-q4` evaluates to empty, so it fails, whenever `pa-needed` is `auth-needed` and `doc-purpose` is `withpa`; the HL7 validator rejects every such extension. `doc-purpose` is optional, and the questionnaire still says which form to fill.
+- CRD says coverage information SHALL travel in the `systemAction` and not as a card. We also send one Instructions card per order (topic `cdshooks-card-type#coverage-info`), because the clinician order dialog (E2-S4) shows its text. This is a deliberate deviation.
+- 400 for a malformed request, no or several Coverages, or another payer; 404 for an unknown service; 412 for a missing prefetch that can't be fetched; 401/403 for a missing token or a token without `system/Coverage.r` (member tokens never qualify); 502/503 when the payer HAPI fails.
+- Every hook call, including failed ones, records the `crd.hook` timer (tags `service`, `status`; Prometheus `crd_hook_seconds`) and writes an `AuditEvent` to the payer HAPI in the background: client id, `hookInstance`, HTTP outcome and the payer Coverage, no PHI.
+
 ## 4. What we reuse instead of building
 
 | Need | Reused |

@@ -44,6 +44,10 @@ public class CoverageRuleService {
     return rule != null ? rule : CoverageRule.noPriorAuthNeeded(system, code);
   }
 
+  public boolean hasRule(String system, String code) {
+    return rulesByCode.containsKey(key(system, code));
+  }
+
   private static List<CoverageRule> load(Resource rulesFile) {
     CoverageRules file;
     try (InputStream input = rulesFile.getInputStream()) {

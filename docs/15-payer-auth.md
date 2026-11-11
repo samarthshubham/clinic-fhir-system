@@ -7,7 +7,7 @@ How payer-api decides who is calling and what they may do. The decision is [ADR 
 | Caller | Gets a token from | Token carries | Used on |
 |---|---|---|---|
 | Payer staff (payer-app) | `POST /api/auth/login`, `POST /api/auth/refresh` | `roles` (`UM_REVIEWER`, `PAYER_ADMIN`) | `/api/**` JSON endpoints |
-| Systems (clinic-api, another payer) | `POST /oauth/token`, `grant_type=client_credentials` | `scope` with SMART v2 system scopes, `client_id` | `/fhir/**` interop |
+| Systems (clinic-api, another payer) | `POST /oauth/token`, `grant_type=client_credentials` | `scope` with SMART v2 system scopes, `client_id` | `/fhir/**` interop, `POST /cds-services/*` CRD hooks |
 | Members (through clinic-api) | `TokenService.issueMemberToken`; the exchange that hands it to clinic-api is E6-S3 | `scope=patient/*.r`, `patient` claim | `/fhir/**` interop, own compartment only |
 
 All three are HS256 JWTs signed with `payer.auth.jwt-secret` (env `PAYER_JWT_SECRET`, at least 32 bytes), issuer `payer-api`, `token_type=access`. Staff refresh tokens have `token_type=refresh` and are rejected as bearer tokens, as in clinic-api.
@@ -77,13 +77,21 @@ A member token has `scope=patient/*.r` and `patient=<payer Patient id>`. ADR 000
 
 Later stories register their providers as Spring beans (`IResourceProvider`) and declare an `OperationScope` per operation; `RestfulServerConfig` picks both up.
 
+### CDS Hooks
+
+`/cds-services/**` has its own filter chain, with the same `OperationOutcome` errors as `/fhir/**` (`FhirSecurityErrorHandler`):
+
+- `GET /cds-services` (discovery) is public.
+- `POST /cds-services/{id}` needs a system token whose scopes grant `Coverage` read (`system/Coverage.r`, or `system/*.r`). No token gets 401; a staff token, a member token or a system token without that scope gets 403 (`SystemScopeAuthorization`).
+- CDS Hooks' own JWT client authentication is not used: callers get the bearer token from `/oauth/token` like every other system.
+
 ## 6. Configuration and secrets
 
 | What | Base `application.yaml` | `application-dev.yaml` (`./mvnw spring-boot:run` only) |
 |---|---|---|
 | `payer.auth.jwt-secret` | `${PAYER_JWT_SECRET:}`, so startup fails without it | dev default |
 | `payer.auth.users` | none | `reviewer` / `Reviewer#2026` (`UM_REVIEWER`), `payeradmin` / `PayerAdmin#2026` (`PAYER_ADMIN`) |
-| `payer.auth.clients` | none | `clinic-api` / `dev-only-clinic-api-client-secret` with `system/Claim.c`, `system/Questionnaire.r`; the hash can be replaced with `PAYER_CLINIC_API_CLIENT_SECRET_HASH` |
+| `payer.auth.clients` | none | `clinic-api` / `dev-only-clinic-api-client-secret` with `system/Claim.c`, `system/Coverage.r` (CRD hooks), `system/Questionnaire.r`; the hash can be replaced with `PAYER_CLINIC_API_CLIENT_SECRET_HASH` |
 
 `/actuator/health`, `/actuator/info` and `/actuator/prometheus` are public, like clinic-api. Nothing logs tokens, secrets or member data (NFR-SEC-6).
 
@@ -95,6 +103,7 @@ Later stories register their providers as Spring beans (`IResourceProvider`) and
 | `TokenServiceTest`, `AuthServiceTest`, `ClientCredentialsServiceTest` | staff, system and member token claims; login and refresh; client and scope checks |
 | `AuthControllerTest`, `OAuthTokenControllerTest`, `SecurityConfigTest` | the JSON and OAuth2 error shapes, Basic and form client auth, 401s |
 | `ScopeInterceptorInteropTest` | over real HTTP: a wrong scope gets 403, member A reading member B gets 403, 401s are `OperationOutcome`s, metadata advertises SMART |
+| `CdsHooksInteropTest` | public discovery; hook calls without a token (401), without `system/Coverage.r` or with a member token (403), as `OperationOutcome`s |
 | `AuthorizationMatrixTest` | every JSON endpoint and interop operation × anonymous, both staff roles, clinic-api, a system reader and two members |
 
 The interop rows use test-only providers (`support/TestInteropProviders`) until real ones exist. Each story that adds an endpoint or operation adds its row.
