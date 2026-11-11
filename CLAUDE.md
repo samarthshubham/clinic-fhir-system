@@ -147,6 +147,7 @@ When Serena is available, call `mcp__serena__initial_instructions` then `mcp__se
 
 ### Infrastructure (run from project root)
 ```bash
+./dev.sh                                            # whole stack: Docker, clinic-api, payer-api, the 3 apps, Swagger; waits for the payer HAPI
 docker compose -f infra/docker-compose.yml up -d    # start HAPI FHIR + Postgres (payer HAPI on 8081 too)
 bash infra/payer/smoke.sh                           # check the payer HAPI loaded the Da Vinci IGs
 docker compose -f infra/docker-compose.yml down     # stop (keep data)
@@ -194,7 +195,7 @@ bash .github/scripts/ig-validate.sh   # golden fixtures + target/fhir-out of bot
 ### Seed data
 ```bash
 bash clinic-api/seed-data/load.sh           # loads 13 Synthea patients into HAPI FHIR
-npx nx run seed-demo-data:seed              # idempotent Cucumber seed — 8 realistic patients
+npx nx run seed-demo-data:seed              # idempotent Cucumber seed — 8 realistic patients; needs clinic-api, payer-api and both HAPI servers
 ```
 
 ---

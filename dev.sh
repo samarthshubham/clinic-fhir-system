@@ -26,16 +26,16 @@ check_port() {
 }
 
 wait_for_http() {
-  local name=$1 health_url=$2 display_url=$3
-  pending "Waiting for $name (up to 60s)..."
-  for i in $(seq 1 12); do
+  local name=$1 health_url=$2 display_url=$3 attempts=${4:-12} log_hint=${5:-logs/docker.log}
+  pending "Waiting for $name (up to $((attempts * 5))s)..."
+  for i in $(seq 1 "$attempts"); do
     if curl -sf --connect-timeout 2 "$health_url" > /dev/null 2>&1; then
       ok "$name is healthy → $display_url"
       return 0
     fi
     sleep 5
   done
-  err "$name did not respond in time — check logs/docker.log"
+  err "$name did not respond in time — check $log_hint"
   exit 1
 }
 
@@ -99,7 +99,7 @@ teardown() {
     rm -f "$PID_FILE"
   fi
 
-  for port in 9090 4200 4201 8082; do
+  for port in 9090 9095 4200 4201 4400 8082; do
     kill_port "$port"
   done
 
@@ -173,6 +173,35 @@ startup() {
     exit 1
   fi
 
+  info "payer-api (Spring Boot :9095)"
+
+  cd "$SCRIPT_DIR/payer-api"
+  if $IS_WINDOWS; then
+    cmd //c mvnw.cmd spring-boot:run "-Dspring.output.ansi.enabled=NEVER" > "$LOG_DIR/payer-api.log" 2>&1 &
+  else
+    ./mvnw spring-boot:run -Dspring.output.ansi.enabled=NEVER 2>&1 | log_with_ts "$LOG_DIR/payer-api.log" &
+  fi
+  PAYER_API_PID=$!
+  echo "$PAYER_API_PID" >> "$PID_FILE"
+  cd "$SCRIPT_DIR"
+
+  pending "Waiting for payer-api on :9095 (up to 60s)..."
+  PAYER_API_UP=false
+  for i in $(seq 1 12); do
+    if check_port 9095; then
+      PAYER_API_UP=true
+      break
+    fi
+    sleep 5
+  done
+
+  if $PAYER_API_UP; then
+    ok "payer-api is up → http://localhost:9095 (PID $PAYER_API_PID, logs → logs/payer-api.log)"
+  else
+    err "payer-api did not start — check logs/payer-api.log"
+    exit 1
+  fi
+
   # 3. Frontend
   info "Frontend"
 
@@ -188,6 +217,11 @@ startup() {
   echo "$PATIENT_PID" >> "$PID_FILE"
   ok "patient-app starting  → http://localhost:4201 (PID $PATIENT_PID, logs → logs/patient-app.log)"
 
+  NO_COLOR=1 npx nx serve payer-app --port=4400 2>&1 | log_with_ts "$LOG_DIR/payer-app.log" &
+  PAYER_APP_PID=$!
+  echo "$PAYER_APP_PID" >> "$PID_FILE"
+  ok "payer-app starting    → http://localhost:4400 (PID $PAYER_APP_PID, logs → logs/payer-app.log)"
+
   cd "$SCRIPT_DIR"
 
   # 4. Swagger UI
@@ -202,20 +236,28 @@ startup() {
   echo "$SWAGGER_PID" >> "$PID_FILE"
   ok "Swagger UI starting → http://localhost:8082 (PID $SWAGGER_PID, logs → logs/swagger.log)"
 
+  # The payer HAPI loads its IG packages on start, so it comes up last. The seed needs it.
+  info "Payer HAPI FHIR (:8081)"
+  wait_for_http "Payer HAPI" "http://localhost:8081/fhir/metadata" "http://localhost:8081/fhir" 72 \
+    "docker compose -f infra/docker-compose.yml logs hapi-fhir-payer"
+
   echo ""
   echo -e "${BOLD}All services started.${NC}"
   echo -e "  Postgres      → localhost:5432"
   echo -e "  HAPI FHIR     → http://localhost:8080/fhir"
-  echo -e "  Payer HAPI    → http://localhost:8081/fhir (ready ~5 min after start)"
+  echo -e "  Payer HAPI    → http://localhost:8081/fhir"
   echo -e "  clinic-api    → http://localhost:9090"
+  echo -e "  payer-api     → http://localhost:9095"
   echo -e "  clinician-app → http://localhost:4200"
   echo -e "  patient-app   → http://localhost:4201"
+  echo -e "  payer-app     → http://localhost:4400"
   echo -e "  Swagger UI    → http://localhost:8082"
   echo -e "  Prometheus    → http://localhost:9091"
   echo -e "  Grafana       → http://localhost:3000 (admin/admin)"
   echo ""
   echo -e "Logs are in ${CYAN}./logs/${NC} — tail any service in a separate terminal:"
   echo -e "  tail -f logs/clinic-api.log"
+  echo -e "  tail -f logs/payer-api.log"
   echo -e "  tail -f logs/clinician-app.log"
   echo -e "  docker compose -f infra/docker-compose.yml logs -f hapi-fhir"
   echo ""
