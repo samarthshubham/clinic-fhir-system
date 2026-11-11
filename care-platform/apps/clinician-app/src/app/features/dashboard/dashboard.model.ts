@@ -99,7 +99,7 @@ export interface GoalSummary {
   status: string | null;
   targetValue: number | null;
   targetDate: string | null;
-  progress: GoalProgress;
+  progress?: GoalProgress;
 }
 
 export interface ActiveCarePlan {
@@ -133,7 +133,7 @@ export interface BpSeries {
 export interface SimpleSeries {
   values: DataPoint[];
   unit: string;
-  referenceRange: Record<string, unknown>;
+  referenceRange: Record<string, unknown> | null;
 }
 
 export interface TrendsResponse {
