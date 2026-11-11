@@ -24,7 +24,8 @@
     "coding": [
       {
         "system": "http://terminology.hl7.org/CodeSystem/library-type",
-        "code": "logic-library"
+        "code": "logic-library",
+        "display": "Logic Library"
       }
     ]
   },

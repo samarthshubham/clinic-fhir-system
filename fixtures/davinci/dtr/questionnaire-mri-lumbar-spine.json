@@ -113,19 +113,39 @@
           "type": "choice",
           "answerOption": [
             {
-              "valueString": "Physical therapy"
+              "valueCoding": {
+                "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+                "code": "physical-therapy",
+                "display": "Physical therapy"
+              }
             },
             {
-              "valueString": "NSAIDs or other analgesics"
+              "valueCoding": {
+                "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+                "code": "nsaids-other-analgesics",
+                "display": "NSAIDs or other analgesics"
+              }
             },
             {
-              "valueString": "Activity modification"
+              "valueCoding": {
+                "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+                "code": "activity-modification",
+                "display": "Activity modification"
+              }
             },
             {
-              "valueString": "Chiropractic care"
+              "valueCoding": {
+                "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+                "code": "chiropractic-care",
+                "display": "Chiropractic care"
+              }
             },
             {
-              "valueString": "Epidural steroid injection"
+              "valueCoding": {
+                "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+                "code": "epidural-steroid-injection",
+                "display": "Epidural steroid injection"
+              }
             }
           ],
           "repeats": true

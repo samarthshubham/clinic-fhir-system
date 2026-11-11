@@ -139,16 +139,32 @@
       ],
       "answerOption": [
         {
-          "valueString": "Negative"
+          "valueCoding": {
+            "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+            "code": "negative",
+            "display": "Negative"
+          }
         },
         {
-          "valueString": "Inconclusive"
+          "valueCoding": {
+            "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+            "code": "inconclusive",
+            "display": "Inconclusive"
+          }
         },
         {
-          "valueString": "Technically inadequate"
+          "valueCoding": {
+            "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+            "code": "technically-inadequate",
+            "display": "Technically inadequate"
+          }
         },
         {
-          "valueString": "Positive"
+          "valueCoding": {
+            "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+            "code": "positive",
+            "display": "Positive"
+          }
         }
       ]
     },
@@ -159,16 +175,32 @@
       "required": true,
       "answerOption": [
         {
-          "valueString": "Significant cardiopulmonary disease"
+          "valueCoding": {
+            "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+            "code": "significant-cardiopulmonary-disease",
+            "display": "Significant cardiopulmonary disease"
+          }
         },
         {
-          "valueString": "Suspected central sleep apnea"
+          "valueCoding": {
+            "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+            "code": "suspected-central-sleep-apnea",
+            "display": "Suspected central sleep apnea"
+          }
         },
         {
-          "valueString": "Neuromuscular condition affecting breathing"
+          "valueCoding": {
+            "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+            "code": "neuromuscular-condition-affecting-breathing",
+            "display": "Neuromuscular condition affecting breathing"
+          }
         },
         {
-          "valueString": "Home sleep apnea test negative or inconclusive"
+          "valueCoding": {
+            "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+            "code": "home-sleep-apnea-test-negative-inconclusive",
+            "display": "Home sleep apnea test negative or inconclusive"
+          }
         }
       ]
     }

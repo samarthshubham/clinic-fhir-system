@@ -1,9 +1,11 @@
 package io.github.samarthshubham.payer.service;
 
+import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.UriClientParam;
 import io.github.samarthshubham.payer.mapper.PageMapper;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -13,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.hl7.fhir.r4.model.Bundle;
@@ -20,6 +23,7 @@ import org.hl7.fhir.r4.model.CanonicalType;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Coverage;
+import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.DeviceRequest;
 import org.hl7.fhir.r4.model.Library;
 import org.hl7.fhir.r4.model.MedicationRequest;
@@ -57,10 +61,13 @@ public class QuestionnairePackageService {
 
   private final IGenericClient fhirClient;
   private final CoverageRuleService coverageRules;
+  private final Clock clock;
 
-  public QuestionnairePackageService(IGenericClient fhirClient, CoverageRuleService coverageRules) {
+  public QuestionnairePackageService(
+      IGenericClient fhirClient, CoverageRuleService coverageRules, Clock clock) {
     this.fhirClient = fhirClient;
     this.coverageRules = coverageRules;
+    this.clock = clock;
   }
 
   public Parameters questionnairePackages(
@@ -250,7 +257,7 @@ public class QuestionnairePackageService {
         .anyMatch(lastUpdated -> lastUpdated == null || lastUpdated.after(since));
   }
 
-  private static Bundle packageBundle(
+  private Bundle packageBundle(
       Questionnaire questionnaire,
       Coverage coverage,
       List<Resource> orders,
@@ -279,7 +286,7 @@ public class QuestionnairePackageService {
         .setResource(copy);
   }
 
-  private static QuestionnaireResponse emptyResponse(
+  private QuestionnaireResponse emptyResponse(
       Questionnaire questionnaire, Coverage coverage, List<Resource> orders) {
     QuestionnaireResponse response = new QuestionnaireResponse();
     List<String> orderReferences =
@@ -305,6 +312,9 @@ public class QuestionnairePackageService {
             ? questionnaire.getUrl() + "|" + questionnaire.getVersion()
             : questionnaire.getUrl());
     response.setStatus(QuestionnaireResponse.QuestionnaireResponseStatus.INPROGRESS);
+    response.setAuthoredElement(
+        new DateTimeType(
+            Date.from(clock.instant()), TemporalPrecisionEnum.SECOND, TimeZone.getTimeZone("UTC")));
     response.setSubject(new Reference(coverage.getBeneficiary().getReference()));
     return response;
   }

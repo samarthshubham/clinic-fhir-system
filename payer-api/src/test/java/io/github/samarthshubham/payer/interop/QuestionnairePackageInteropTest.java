@@ -14,6 +14,9 @@ import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
 import io.github.samarthshubham.payer.service.TokenService;
 import io.github.samarthshubham.payer.support.FhirClientStub;
 import io.github.samarthshubham.payer.support.TestAuth;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import org.hl7.fhir.r4.model.CanonicalType;
 import org.hl7.fhir.r4.model.Coverage;
 import org.hl7.fhir.r4.model.Library;
@@ -37,6 +40,8 @@ class QuestionnairePackageInteropTest {
 
   @TestBean private IGenericClient fhirClient;
 
+  @TestBean private Clock clock;
+
   @LocalServerPort private int port;
 
   @Autowired private TokenService tokenService;
@@ -45,6 +50,10 @@ class QuestionnairePackageInteropTest {
 
   static IGenericClient fhirClient() {
     return PAYER_HAPI.client();
+  }
+
+  static Clock clock() {
+    return Clock.fixed(Instant.parse("2026-09-14T15:30:00Z"), ZoneOffset.UTC);
   }
 
   @BeforeEach

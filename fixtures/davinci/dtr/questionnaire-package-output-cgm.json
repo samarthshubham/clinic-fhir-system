@@ -177,7 +177,8 @@
           "status": "in-progress",
           "subject": {
             "reference": "Patient/ramon-castillo"
-          }
+          },
+          "authored": "2026-09-14T15:30:00+00:00"
         }
       }, {
         "fullUrl": "http://praxishealthplan.example/fhir/Library/continuous-glucose-monitor-prepopulation",
@@ -202,7 +203,8 @@
           "type": {
             "coding": [ {
               "system": "http://terminology.hl7.org/CodeSystem/library-type",
-              "code": "logic-library"
+              "code": "logic-library",
+              "display": "Logic Library"
             } ]
           },
           "date": "2026-11-01",

@@ -4,6 +4,9 @@ import static io.github.samarthshubham.payer.support.GoldenFhir.fixture;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.samarthshubham.payer.support.FhirClientStub;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
 import org.hl7.fhir.r4.model.Bundle;
@@ -37,7 +40,8 @@ class QuestionnairePackageServiceTest {
   private final QuestionnairePackageService service =
       new QuestionnairePackageService(
           payerHapi.client(),
-          new CoverageRuleService(new ClassPathResource("coverage-rules.yaml")));
+          new CoverageRuleService(new ClassPathResource("coverage-rules.yaml")),
+          Clock.fixed(Instant.parse("2026-11-01T10:15:30Z"), ZoneOffset.UTC));
 
   private Questionnaire polysomnography;
   private Questionnaire mri;
@@ -103,6 +107,8 @@ class QuestionnairePackageServiceTest {
                     response.getExtensionByUrl(QuestionnairePackageService.QR_CONTEXT).getValue())
                 .getReference())
         .isEqualTo("ServiceRequest/psg-1");
+    assertThat(response.getAuthoredElement().getValueAsString())
+        .isEqualTo("2026-11-01T10:15:30+00:00");
     assertThat(response.getItem()).isEmpty();
   }
 
