@@ -57,10 +57,6 @@
                 "valueCode": "clinical"
               },
               {
-                "url": "doc-purpose",
-                "valueCode": "withpa"
-              },
-              {
                 "url": "reason",
                 "valueCodeableConcept": {
                   "text": "Clinical documentation is needed for the prior authorization request"

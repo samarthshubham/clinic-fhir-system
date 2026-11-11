@@ -70,7 +70,6 @@ public class CoverageDecisions {
           "pa-needed", new CodeType(decision.priorAuthNeeded() ? "auth-needed" : "no-auth"));
       if (decision.documentationNeeded()) {
         information.addExtension("doc-needed", new CodeType("clinical"));
-        information.addExtension("doc-purpose", new CodeType("withpa"));
         information.addExtension(
             "reason",
             new CodeableConcept()
