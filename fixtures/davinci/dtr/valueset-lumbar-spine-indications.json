@@ -1,0 +1,87 @@
+{
+  "resourceType": "ValueSet",
+  "id": "lumbar-spine-indications",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/StructureDefinition/shareablevalueset"
+    ]
+  },
+  "url": "http://praxishealthplan.example/fhir/ValueSet/lumbar-spine-indications",
+  "version": "1.0.0",
+  "name": "LumbarSpineIndications",
+  "title": "Lumbar spine MRI indications",
+  "status": "active",
+  "experimental": false,
+  "date": "2026-11-01",
+  "publisher": "Praxis Health Plan",
+  "description": "Diagnoses Praxis Health Plan accepts as the indication for a lumbar spine MRI.",
+  "compose": {
+    "include": [
+      {
+        "system": "http://snomed.info/sct",
+        "concept": [
+          {
+            "code": "279039007",
+            "display": "Low back pain"
+          },
+          {
+            "code": "128196005",
+            "display": "Lumbar radiculopathy"
+          },
+          {
+            "code": "23056005",
+            "display": "Sciatica"
+          },
+          {
+            "code": "18347007",
+            "display": "Spinal stenosis of lumbar region"
+          },
+          {
+            "code": "202708005",
+            "display": "Prolapsed lumbar intervertebral disc"
+          },
+          {
+            "code": "192970008",
+            "display": "Cauda equina syndrome"
+          }
+        ]
+      }
+    ]
+  },
+  "expansion": {
+    "timestamp": "2026-11-01T00:00:00Z",
+    "total": 6,
+    "contains": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "279039007",
+        "display": "Low back pain"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "128196005",
+        "display": "Lumbar radiculopathy"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "23056005",
+        "display": "Sciatica"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "18347007",
+        "display": "Spinal stenosis of lumbar region"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "202708005",
+        "display": "Prolapsed lumbar intervertebral disc"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "192970008",
+        "display": "Cauda equina syndrome"
+      }
+    ]
+  }
+}

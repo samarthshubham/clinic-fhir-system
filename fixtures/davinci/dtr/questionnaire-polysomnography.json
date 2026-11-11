@@ -1,0 +1,176 @@
+{
+  "resourceType": "Questionnaire",
+  "id": "polysomnography",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/dtr-std-questionnaire"
+    ]
+  },
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/questionnaireAudience",
+      "valueCode": "clinical"
+    },
+    {
+      "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/estimated-completion-time",
+      "extension": [
+        {
+          "url": "totalTime",
+          "valueCode": "under-5min"
+        },
+        {
+          "url": "clinicalTime",
+          "valueCode": "under-5min"
+        }
+      ]
+    },
+    {
+      "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-launchContext",
+      "extension": [
+        {
+          "url": "name",
+          "valueCoding": {
+            "system": "http://hl7.org/fhir/uv/sdc/CodeSystem/launchContext",
+            "code": "patient"
+          }
+        },
+        {
+          "url": "type",
+          "valueCode": "Patient"
+        }
+      ]
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/cqf-library",
+      "valueCanonical": "http://praxishealthplan.example/fhir/Library/polysomnography-prepopulation"
+    }
+  ],
+  "url": "http://praxishealthplan.example/fhir/Questionnaire/polysomnography",
+  "name": "Polysomnography",
+  "title": "Polysomnography documentation",
+  "status": "active",
+  "subjectType": [
+    "Patient"
+  ],
+  "date": "2026-11-01",
+  "publisher": "Praxis Health Plan",
+  "description": "Documentation Praxis Health Plan needs to review prior authorization for an attended in-lab polysomnography.",
+  "item": [
+    {
+      "linkId": "instructions",
+      "text": "Praxis Health Plan needs this documentation for an attended in-lab polysomnography (CPT 95810).",
+      "type": "display"
+    },
+    {
+      "linkId": "sleep-symptoms",
+      "text": "Sleep symptoms",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "witnessed-apnea",
+          "text": "Has anyone witnessed the patient stop breathing or gasp during sleep?",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "linkId": "loud-snoring",
+          "text": "Does the patient snore loudly?",
+          "type": "boolean"
+        },
+        {
+          "linkId": "epworth-score",
+          "text": "Epworth Sleepiness Scale score (0 to 24)",
+          "type": "integer",
+          "required": true,
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/minValue",
+              "valueInteger": 0
+            },
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/maxValue",
+              "valueInteger": 24
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "body-measurements",
+      "text": "Body measurements",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "bmi",
+          "text": "Body mass index (kg/m2)",
+          "type": "decimal"
+        },
+        {
+          "linkId": "neck-circumference-cm",
+          "text": "Neck circumference (cm)",
+          "type": "decimal"
+        }
+      ]
+    },
+    {
+      "linkId": "comorbidities",
+      "text": "Comorbidities",
+      "type": "choice",
+      "answerValueSet": "http://praxishealthplan.example/fhir/ValueSet/sleep-study-comorbidities",
+      "repeats": true
+    },
+    {
+      "linkId": "home-sleep-test-done",
+      "text": "Has the patient had a home sleep apnea test?",
+      "type": "boolean",
+      "required": true
+    },
+    {
+      "linkId": "home-sleep-test-result",
+      "text": "Result of the home sleep apnea test",
+      "type": "choice",
+      "required": true,
+      "enableWhen": [
+        {
+          "question": "home-sleep-test-done",
+          "operator": "=",
+          "answerBoolean": true
+        }
+      ],
+      "answerOption": [
+        {
+          "valueString": "Negative"
+        },
+        {
+          "valueString": "Inconclusive"
+        },
+        {
+          "valueString": "Technically inadequate"
+        },
+        {
+          "valueString": "Positive"
+        }
+      ]
+    },
+    {
+      "linkId": "in-lab-reason",
+      "text": "Why is an attended in-lab study needed?",
+      "type": "open-choice",
+      "required": true,
+      "answerOption": [
+        {
+          "valueString": "Significant cardiopulmonary disease"
+        },
+        {
+          "valueString": "Suspected central sleep apnea"
+        },
+        {
+          "valueString": "Neuromuscular condition affecting breathing"
+        },
+        {
+          "valueString": "Home sleep apnea test negative or inconclusive"
+        }
+      ]
+    }
+  ]
+}

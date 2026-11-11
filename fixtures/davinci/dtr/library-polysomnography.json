@@ -1,0 +1,40 @@
+{
+  "resourceType": "Library",
+  "id": "polysomnography-prepopulation",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-library"
+    ]
+  },
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/artifact-versionAlgorithm",
+      "valueCoding": {
+        "system": "http://hl7.org/fhir/version-algorithm",
+        "code": "semver"
+      }
+    }
+  ],
+  "url": "http://praxishealthplan.example/fhir/Library/polysomnography-prepopulation",
+  "version": "1.0.0",
+  "name": "PolysomnographyPrepopulation",
+  "title": "Polysomnography prepopulation",
+  "status": "active",
+  "type": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/library-type",
+        "code": "logic-library"
+      }
+    ]
+  },
+  "date": "2026-11-01",
+  "publisher": "Praxis Health Plan",
+  "description": "CQL that prefills the polysomnography documentation from the patient's chart.",
+  "content": [
+    {
+      "contentType": "text/cql",
+      "data": "bGlicmFyeSBQb2x5c29tbm9ncmFwaHlQcmVwb3B1bGF0aW9uIHZlcnNpb24gJzEuMC4wJwoKdXNpbmcgRkhJUiB2ZXJzaW9uICc0LjAuMScKCnZhbHVlc2V0ICJTbGVlcCBTdHVkeSBDb21vcmJpZGl0aWVzIjogJ2h0dHA6Ly9wcmF4aXNoZWFsdGhwbGFuLmV4YW1wbGUvZmhpci9WYWx1ZVNldC9zbGVlcC1zdHVkeS1jb21vcmJpZGl0aWVzJwoKY29udGV4dCBQYXRpZW50CgpkZWZpbmUgIkNvbW9yYmlkaXRpZXMiOgogIFtDb25kaXRpb246ICJTbGVlcCBTdHVkeSBDb21vcmJpZGl0aWVzIl0KCmRlZmluZSAiSGFzIENvbW9yYmlkaXR5IjoKICBleGlzdHMgIkNvbW9yYmlkaXRpZXMiCg=="
+    }
+  ]
+}

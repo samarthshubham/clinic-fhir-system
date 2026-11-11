@@ -1,0 +1,192 @@
+{
+  "resourceType": "Questionnaire",
+  "id": "mri-lumbar-spine",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/dtr-std-questionnaire"
+    ]
+  },
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/questionnaireAudience",
+      "valueCode": "clinical"
+    },
+    {
+      "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/estimated-completion-time",
+      "extension": [
+        {
+          "url": "totalTime",
+          "valueCode": "under-5min"
+        },
+        {
+          "url": "clinicalTime",
+          "valueCode": "under-5min"
+        }
+      ]
+    },
+    {
+      "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-launchContext",
+      "extension": [
+        {
+          "url": "name",
+          "valueCoding": {
+            "system": "http://hl7.org/fhir/uv/sdc/CodeSystem/launchContext",
+            "code": "patient"
+          }
+        },
+        {
+          "url": "type",
+          "valueCode": "Patient"
+        }
+      ]
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/cqf-library",
+      "valueCanonical": "http://praxishealthplan.example/fhir/Library/mri-lumbar-spine-prepopulation"
+    }
+  ],
+  "url": "http://praxishealthplan.example/fhir/Questionnaire/mri-lumbar-spine",
+  "name": "MRILumbarSpine",
+  "title": "MRI lumbar spine documentation",
+  "status": "active",
+  "subjectType": [
+    "Patient"
+  ],
+  "date": "2026-11-01",
+  "publisher": "Praxis Health Plan",
+  "description": "Documentation Praxis Health Plan needs to review prior authorization for a lumbar spine MRI without contrast.",
+  "item": [
+    {
+      "linkId": "instructions",
+      "text": "Praxis Health Plan needs this documentation for a lumbar spine MRI without contrast (CPT 72148).",
+      "type": "display"
+    },
+    {
+      "linkId": "clinical-indication",
+      "text": "Clinical indication",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "primary-diagnosis",
+          "text": "Primary diagnosis",
+          "type": "open-choice",
+          "required": true,
+          "answerValueSet": "http://praxishealthplan.example/fhir/ValueSet/lumbar-spine-indications"
+        },
+        {
+          "linkId": "symptom-onset-date",
+          "text": "When did the symptoms start?",
+          "type": "date",
+          "required": true
+        },
+        {
+          "linkId": "pain-location",
+          "text": "Where is the pain (side and level)?",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "linkId": "conservative-therapy",
+      "text": "Conservative therapy",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "conservative-therapy-weeks",
+          "text": "How many weeks of conservative therapy has the patient completed?",
+          "type": "integer",
+          "required": true,
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/minValue",
+              "valueInteger": 0
+            },
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/maxValue",
+              "valueInteger": 520
+            }
+          ]
+        },
+        {
+          "linkId": "conservative-therapy-types",
+          "text": "Which conservative therapies were tried?",
+          "type": "choice",
+          "answerOption": [
+            {
+              "valueString": "Physical therapy"
+            },
+            {
+              "valueString": "NSAIDs or other analgesics"
+            },
+            {
+              "valueString": "Activity modification"
+            },
+            {
+              "valueString": "Chiropractic care"
+            },
+            {
+              "valueString": "Epidural steroid injection"
+            }
+          ],
+          "repeats": true
+        }
+      ]
+    },
+    {
+      "linkId": "neurological-findings",
+      "text": "Neurological findings",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "neurological-deficit",
+          "text": "Does the patient have a progressive or severe neurological deficit?",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "linkId": "neurological-deficit-description",
+          "text": "Describe the deficit (motor weakness, reflex or sensory loss, bowel or bladder changes).",
+          "type": "text",
+          "required": true,
+          "enableWhen": [
+            {
+              "question": "neurological-deficit",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "prior-imaging",
+      "text": "Prior imaging",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "prior-imaging-done",
+          "text": "Has the lumbar spine been imaged before?",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "linkId": "prior-imaging-date",
+          "text": "Date of the most recent imaging",
+          "type": "date",
+          "enableWhen": [
+            {
+              "question": "prior-imaging-done",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "clinical-notes",
+      "text": "Anything else the reviewer should know",
+      "type": "text"
+    }
+  ]
+}

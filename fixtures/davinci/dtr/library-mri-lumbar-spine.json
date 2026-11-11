@@ -1,0 +1,40 @@
+{
+  "resourceType": "Library",
+  "id": "mri-lumbar-spine-prepopulation",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-library"
+    ]
+  },
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/artifact-versionAlgorithm",
+      "valueCoding": {
+        "system": "http://hl7.org/fhir/version-algorithm",
+        "code": "semver"
+      }
+    }
+  ],
+  "url": "http://praxishealthplan.example/fhir/Library/mri-lumbar-spine-prepopulation",
+  "version": "1.0.0",
+  "name": "MRILumbarSpinePrepopulation",
+  "title": "MRI lumbar spine prepopulation",
+  "status": "active",
+  "type": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/library-type",
+        "code": "logic-library"
+      }
+    ]
+  },
+  "date": "2026-11-01",
+  "publisher": "Praxis Health Plan",
+  "description": "CQL that prefills the MRI lumbar spine documentation from the patient's chart.",
+  "content": [
+    {
+      "contentType": "text/cql",
+      "data": "bGlicmFyeSBNUklMdW1iYXJTcGluZVByZXBvcHVsYXRpb24gdmVyc2lvbiAnMS4wLjAnCgp1c2luZyBGSElSIHZlcnNpb24gJzQuMC4xJwoKdmFsdWVzZXQgIkx1bWJhciBTcGluZSBJbmRpY2F0aW9ucyI6ICdodHRwOi8vcHJheGlzaGVhbHRocGxhbi5leGFtcGxlL2ZoaXIvVmFsdWVTZXQvbHVtYmFyLXNwaW5lLWluZGljYXRpb25zJwoKY29udGV4dCBQYXRpZW50CgpkZWZpbmUgIkx1bWJhciBTcGluZSBDb25kaXRpb25zIjoKICBbQ29uZGl0aW9uOiAiTHVtYmFyIFNwaW5lIEluZGljYXRpb25zIl0KCmRlZmluZSAiUHJpbWFyeSBEaWFnbm9zaXMiOgogIEZpcnN0KCJMdW1iYXIgU3BpbmUgQ29uZGl0aW9ucyIpLmNvZGUKCmRlZmluZSAiU3ltcHRvbSBPbnNldCI6CiAgRmlyc3QoIkx1bWJhciBTcGluZSBDb25kaXRpb25zIikub25zZXQK"
+    }
+  ]
+}

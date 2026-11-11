@@ -1,0 +1,126 @@
+{
+  "resourceType": "Questionnaire",
+  "id": "echocardiogram",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/dtr-std-questionnaire"
+    ]
+  },
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/questionnaireAudience",
+      "valueCode": "clinical"
+    },
+    {
+      "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/estimated-completion-time",
+      "extension": [
+        {
+          "url": "totalTime",
+          "valueCode": "under-3min"
+        },
+        {
+          "url": "clinicalTime",
+          "valueCode": "under-3min"
+        }
+      ]
+    },
+    {
+      "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-launchContext",
+      "extension": [
+        {
+          "url": "name",
+          "valueCoding": {
+            "system": "http://hl7.org/fhir/uv/sdc/CodeSystem/launchContext",
+            "code": "patient"
+          }
+        },
+        {
+          "url": "type",
+          "valueCode": "Patient"
+        }
+      ]
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/cqf-library",
+      "valueCanonical": "http://praxishealthplan.example/fhir/Library/echocardiogram-prepopulation"
+    }
+  ],
+  "url": "http://praxishealthplan.example/fhir/Questionnaire/echocardiogram",
+  "name": "Echocardiogram",
+  "title": "Echocardiogram documentation",
+  "status": "active",
+  "subjectType": [
+    "Patient"
+  ],
+  "date": "2026-11-01",
+  "publisher": "Praxis Health Plan",
+  "description": "Documentation Praxis Health Plan needs to review prior authorization for an echocardiogram.",
+  "item": [
+    {
+      "linkId": "instructions",
+      "text": "Praxis Health Plan needs this documentation for a transthoracic echocardiogram.",
+      "type": "display"
+    },
+    {
+      "linkId": "indication",
+      "text": "Indication for the echocardiogram",
+      "type": "open-choice",
+      "required": true,
+      "answerValueSet": "http://praxishealthplan.example/fhir/ValueSet/echocardiogram-indications"
+    },
+    {
+      "linkId": "symptoms-new-or-worse",
+      "text": "Are the symptoms new or worse since the last evaluation?",
+      "type": "boolean",
+      "required": true
+    },
+    {
+      "linkId": "prior-echocardiogram",
+      "text": "Prior echocardiogram",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "prior-echo-done",
+          "text": "Has the patient had an echocardiogram before?",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "linkId": "prior-echo-date",
+          "text": "Date of the most recent echocardiogram",
+          "type": "date",
+          "required": true,
+          "enableWhen": [
+            {
+              "question": "prior-echo-done",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ]
+        },
+        {
+          "linkId": "last-ejection-fraction",
+          "text": "Last left ventricular ejection fraction (%)",
+          "type": "decimal",
+          "enableWhen": [
+            {
+              "question": "prior-echo-done",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "requesting-specialty",
+      "text": "Specialty of the ordering clinician",
+      "type": "string"
+    },
+    {
+      "linkId": "clinical-notes",
+      "text": "Anything else the reviewer should know",
+      "type": "text"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "resourceType": "ValueSet",
+  "id": "diabetes-types",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/StructureDefinition/shareablevalueset"
+    ]
+  },
+  "url": "http://praxishealthplan.example/fhir/ValueSet/diabetes-types",
+  "version": "1.0.0",
+  "name": "DiabetesTypes",
+  "title": "Diabetes types",
+  "status": "active",
+  "experimental": false,
+  "date": "2026-11-01",
+  "publisher": "Praxis Health Plan",
+  "description": "Types of diabetes mellitus for continuous glucose monitor documentation.",
+  "compose": {
+    "include": [
+      {
+        "system": "http://snomed.info/sct",
+        "concept": [
+          {
+            "code": "46635009",
+            "display": "Type 1 diabetes mellitus"
+          },
+          {
+            "code": "44054006",
+            "display": "Type 2 diabetes mellitus"
+          },
+          {
+            "code": "11687002",
+            "display": "Gestational diabetes mellitus"
+          }
+        ]
+      }
+    ]
+  },
+  "expansion": {
+    "timestamp": "2026-11-01T00:00:00Z",
+    "total": 3,
+    "contains": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "46635009",
+        "display": "Type 1 diabetes mellitus"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "44054006",
+        "display": "Type 2 diabetes mellitus"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "11687002",
+        "display": "Gestational diabetes mellitus"
+      }
+    ]
+  }
+}
