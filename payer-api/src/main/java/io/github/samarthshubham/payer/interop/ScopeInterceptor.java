@@ -93,7 +93,8 @@ public class ScopeInterceptor extends AuthorizationInterceptor {
 
   private void allowOperations(RuleBuilder rules, SmartScope scope, IdType member) {
     for (OperationScope operation : operationScopes) {
-      if (scope.grants(operation.resourceType(), operation.permission())) {
+      if ((member == null || !operation.systemOnly())
+          && scope.grants(operation.resourceType(), operation.permission())) {
         Class<? extends IBaseResource> type =
             fhirContext.getResourceDefinition(operation.resourceType()).getImplementingClass();
         respond(rules.allow().operation().named(operation.operation()).onType(type), member);
