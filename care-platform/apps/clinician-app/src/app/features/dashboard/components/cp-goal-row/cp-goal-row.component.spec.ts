@@ -123,6 +123,25 @@ describe('CpGoalRowComponent', () => {
     expect(el.querySelector('.goal-row__msg')).toBeNull();
   });
 
+  it('should render a goal without progress, which the API leaves out when the goal has no target', async () => {
+    const withoutProgress: GoalSummary = { ...goal(), progress: undefined };
+    const collapsed = await render(withoutProgress);
+    const row: HTMLElement = collapsed.nativeElement;
+
+    expect(collapsed.componentInstance.percent()).toBeNull();
+    expect(row.querySelector('.goal-row__current')).toBeNull();
+    expect(row.querySelector('.goal-row__status')).toBeNull();
+    expect(row.querySelector('.goal-row__bar')).toBeNull();
+
+    const expanded = await render(withoutProgress, true);
+    const stats = Array.from(
+      (expanded.nativeElement as HTMLElement).querySelectorAll(
+        '.goal-row__stat-val',
+      ),
+    ).map((s) => s.textContent);
+    expect(stats).toEqual(['—', '—', '130']);
+  });
+
   it('should emit toggle with the goal id when the row is clicked', async () => {
     const fixture = await render(goal());
     const toggle = vi.fn();

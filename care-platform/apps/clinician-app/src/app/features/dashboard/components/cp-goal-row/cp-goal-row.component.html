@@ -1,3 +1,4 @@
+@let progress = goal().progress;
 <div
   class="goal-row"
   role="button"
@@ -12,20 +13,18 @@
     <div class="goal-row__titles">
       <div class="goal-row__desc">{{ goal().description }}</div>
       <div class="goal-row__meta cp-font-mono">
-        @if (goal().progress.currentValue !== null) {
-          <span class="goal-row__current">{{
-            goal().progress.currentValue
-          }}</span>
+        @if (progress && progress.currentValue !== null) {
+          <span class="goal-row__current">{{ progress.currentValue }}</span>
           <span class="goal-row__arrow">→</span>
           <span class="goal-row__target"
-            >target {{ goal().progress.targetValue }}</span
+            >target {{ progress.targetValue }}</span
           >
         }
-        @if (goal().progress.onTrack === true) {
+        @if (progress?.onTrack === true) {
           <span class="goal-row__status goal-row__status--on-track"
             >on track</span
           >
-        } @else if (goal().progress.onTrack === false) {
+        } @else if (progress?.onTrack === false) {
           <span class="goal-row__status goal-row__status--off-track"
             >off track</span
           >
@@ -59,19 +58,19 @@
         <div class="goal-row__stat">
           <span class="goal-row__stat-lab">Baseline</span>
           <span class="goal-row__stat-val cp-font-mono">{{
-            goal().progress.baselineValue ?? '—'
+            progress?.baselineValue ?? '—'
           }}</span>
         </div>
         <div class="goal-row__stat">
           <span class="goal-row__stat-lab">Current</span>
           <span class="goal-row__stat-val cp-font-mono">{{
-            goal().progress.currentValue ?? '—'
+            progress?.currentValue ?? '—'
           }}</span>
         </div>
         <div class="goal-row__stat">
           <span class="goal-row__stat-lab">Target</span>
           <span class="goal-row__stat-val cp-font-mono">{{
-            goal().progress.targetValue ?? goal().targetValue ?? '—'
+            progress?.targetValue ?? goal().targetValue ?? '—'
           }}</span>
         </div>
       </div>
@@ -80,8 +79,8 @@
           Target by {{ goal().targetDate | date: 'MMM d, y' }}
         </div>
       }
-      @if (goal().progress.message) {
-        <div class="goal-row__msg">{{ goal().progress.message }}</div>
+      @if (progress?.message; as message) {
+        <div class="goal-row__msg">{{ message }}</div>
       }
     </div>
   }

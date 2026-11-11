@@ -116,6 +116,14 @@ describe('CpTrendChartComponent', () => {
     expect(nonNumeric.componentInstance.svgData()?.refY).toBeNull();
   });
 
+  it('should scale a simple series without a reference range', async () => {
+    const fixture = await render({ ...weight, referenceRange: null });
+    const d = fixture.componentInstance.svgData();
+
+    expect(d).toMatchObject({ isBp: false, refY: null });
+    expect(d?.primaryDots).toHaveLength(2);
+  });
+
   it('should build systolic and diastolic paths with reference lines for BP', async () => {
     const fixture = await render(bp, 'red');
     const d = fixture.componentInstance.svgData();

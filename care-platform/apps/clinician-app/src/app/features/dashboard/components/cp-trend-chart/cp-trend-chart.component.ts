@@ -161,7 +161,7 @@ export class CpTrendChartComponent {
       const pts = simple.values;
       if (pts.length < 2) return null;
       const vals = pts.map((p) => p.value);
-      const refRange = simple.referenceRange;
+      const refRange = simple.referenceRange ?? {};
       const refMaxRaw = refRange['max'] ?? refRange['upper'] ?? null;
       const refMax = typeof refMaxRaw === 'number' ? refMaxRaw : null;
       if (refMax !== null) vals.push(refMax);

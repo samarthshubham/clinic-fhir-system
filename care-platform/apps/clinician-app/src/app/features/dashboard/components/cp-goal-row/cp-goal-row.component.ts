@@ -23,7 +23,7 @@ export class CpGoalRowComponent {
   readonly goalToggle = output<string>();
 
   readonly percent = computed(() => {
-    const p = this.goal().progress.percentToGoal;
-    return p !== null ? Math.min(100, Math.max(0, p)) : null;
+    const p = this.goal().progress?.percentToGoal;
+    return p != null ? Math.min(100, Math.max(0, p)) : null;
   });
 }
