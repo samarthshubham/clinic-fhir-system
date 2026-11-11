@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.method.ParameterErrors;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -72,9 +73,11 @@ public class GlobalExceptionHandler {
                     result.getResolvableErrors().stream()
                         .map(
                             error ->
-                                result.getMethodParameter().getParameterName()
-                                    + " "
-                                    + error.getDefaultMessage()))
+                                result instanceof ParameterErrors
+                                    ? error.getDefaultMessage()
+                                    : result.getMethodParameter().getParameterName()
+                                        + " "
+                                        + error.getDefaultMessage()))
             .collect(Collectors.joining(", "));
     return ResponseEntity.badRequest().body(new ErrorResponse(400, message));
   }

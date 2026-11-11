@@ -44,7 +44,7 @@ public class CoverageController {
   @PreAuthorize("hasAuthority('coverage:write')")
   @PutMapping("/{id}")
   public ResponseEntity<CoverageResponse> updateCoverage(
-      @PathVariable String id, @Valid @RequestBody CoverageRequest request) {
+      @PathVariable @NotBlank String id, @Valid @RequestBody CoverageRequest request) {
     return ResponseEntity.ok(coverageService.updateCoverage(id, request));
   }
 

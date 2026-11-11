@@ -18,7 +18,7 @@ How the payer and Da Vinci work is tested, and where test data comes from. Every
 | **API e2e** | `payer-app-e2e` `@api` | payer-api against the running stack (`e2e.yml` starts both HAPI servers, both APIs and all three e2e suites) | Cucumber + `libs/e2e-support` |
 | **UI e2e** | `@ui` in each e2e app | screens behave correctly | Cypress + Cucumber |
 | **journey e2e** | `@journey @payer` | the end-to-end goal in roadmap §3, across three apps and two APIs | Cypress + Cucumber |
-| **conformance** | `infra/inferno/` + nightly workflow | IG conformance for CRD, DTR, PAS, PDex, Plan-Net and Formulary | Inferno Da Vinci test kits |
+| **conformance** | `infra/inferno/` + nightly workflow (E8-S1) | IG conformance for CRD, DTR, PAS, PDex, Plan-Net and Formulary. A story that lists its kit is checked when E8-S1 runs it; until then the story delivers the other levels | Inferno Da Vinci test kits |
 
 The existing gates still apply, extended to payer-api and payer-app:
 

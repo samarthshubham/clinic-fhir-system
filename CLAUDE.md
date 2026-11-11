@@ -472,6 +472,7 @@ Every other `/api/**` endpoint needs `Authorization: Bearer <accessToken>` (exce
 | `GET` | `/api/goals?patientId={id}` | List goals |
 | `POST` | `/api/coverages` | Record insurance (`coverage:write`; finds or creates the payer Organization) |
 | `GET` | `/api/coverages/{id}` | Get coverage (`coverage:read`) |
+| `PUT` | `/api/coverages/{id}` | Replace coverage (`coverage:write`; `patientId` must match the beneficiary, else 422) |
 | `GET` | `/api/coverages?patientId={id}` | List coverages (`coverage:read` or the patient themself) |
 
 ### Experience APIs — return `application/json` (flat DTOs, not FHIR)
