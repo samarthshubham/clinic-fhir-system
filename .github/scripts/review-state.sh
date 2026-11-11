@@ -4,6 +4,8 @@
 #
 #   review-state.sh range            -> mode/base/head/commits to $GITHUB_OUTPUT (or stdout)
 #   review-state.sh save <summary>   -> create or update the sticky summary comment
+#                                       (KEEP_HISTORY=true: post a new comment every run,
+#                                       so earlier findings stay visible)
 #
 # Env: REPO (owner/name), PR_NUMBER, HEAD_SHA, BASE_REF (default main), GH_TOKEN.
 # REVIEW_NAME (default claude-review) names the sticky comment, so several reviews
@@ -72,7 +74,8 @@ save() {
 
 $SUMMARY_TAG
 $SHA_TAG_PREFIX$(git rev-parse "$HEAD_SHA") -->"
-  existing_id=$(summary_comment | jq -r '.id // ""')
+  existing_id=""
+  [[ "${KEEP_HISTORY:-false}" == "true" ]] || existing_id=$(summary_comment | jq -r '.id // ""')
   if [[ -n "$existing_id" ]]; then
     gh api -X PATCH "repos/$REPO/issues/comments/$existing_id" -f body="$body" >/dev/null
   else

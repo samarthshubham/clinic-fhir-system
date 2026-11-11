@@ -218,7 +218,7 @@ This is a personal project. Keep commits lightweight.
 - Add a one-line body only if I'd forget *why* in a week. Otherwise skip it.
 - `wip:` prefix is fine for checkpoints.
 
-**PR review:** the `claude-review` check runs the `incremental-review` skill (`.claude/skills/incremental-review/SKILL.md`) on every push. `.github/scripts/review-state.sh` tracks the last reviewed commit in a sticky PR comment, so only new non-merge commits are reviewed. Run it locally with `/incremental-review <pr-number>`.
+**PR review:** the `claude-review` check runs the `incremental-review` skill (`.claude/skills/incremental-review/SKILL.md`) on every push, on Opus. Each run posts its own summary comment, so earlier findings stay visible, plus an inline comment for each line-level finding. `.github/scripts/review-state.sh` reads the last reviewed commit from the newest summary, so only new non-merge commits are reviewed. Run it locally with `/incremental-review <pr-number>`.
 
 **CI scope:** `ci.yml` skips test jobs for areas a PR doesn't touch (`.github/scripts/changed-areas.sh`). `e2e.yml` runs only the Cypress suites a PR can break (`.github/scripts/e2e-suites.sh`; docs, unit tests and the seed don't count), and runs every suite on pushes to main.
 
