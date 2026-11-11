@@ -249,6 +249,43 @@ class CdsHooksInteropTest {
   }
 
   @Test
+  void aCoverageWithoutPayerIdentifierLosesToOneThatNamesUs() throws Exception {
+    givenPayerCoverage("PHP-10005", Coverage.CoverageStatus.ACTIVE, "2025-11-11", null);
+    ObjectNode request = goldenRequest();
+    ArrayNode entries = (ArrayNode) request.at("/prefetch/coverage/entry");
+    ObjectNode secondary = entries.get(0).deepCopy();
+    secondary.put("fullUrl", "http://praxis.clinic/fhir/Coverage/reference-only");
+    ObjectNode resource = (ObjectNode) secondary.path("resource");
+    resource.put("id", "reference-only");
+    resource.putArray("payor").addObject().put("reference", "Organization/other");
+    entries.add(secondary);
+
+    JsonNode response = okJson(post("/cds-services/order-sign-crd", request, clinicApi()));
+
+    assertThat(
+            subExtension(coverageInformation(response), "coverage")
+                .at("/valueReference/reference")
+                .asText())
+        .isEqualTo("Coverage/coverage-sandra-okafor");
+  }
+
+  @Test
+  void twoCoveragesWithoutPayerIdentifiersAre400() throws Exception {
+    ObjectNode request = goldenRequest();
+    ArrayNode entries = (ArrayNode) request.at("/prefetch/coverage/entry");
+    ((ObjectNode) entries.get(0).path("resource"))
+        .putArray("payor")
+        .addObject()
+        .put("reference", "Organization/a");
+    ObjectNode second = entries.get(0).deepCopy();
+    ((ObjectNode) second.path("resource")).put("id", "second");
+    second.put("fullUrl", "http://praxis.clinic/fhir/Coverage/second");
+    entries.add(second);
+
+    assertOperationOutcome(post("/cds-services/order-sign-crd", request, clinicApi()), 400);
+  }
+
+  @Test
   void anotherPayersCoverageNextToOursIsIgnored() throws Exception {
     givenPayerCoverage("PHP-10005", Coverage.CoverageStatus.ACTIVE, "2025-11-11", null);
     ObjectNode request = goldenRequest();

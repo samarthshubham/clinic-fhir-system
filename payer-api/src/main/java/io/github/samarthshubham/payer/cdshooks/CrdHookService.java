@@ -181,7 +181,10 @@ public class CrdHookService {
     if (coverages.isEmpty()) {
       throw CdsHookRequest.badRequest("The hook request has no active Coverage");
     }
-    List<Coverage> ours = coverages.stream().filter(this::mayBeOurs).toList();
+    List<Coverage> ours = coverages.stream().filter(this::namesOurPayer).toList();
+    if (ours.isEmpty()) {
+      ours = coverages.stream().filter(coverage -> payerIdentifiers(coverage).isEmpty()).toList();
+    }
     if (ours.isEmpty()) {
       throw CdsHookRequest.badRequest(
           "No Coverage in the hook request is with " + crdProperties.payerName());
@@ -197,15 +200,16 @@ public class CrdHookService {
     return coverage;
   }
 
-  private boolean mayBeOurs(Coverage coverage) {
-    List<Identifier> payerIdentifiers =
-        coverage.getPayor().stream()
-            .filter(Reference::hasIdentifier)
-            .map(Reference::getIdentifier)
-            .toList();
-    return payerIdentifiers.isEmpty()
-        || payerIdentifiers.stream()
-            .anyMatch(id -> crdProperties.isOurPayer(id.getSystem(), id.getValue()));
+  private boolean namesOurPayer(Coverage coverage) {
+    return payerIdentifiers(coverage).stream()
+        .anyMatch(id -> crdProperties.isOurPayer(id.getSystem(), id.getValue()));
+  }
+
+  private static List<Identifier> payerIdentifiers(Coverage coverage) {
+    return coverage.getPayor().stream()
+        .filter(Reference::hasIdentifier)
+        .map(Reference::getIdentifier)
+        .toList();
   }
 
   private static String memberId(Coverage coverage) {
