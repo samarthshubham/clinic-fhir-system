@@ -73,9 +73,13 @@ payer-api/          Payer Spring Boot service (Maven, port 9095), client of the 
     interop/        PayerFhirServer (HAPI RestfulServer at /fhir), ImplementationGuideCapabilityInterceptor,
                     QuestionnairePackageProvider (DTR Questionnaire/$questionnaire-package, system tokens only),
                     ScopeInterceptor (SMART scopes + member compartment); auth per docs/15-payer-auth.md
-    config/         FhirConfig, RestfulServerConfig, ImplementationGuideProperties (IGs listed in /fhir/metadata)
+    cdshooks/       CRD over CDS Hooks: GET /cds-services (public), POST /cds-services/{order-sign,order-select}-crd
+                    (system/Coverage.r); CrdHookService, CoverageDecisions, PrefetchResolver (docs/11-payer-architecture.md §3)
+    config/         FhirConfig, RestfulServerConfig, ImplementationGuideProperties (IGs listed in /fhir/metadata),
+                    CrdProperties (payer.crd: payer identifiers, prefetch fallback allow-list), ClockConfig
     controller/     AuthController, OAuthTokenController, MemberController (/api/members, docs/11-payer-architecture.md §3)
-    service/ mapper/ MemberService + MemberMapper (payer HAPI Patient, Coverage, InsurancePlan, preauthorization Claims)
+    service/ mapper/ MemberService + MemberMapper (payer HAPI Patient, Coverage, InsurancePlan, preauthorization Claims),
+                    CoverageRuleService (coverage-rules.yaml), MemberCoverageService, AuditEventService
     security/ dto/ exception/   same layout as clinic-api
 
 care-platform/      Angular 21 Nx monorepo

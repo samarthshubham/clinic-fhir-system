@@ -26,7 +26,7 @@ class ClientCredentialsServiceTest {
   @Test
   void noScopeRequestedGrantsEveryRegisteredScope() {
     assertThat(service.issueToken("client_credentials", CLIENT_ID, CLIENT_SECRET, null).scope())
-        .isEqualTo("system/Claim.c system/Questionnaire.r");
+        .isEqualTo("system/Claim.c system/Coverage.r system/Questionnaire.r");
   }
 
   @Test

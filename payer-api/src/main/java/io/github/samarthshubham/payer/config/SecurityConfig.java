@@ -3,6 +3,8 @@ package io.github.samarthshubham.payer.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.samarthshubham.payer.interop.FhirSecurityErrorHandler;
 import io.github.samarthshubham.payer.security.JsonSecurityErrorHandler;
+import io.github.samarthshubham.payer.security.SmartPermission;
+import io.github.samarthshubham.payer.security.SystemScopeAuthorization;
 import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -87,6 +89,34 @@ public class SecurityConfig {
 
   @Bean
   @Order(2)
+  SecurityFilterChain cdsHooksSecurityFilterChain(
+      HttpSecurity http,
+      FhirSecurityErrorHandler errorHandler,
+      JwtAuthenticationConverter jwtAuthenticationConverter)
+      throws Exception {
+    statelessBearer(
+            http.securityMatcher(
+                PathPatternRequestMatcher.withDefaults().matcher("/cds-services/**")),
+            jwtAuthenticationConverter,
+            errorHandler)
+        .authorizeHttpRequests(
+            auth ->
+                auth.requestMatchers(HttpMethod.GET, "/cds-services")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/cds-services/*")
+                    .access(SystemScopeAuthorization.requires("Coverage", SmartPermission.READ))
+                    .anyRequest()
+                    .denyAll())
+        .exceptionHandling(
+            exceptions ->
+                exceptions
+                    .authenticationEntryPoint(errorHandler)
+                    .accessDeniedHandler(errorHandler));
+    return http.build();
+  }
+
+  @Bean
+  @Order(3)
   SecurityFilterChain apiSecurityFilterChain(
       HttpSecurity http,
       JsonSecurityErrorHandler errorHandler,

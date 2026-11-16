@@ -163,7 +163,7 @@ public class MemberMapper {
     return coding.hasDisplay() ? coding.getDisplay() : coding.getCode();
   }
 
-  private static LocalDate date(BaseDateTimeType value) {
+  public static LocalDate date(BaseDateTimeType value) {
     if (value == null
         || value.isEmpty()
         || value.getPrecision().compareTo(TemporalPrecisionEnum.DAY) < 0) {

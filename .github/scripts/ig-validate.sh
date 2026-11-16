@@ -55,15 +55,43 @@ collect_files() {
   done
 }
 
+# A CDS Hooks request or response is not a FHIR resource; validate the resources inside it.
+embedded_dir=$(mktemp -d)
+trap 'rm -rf "$embedded_dir"' EXIT
+
+expand_cds_hooks_json() {
+  local file
+  for file in "$@"; do
+    if jq -e 'has("resourceType")' "$file" >/dev/null; then
+      echo "$file"
+      continue
+    fi
+    local name i=0
+    name=$(basename "$file" .json)
+    while IFS= read -r resource; do
+      i=$((i + 1))
+      echo "$resource" >"$embedded_dir/$name.$i.json"
+      echo "$embedded_dir/$name.$i.json"
+    done < <(jq -c 'def outermost: if type == "object" and has("resourceType") then .
+      elif type == "object" or type == "array" then .[] | outermost else empty end; outermost' "$file")
+    if [[ $i -eq 0 ]]; then
+      echo "::error::$file has no resourceType and no embedded FHIR resources" >&2
+      exit 1
+    fi
+  done
+}
+
 if [[ $# -eq 0 ]]; then
   set -- "$repo_root/fixtures/davinci" "$repo_root/clinic-api/target/fhir-out" "$repo_root/payer-api/target/fhir-out"
 fi
 
-mapfile -t files < <(collect_files "$@")
-if [[ ${#files[@]} -eq 0 ]]; then
+mapfile -t json_files < <(collect_files "$@")
+if [[ ${#json_files[@]} -eq 0 ]]; then
   echo "::error::No FHIR JSON files found in: $*" >&2
   exit 1
 fi
+expanded=$(expand_cds_hooks_json "${json_files[@]}")
+mapfile -t files <<<"$expanded"
 
 mapfile -t igs < <(ig_arguments)
 if [[ ${#igs[@]} -eq 0 ]]; then

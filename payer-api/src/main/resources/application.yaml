@@ -16,6 +16,14 @@ payer:
     access-token-ttl: 15m
     refresh-token-ttl: 7d
     client-token-ttl: 5m
+  crd:
+    payer-name: Praxis Health Plan
+    payer-identifiers:
+      - system: http://praxis.clinic/fhir/identifier/payer
+        value: praxis-health-plan
+      - system: http://praxishealthplan.example/fhir/identifier/payer-id
+        value: PHP01
+    prefetch-fhir-servers: []
   implementation-guides:
     - url: http://hl7.org/fhir/us/core/ImplementationGuide/hl7.fhir.us.core
       version: 7.0.0

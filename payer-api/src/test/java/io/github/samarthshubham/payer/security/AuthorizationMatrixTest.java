@@ -8,6 +8,7 @@ import static io.github.samarthshubham.payer.security.AuthorizationMatrixTest.Ca
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ca.uhn.fhir.rest.client.api.IGenericClient;
+import io.github.samarthshubham.payer.cdshooks.CrdHookService;
 import io.github.samarthshubham.payer.service.AuthService;
 import io.github.samarthshubham.payer.service.ClientCredentialsService;
 import io.github.samarthshubham.payer.service.MemberService;
@@ -95,7 +96,10 @@ class AuthorizationMatrixTest {
               "POST",
               "/fhir/Questionnaire/$questionnaire-package",
               QUESTIONNAIRE_PACKAGE_FOR_A_CBC,
-              EnumSet.of(CLINIC_API, SYSTEM_READER)));
+              EnumSet.of(CLINIC_API, SYSTEM_READER)),
+          json("GET", "/cds-services", null, null, EVERYONE),
+          cdsHook("/cds-services/order-sign-crd", EnumSet.of(CLINIC_API, SYSTEM_READER)),
+          cdsHook("/cds-services/order-select-crd", EnumSet.of(CLINIC_API, SYSTEM_READER)));
 
   private final HttpClient http = HttpClient.newHttpClient();
 
@@ -107,6 +111,7 @@ class AuthorizationMatrixTest {
   @MockitoBean private AuthService authService;
   @MockitoBean private ClientCredentialsService clientCredentialsService;
   @MockitoBean private MemberService memberService;
+  @MockitoBean private CrdHookService crdHookService;
 
   static Stream<Arguments> endpointsByCaller() {
     List<Arguments> cases = new ArrayList<>();
@@ -179,6 +184,10 @@ class AuthorizationMatrixTest {
   private static Endpoint json(
       String method, String path, String contentType, String body, Set<Caller> allowed) {
     return new Endpoint(method, path, contentType, body, allowed, false);
+  }
+
+  private static Endpoint cdsHook(String path, Set<Caller> allowed) {
+    return new Endpoint("POST", path, JSON, "{\"hook\":\"order-sign\"}", allowed, true);
   }
 
   private static Endpoint fhir(String method, String path, String body, Set<Caller> allowed) {

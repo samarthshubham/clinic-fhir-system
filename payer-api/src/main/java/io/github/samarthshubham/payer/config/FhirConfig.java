@@ -2,6 +2,7 @@ package io.github.samarthshubham.payer.config;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
+import ca.uhn.fhir.rest.client.api.ServerValidationModeEnum;
 import ca.uhn.fhir.rest.client.interceptor.LoggingInterceptor;
 import java.time.Clock;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,7 +19,9 @@ public class FhirConfig {
 
   @Bean
   public FhirContext fhirContext() {
-    return FhirContext.forR4();
+    FhirContext context = FhirContext.forR4();
+    context.getRestfulClientFactory().setServerValidationMode(ServerValidationModeEnum.NEVER);
+    return context;
   }
 
   @Bean

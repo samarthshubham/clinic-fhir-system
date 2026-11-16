@@ -9,7 +9,10 @@ import static org.mockito.Mockito.withSettings;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.model.api.Include;
+import ca.uhn.fhir.rest.api.MethodOutcome;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
+import ca.uhn.fhir.rest.gclient.ICreate;
+import ca.uhn.fhir.rest.gclient.ICreateTyped;
 import ca.uhn.fhir.rest.gclient.ICriterion;
 import ca.uhn.fhir.rest.gclient.ICriterionInternal;
 import ca.uhn.fhir.rest.gclient.IParam;
@@ -24,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.IdType;
@@ -31,7 +35,10 @@ import org.hl7.fhir.r4.model.Resource;
 import org.mockito.Answers;
 import org.mockito.quality.Strictness;
 
-/** A fake IGenericClient for search and read: records each search's criteria as "name=value". */
+/**
+ * A fake IGenericClient for search, read and create: records each search's criteria as "name=value"
+ * and keeps every created resource.
+ */
 public final class FhirClientStub {
 
   private final IGenericClient client = lenientMock(IGenericClient.class, Answers.RETURNS_DEFAULTS);
@@ -39,6 +46,7 @@ public final class FhirClientStub {
   private final Map<Class<?>, Map<String, Resource>> stored = new HashMap<>();
   private final Map<Class<?>, List<String>> pendingCriteria = new HashMap<>();
   private final Map<Class<?>, List<List<String>>> executedSearches = new HashMap<>();
+  private final List<IBaseResource> created = new CopyOnWriteArrayList<>();
 
   public FhirClientStub() {
     IUntypedQuery<?> untypedQuery = lenientMock(IUntypedQuery.class, Answers.RETURNS_DEFAULTS);
@@ -51,6 +59,13 @@ public final class FhirClientStub {
     IRead read = lenientMock(IRead.class, Answers.RETURNS_DEFAULTS);
     lenient().doReturn(read).when(client).read();
     lenient().doAnswer(inv -> readTyped(inv.getArgument(0))).when(read).resource(any(Class.class));
+
+    ICreate create = lenientMock(ICreate.class, Answers.RETURNS_DEFAULTS);
+    lenient().doReturn(create).when(client).create();
+    lenient()
+        .doAnswer(inv -> createTyped(inv.getArgument(0)))
+        .when(create)
+        .resource(any(IBaseResource.class));
   }
 
   public IGenericClient client() {
@@ -76,6 +91,10 @@ public final class FhirClientStub {
       throw new AssertionError("No " + type.getSimpleName() + " search was executed");
     }
     return searches.get(searches.size() - 1);
+  }
+
+  public <T extends IBaseResource> List<T> created(Class<T> type) {
+    return created.stream().filter(type::isInstance).map(type::cast).toList();
   }
 
   public static Bundle bundleOf(Resource... resources) {
@@ -136,6 +155,19 @@ public final class FhirClientStub {
         .add(List.copyOf(pendingCriteria.remove(type)));
     Bundle result = searchResults.get(type);
     return result == null ? new Bundle() : result.copy();
+  }
+
+  private ICreateTyped createTyped(IBaseResource resource) {
+    ICreateTyped createTyped = lenientMock(ICreateTyped.class, Answers.RETURNS_SELF);
+    lenient()
+        .doAnswer(
+            inv -> {
+              created.add(resource);
+              return new MethodOutcome().setCreated(true);
+            })
+        .when(createTyped)
+        .execute();
+    return createTyped;
   }
 
   private IReadTyped<?> readTyped(Class<?> type) {

@@ -22,4 +22,5 @@ payer:
         client-secret-hash: ${PAYER_CLINIC_API_CLIENT_SECRET_HASH:$2a$10$nF8XQgdUJX3XdbE9ctC.xuhvIZan8R.hqJ.iC0cnK6A3mwIRK0hzi}
         scopes:
           - system/Claim.c
+          - system/Coverage.r
           - system/Questionnaire.r

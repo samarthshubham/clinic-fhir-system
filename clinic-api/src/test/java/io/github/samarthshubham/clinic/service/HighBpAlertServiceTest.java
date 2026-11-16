@@ -139,6 +139,7 @@ class HighBpAlertServiceTest {
     long before = System.currentTimeMillis();
 
     service.handleNotification();
+    long after = System.currentTimeMillis();
 
     List<String> criteria = fhir.lastSearchCriteria(Observation.class);
     assertThat(criteria)
@@ -147,7 +148,7 @@ class HighBpAlertServiceTest {
     assertThat(criteria.get(1)).startsWith("value-quantity=gt180");
     assertThat(criteria.get(2)).startsWith("_lastUpdated=gt");
     assertThat(lastUpdatedLowerBound(criteria).getTime())
-        .isBetween(before - FIRST_LOOKBACK.toMillis() - 1_000, before - FIRST_LOOKBACK.toMillis());
+        .isBetween(before - FIRST_LOOKBACK.toMillis() - 1_000, after - FIRST_LOOKBACK.toMillis());
   }
 
   @Test
