@@ -6,7 +6,39 @@
     "dispatchedOrders": [
       "ServiceRequest/draft-mri-lumbar-spine"
     ],
-    "performer": "Organization/seed-imaging-center"
+    "performer": "Organization/seed-imaging-center",
+    "fulfillmentTasks": [
+      {
+        "resourceType": "Task",
+        "id": "dispatch-mri-lumbar-spine",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/davinci-crd/StructureDefinition/profile-task-dispatch"
+          ]
+        },
+        "status": "draft",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/CodeSystem/task-code",
+              "code": "fulfill",
+              "display": "Fulfill the focal request"
+            }
+          ]
+        },
+        "focus": {
+          "reference": "ServiceRequest/draft-mri-lumbar-spine"
+        },
+        "for": {
+          "reference": "Patient/seed-sandra-okafor"
+        },
+        "authoredOn": "2026-11-11",
+        "owner": {
+          "reference": "Organization/seed-imaging-center"
+        }
+      }
+    ]
   },
   "prefetch": {
     "patient": {

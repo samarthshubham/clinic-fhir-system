@@ -35,6 +35,7 @@ import org.hl7.fhir.r4.model.Coverage;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -230,6 +231,59 @@ class CdsHooksInteropTest {
     ObjectNode request = (ObjectNode) objectMapper.readTree(fixture("order-dispatch-request.json"));
     ((ObjectNode) request.path("prefetch"))
         .set("dispatchedOrders", request.path("prefetch").path("patient"));
+
+    assertOperationOutcome(post("/cds-services/order-dispatch-crd", request, clinicApi()), 400);
+  }
+
+  @Test
+  void orderDispatchNamesTheFulfillmentTaskOwnerWhenTheContextHasNoPerformer() throws Exception {
+    givenPayerCoverage("PHP-10005", Coverage.CoverageStatus.ACTIVE, "2025-11-11", null);
+    ObjectNode request = (ObjectNode) objectMapper.readTree(fixture("order-dispatch-request.json"));
+    ObjectNode context = (ObjectNode) request.path("context");
+    context.remove("performer");
+    ((ObjectNode) context.at("/fulfillmentTasks/0/owner")).put("reference", "Organization/other");
+
+    JsonNode response = okJson(post("/cds-services/order-dispatch-crd", request, clinicApi()));
+
+    assertThat(response.at("/cards/0/detail").asText())
+        .startsWith(
+            "Praxis Health Plan needs prior authorization for this order at Organization/other.");
+  }
+
+  @Test
+  void orderDispatchWithoutPerformerOrTasksStillAnswers() throws Exception {
+    givenPayerCoverage("PHP-10005", Coverage.CoverageStatus.ACTIVE, "2025-11-11", null);
+    ObjectNode request = (ObjectNode) objectMapper.readTree(fixture("order-dispatch-request.json"));
+    ((ObjectNode) request.path("context")).remove(List.of("performer", "fulfillmentTasks"));
+
+    JsonNode response = okJson(post("/cds-services/order-dispatch-crd", request, clinicApi()));
+
+    assertThat(response.at("/cards/0/detail").asText())
+        .startsWith("Praxis Health Plan needs prior authorization for this order.");
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @CsvSource({
+    "performer that is not a reference, /performer, not a reference",
+    "task for another order, /fulfillmentTasks/0/focus/reference, ServiceRequest/other",
+    "task owner that is not a reference, /fulfillmentTasks/0/owner/reference, not a reference",
+    "task that is a Patient, /fulfillmentTasks/0/resourceType, Patient",
+  })
+  void orderDispatchWithABadPerformerOrTaskIsABadRequest(String name, String pointer, String value)
+      throws Exception {
+    ObjectNode request = (ObjectNode) objectMapper.readTree(fixture("order-dispatch-request.json"));
+    JsonNode context = request.path("context");
+    String parent = pointer.substring(0, pointer.lastIndexOf('/'));
+    ((ObjectNode) (parent.isEmpty() ? context : context.at(parent)))
+        .put(pointer.substring(pointer.lastIndexOf('/') + 1), value);
+
+    assertOperationOutcome(post("/cds-services/order-dispatch-crd", request, clinicApi()), 400);
+  }
+
+  @Test
+  void orderDispatchWithFulfillmentTasksThatAreNotAnArrayIsABadRequest() throws Exception {
+    ObjectNode request = (ObjectNode) objectMapper.readTree(fixture("order-dispatch-request.json"));
+    ((ObjectNode) request.path("context")).putObject("fulfillmentTasks");
 
     assertOperationOutcome(post("/cds-services/order-dispatch-crd", request, clinicApi()), 400);
   }

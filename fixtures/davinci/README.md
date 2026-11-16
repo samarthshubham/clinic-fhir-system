@@ -20,7 +20,7 @@ Each file starts from an example in the published IG package (all CC0-1.0) and i
 | `crd/appointment-book-response-pa-needed.json` | `Binary/CRDServiceResponse3`, payer-api's answer to `appointment-book-request.json` | hl7.fhir.us.davinci-crd#2.2.1 |
 | `crd/encounter-start-request.json` | `crd/order-sign-request.json` with an in-progress MRI `Encounter` (`profile-encounter`) in `prefetch.encounter` | hl7.fhir.us.davinci-crd#2.2.1 |
 | `crd/encounter-start-response-pa-needed.json` | `Binary/CRDServiceResponse3`, payer-api's answer to `encounter-start-request.json` | hl7.fhir.us.davinci-crd#2.2.1 |
-| `crd/order-dispatch-request.json` | `crd/order-sign-request.json` with the MRI order active and dispatched to an imaging center, in `prefetch.dispatchedOrders` | hl7.fhir.us.davinci-crd#2.2.1 |
+| `crd/order-dispatch-request.json` | `crd/order-sign-request.json` with the MRI order active and dispatched to an imaging center, in `prefetch.dispatchedOrders`, and its fulfillment `Task` (`profile-task-dispatch`) in `context.fulfillmentTasks` | hl7.fhir.us.davinci-crd#2.2.1 |
 | `crd/order-dispatch-response-pa-needed.json` | `Binary/CRDServiceResponse3`, payer-api's answer to `order-dispatch-request.json` | hl7.fhir.us.davinci-crd#2.2.1 |
 | `dtr/questionnaire-package-input.json` | `Parameters/QuestionnairePackageInputParamsExample` | hl7.fhir.us.davinci-dtr#2.2.0 |
 | `pas/claim-request-bundle.json` | `Bundle/ReferralAuthorizationBundleExample` | hl7.fhir.us.davinci-pas#2.2.1 |

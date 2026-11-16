@@ -3,7 +3,7 @@
     "uuid" : "e38e7807-4258-36e6-8099-874a9efcc956",
     "summary" : "Prior authorization needed: MRI lumbar spine without contrast",
     "indicator" : "warning",
-    "detail" : "Praxis Health Plan needs prior authorization for this order. Complete the documentation questionnaire, then submit the prior authorization request.",
+    "detail" : "Praxis Health Plan needs prior authorization for this encounter.",
     "source" : {
       "label" : "Praxis Health Plan",
       "topic" : {
@@ -40,17 +40,6 @@
         }, {
           "url" : "pa-needed",
           "valueCode" : "auth-needed"
-        }, {
-          "url" : "doc-needed",
-          "valueCode" : "clinical"
-        }, {
-          "url" : "reason",
-          "valueCodeableConcept" : {
-            "text" : "Clinical documentation is needed for the prior authorization request"
-          }
-        }, {
-          "url" : "questionnaire",
-          "valueCanonical" : "http://praxishealthplan.example/fhir/Questionnaire/mri-lumbar-spine"
         }, {
           "url" : "date",
           "valueDate" : "2026-11-11"

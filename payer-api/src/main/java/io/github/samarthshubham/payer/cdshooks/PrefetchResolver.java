@@ -24,7 +24,7 @@ public class PrefetchResolver {
   private static final Logger log = LoggerFactory.getLogger(PrefetchResolver.class);
   private static final Pattern CONTEXT_TOKEN =
       Pattern.compile("\\{\\{context\\.(\\w+)(?:\\.([A-Z][A-Za-z]+)\\.id)?}}");
-  private static final Pattern ID_OR_REFERENCE =
+  static final Pattern ID_OR_REFERENCE =
       Pattern.compile("^([A-Z][A-Za-z]+/)?[A-Za-z0-9\\-.]{1,64}$");
 
   private final FhirContext fhirContext;

@@ -34,7 +34,7 @@ class CoverageDecisionsTest {
     "http://www.ama-assn.org/go/cpt, 72148, routine, ORDER_SELECT, true, false",
     "http://www.ama-assn.org/go/cpt, 72148, routine, ORDER_DISPATCH, true, true",
     "http://www.ama-assn.org/go/cpt, 72148, routine, APPOINTMENT_BOOK, true, true",
-    "http://www.ama-assn.org/go/cpt, 72148, routine, ENCOUNTER_START, true, true",
+    "http://www.ama-assn.org/go/cpt, 72148, routine, ENCOUNTER_START, true, false",
     "http://snomed.info/sct, 76746007, routine, ORDER_SIGN, true, false",
     "http://snomed.info/sct, 276341003, urgent, ORDER_SIGN, true, false",
     "http://snomed.info/sct, 276341003, stat, ORDER_SIGN, false, false",
@@ -91,7 +91,8 @@ class CoverageDecisionsTest {
     assertThat(decision.priorAuthWaived()).isTrue();
     assertThat(decision.summary()).startsWith("Covered, no prior authorization needed: ");
     assertThat(decision.indicator()).isEqualTo("info");
-    assertThat(decision.detail("Praxis Health Plan", TODAY)).contains("waived for stat");
+    assertThat(decision.detail("Praxis Health Plan", TODAY, CardSubject.ORDER))
+        .contains("waived for stat");
   }
 
   @Test
@@ -146,9 +147,11 @@ class CoverageDecisionsTest {
         new CoverageDecision(
             MemberCoverageCheck.Status.NO_ACTIVE_COVERAGE, "MRI", false, false, false, null);
 
-    assertThat(noMember.detail("Praxis Health Plan", TODAY)).contains("has no member");
-    assertThat(noCoverage.detail("Praxis Health Plan", TODAY))
-        .contains("no active coverage for this member on 2026-11-11");
+    assertThat(noMember.detail("Praxis Health Plan", TODAY, CardSubject.ORDER))
+        .contains("has no member");
+    assertThat(noCoverage.detail("Praxis Health Plan", TODAY, CardSubject.APPOINTMENT))
+        .contains("no active coverage for this member on 2026-11-11")
+        .endsWith("before booking.");
   }
 
   @Test
@@ -157,8 +160,26 @@ class CoverageDecisionsTest {
         new CoverageDecision(
             MemberCoverageCheck.Status.ACTIVE, "Stress test", true, false, false, null);
 
-    assertThat(decision.detail("Praxis Health Plan", TODAY))
+    assertThat(decision.detail("Praxis Health Plan", TODAY, CardSubject.ORDER))
         .isEqualTo("Praxis Health Plan needs prior authorization for this order.");
+  }
+
+  @Test
+  void detailsNameTheResourceTheCardIsAbout() {
+    CoverageDecision covered =
+        new CoverageDecision(MemberCoverageCheck.Status.ACTIVE, "MRI", false, false, false, null);
+
+    assertThat(covered.detail("Praxis Health Plan", TODAY, CardSubject.ENCOUNTER))
+        .isEqualTo("Praxis Health Plan covers this encounter without prior authorization.");
+    assertThat(
+            covered.detail(
+                "Praxis Health Plan",
+                TODAY,
+                CardSubject.dispatchedOrder("Organization/imaging-center")))
+        .isEqualTo(
+            "Praxis Health Plan covers this order at Organization/imaging-center without prior"
+                + " authorization.");
+    assertThat(CardSubject.dispatchedOrder(null).name()).isEqualTo("this order");
   }
 
   @Test

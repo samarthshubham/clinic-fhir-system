@@ -33,9 +33,9 @@ public enum CrdHook {
       "encounter-start-crd",
       "encounter-start",
       "Praxis Health Plan coverage requirements on encounter start",
-      "Tells whether the starting encounter is covered and needs prior authorization or"
-          + " documentation, and adds the CRD coverage-information extension to the encounter.",
-      true),
+      "Tells whether the starting encounter is covered and needs prior authorization, and adds"
+          + " the CRD coverage-information extension to the encounter.",
+      false),
   ORDER_DISPATCH(
       "order-dispatch-crd",
       "order-dispatch",
@@ -86,7 +86,10 @@ public enum CrdHook {
     return description;
   }
 
-  /** A primary hook may ask for documentation; CRD 2.2 limits order-select to coverage and PA. */
+  /**
+   * A primary hook may ask for documentation; CRD 2.2 limits the secondary hooks (order-select,
+   * encounter-start) to coverage and PA.
+   */
   public boolean primary() {
     return primary;
   }

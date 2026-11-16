@@ -20,7 +20,9 @@ import io.micrometer.core.instrument.Timer;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Appointment;
 import org.hl7.fhir.r4.model.Bundle;
@@ -30,6 +32,7 @@ import org.hl7.fhir.r4.model.Encounter;
 import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.ServiceRequest;
+import org.hl7.fhir.r4.model.Task;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -126,6 +129,8 @@ public class CrdHookService {
           case ORDER_DISPATCH -> dispatchedOrders(request, parser);
           case ORDER_SIGN, ORDER_SELECT -> draftOrders(hook, request, parser);
         };
+    Map<String, String> performers =
+        hook == CrdHook.ORDER_DISPATCH ? dispatchPerformers(request, parser) : Map.of();
     Coverage coverage = coverage(request, parser);
     LocalDate today = LocalDate.now(clock);
     MemberCoverageCheck check = memberCoverageService.check(memberId(coverage), today);
@@ -148,7 +153,16 @@ public class CrdHookService {
       updated.addExtension(
           coverageDecisions.coverageInformation(decision, coverageReference, today, assertionId));
       systemActions.add(systemAction(updated, parser));
-      cards.add(card(decision, request.hookInstance(), targetReference, today));
+      CardSubject subject =
+          switch (target) {
+            case Appointment appointment -> CardSubject.APPOINTMENT;
+            case Encounter encounter -> CardSubject.ENCOUNTER;
+            default ->
+                hook == CrdHook.ORDER_DISPATCH
+                    ? CardSubject.dispatchedOrder(performers.get(targetReference))
+                    : CardSubject.ORDER;
+          };
+      cards.add(card(decision, subject, request.hookInstance(), targetReference, today));
     }
     return response;
   }
@@ -197,6 +211,48 @@ public class CrdHookService {
         .filter(order -> order.getIdElement().hasIdPart())
         .filter(order -> dispatched.contains("ServiceRequest/" + order.getIdElement().getIdPart()))
         .toList();
+  }
+
+  private static Map<String, String> dispatchPerformers(CdsHookRequest request, IParser parser) {
+    List<String> dispatched = request.contextReferences("dispatchedOrders");
+    Map<String, String> performers = new HashMap<>();
+    String performer = request.contextValue("performer");
+    if (performer != null) {
+      requireReference(performer, "The hook context performer");
+      dispatched.forEach(order -> performers.put(order, performer));
+    }
+    JsonNode tasks = request.context().path("fulfillmentTasks");
+    if (tasks.isMissingNode()) {
+      return performers;
+    }
+    if (!tasks.isArray()) {
+      throw CdsHookRequest.badRequest("context.fulfillmentTasks is not an array of Tasks");
+    }
+    for (JsonNode node : tasks) {
+      Task task;
+      try {
+        task = parser.parseResource(Task.class, node.toString());
+      } catch (DataFormatException e) {
+        throw CdsHookRequest.badRequest("context.fulfillmentTasks has an entry that is not a Task");
+      }
+      String focus = task.getFocus().getReferenceElement().toUnqualifiedVersionless().getValue();
+      if (!dispatched.contains(focus)) {
+        throw CdsHookRequest.badRequest(
+            "A fulfillment Task's focus is not one of context.dispatchedOrders");
+      }
+      if (task.getOwner().hasReference()) {
+        String owner = task.getOwner().getReference();
+        requireReference(owner, "A fulfillment Task's owner");
+        performers.putIfAbsent(focus, owner);
+      }
+    }
+    return performers;
+  }
+
+  private static void requireReference(String value, String what) {
+    if (!value.contains("/") || !PrefetchResolver.ID_OR_REFERENCE.matcher(value).matches()) {
+      throw CdsHookRequest.badRequest(what + " is not a FHIR reference");
+    }
   }
 
   private Encounter encounter(CdsHookRequest request, IParser parser) {
@@ -289,12 +345,16 @@ public class CrdHookService {
   }
 
   private ObjectNode card(
-      CoverageDecision decision, String hookInstance, String orderReference, LocalDate today) {
+      CoverageDecision decision,
+      CardSubject subject,
+      String hookInstance,
+      String orderReference,
+      LocalDate today) {
     ObjectNode card = objectMapper.createObjectNode();
     card.put("uuid", CoverageDecisions.stableId(hookInstance, "card|" + orderReference));
     card.put("summary", decision.summary());
     card.put("indicator", decision.indicator());
-    card.put("detail", decision.detail(crdProperties.payerName(), today));
+    card.put("detail", decision.detail(crdProperties.payerName(), today, subject));
     ObjectNode source = card.putObject("source");
     source.put("label", crdProperties.payerName());
     ObjectNode topic = source.putObject("topic");
