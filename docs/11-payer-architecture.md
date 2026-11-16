@@ -157,7 +157,9 @@ The payer HAPI (`hapi-fhir-payer` in `infra/docker-compose.yml`) installs these 
 | hl7.fhir.us.davinci-drug-formulary | 2.1.0 | |
 | hl7.fhir.us.davinci-atr | 2.1.0 | |
 | hl7.terminology.r4 | 7.1.0 | shared dependency |
-| hl7.fhir.uv.extensions.r4 | 5.2.0 | shared dependency |
+| hl7.fhir.uv.extensions.r4 | 5.3.0-ballot-tc1 | shared dependency; DTR 2.2.0 and SDC 4.0.0 need it for `questionnaire-supportHyperlink` |
+| hl7.fhir.uv.sdc | 4.0.0 | profiles behind the DTR Questionnaire and Library profiles |
+| hl7.fhir.uv.xver-r5.r4 | 0.1.0 | StructureDefinitions only: the SDC Questionnaire profiles slice on R5 cross-version extensions, and 10 of its ValueSets have ids over HAPI's 64-character limit (HAPI-0521) |
 
 How the packages are loaded:
 
@@ -183,7 +185,8 @@ How the packages are loaded:
 | Cardiac stress test | `http://snomed.info/sct` | `76746007` | yes | no | |
 | Emergency cardiac workup | `http://snomed.info/sct` | `276341003` | yes, waived when `stat` | no | |
 
-- Questionnaire canonicals are `http://praxishealthplan.example/fhir/Questionnaire/<name>`; E3-S1 authors them.
+- Questionnaire canonicals are `http://praxishealthplan.example/fhir/Questionnaire/<name>`. The forms, their CQL Libraries (`Library/<name>-prepopulation`) and ValueSets are golden fixtures in `fixtures/davinci/dtr/`, seeded into the payer HAPI by `payer-questionnaires.feature`. The `autoApproveCriteria` linkIds are required items in them (`DtrQuestionnaireFixturesTest`).
+- `POST /fhir/Questionnaire/$questionnaire-package` (DTR, `system/Questionnaire.r`, system tokens only) looks up each `order` code here and adds any requested `questionnaire` canonicals. Each form comes back as a `packagebundle`: the Questionnaire, an empty `in-progress` QuestionnaireResponse for the coverage and orders, then the `cqf-library` Libraries and the `answerValueSet` ValueSets from the payer HAPI. An `outcome` explains orders that need no documentation and anything missing. `changedsince` leaves out packages that haven't changed. A request with only `context` gets a 400, because looking up a saved response is not built yet.
 - `emergencyExempt` waives PA for `stat` orders only. An `urgent` order still needs PA, on the expedited clock.
 - `autoApproveCriteria` test DTR answers by `linkId` with `EQUALS`, `AT_LEAST` or `AT_MOST`. All met: auto-approve. An unmet criterion with a `denialReason`: deny with that reason. Otherwise, or with no criteria: pend for review. The CGM needs a diabetes diagnosis and insulin treatment; the MRI is denied under 6 weeks of conservative therapy and auto-approved only with a neurological deficit.
 

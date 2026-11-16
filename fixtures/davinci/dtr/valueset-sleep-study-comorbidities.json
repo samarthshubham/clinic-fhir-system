@@ -1,0 +1,87 @@
+{
+  "resourceType": "ValueSet",
+  "id": "sleep-study-comorbidities",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/StructureDefinition/shareablevalueset"
+    ]
+  },
+  "url": "http://praxishealthplan.example/fhir/ValueSet/sleep-study-comorbidities",
+  "version": "1.0.0",
+  "name": "SleepStudyComorbidities",
+  "title": "Sleep study comorbidities",
+  "status": "active",
+  "experimental": false,
+  "date": "2026-11-01",
+  "publisher": "Praxis Health Plan",
+  "description": "Comorbidities that support an attended in-lab sleep study.",
+  "compose": {
+    "include": [
+      {
+        "system": "http://snomed.info/sct",
+        "concept": [
+          {
+            "code": "38341003",
+            "display": "Hypertensive disorder"
+          },
+          {
+            "code": "84114007",
+            "display": "Heart failure"
+          },
+          {
+            "code": "49436004",
+            "display": "Atrial fibrillation"
+          },
+          {
+            "code": "230690007",
+            "display": "Cerebrovascular accident"
+          },
+          {
+            "code": "44054006",
+            "display": "Type 2 diabetes mellitus"
+          },
+          {
+            "code": "414916001",
+            "display": "Obesity"
+          }
+        ]
+      }
+    ]
+  },
+  "expansion": {
+    "timestamp": "2026-11-01T00:00:00Z",
+    "total": 6,
+    "contains": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "38341003",
+        "display": "Hypertensive disorder"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "84114007",
+        "display": "Heart failure"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "49436004",
+        "display": "Atrial fibrillation"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "230690007",
+        "display": "Cerebrovascular accident"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "44054006",
+        "display": "Type 2 diabetes mellitus"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "414916001",
+        "display": "Obesity"
+      }
+    ]
+  }
+}

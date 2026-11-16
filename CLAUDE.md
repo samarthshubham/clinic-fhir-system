@@ -71,6 +71,7 @@ clinic-api/         Spring Boot backend (Maven)
 payer-api/          Payer Spring Boot service (Maven, port 9095), client of the payer HAPI :8081
   src/main/java/io/github/samarthshubham/payer/
     interop/        PayerFhirServer (HAPI RestfulServer at /fhir), ImplementationGuideCapabilityInterceptor,
+                    QuestionnairePackageProvider (DTR Questionnaire/$questionnaire-package, system tokens only),
                     ScopeInterceptor (SMART scopes + member compartment); auth per docs/15-payer-auth.md
     cdshooks/       CRD over CDS Hooks: GET /cds-services (public), POST /cds-services/{order-sign,order-select,appointment-book,encounter-start,order-dispatch}-crd
                     (system/Coverage.r); CrdHookService, CoverageDecisions, PrefetchResolver (docs/11-payer-architecture.md §3)
@@ -90,7 +91,8 @@ care-platform/      Angular 21 Nx monorepo
     src/features/       patients.feature, marcus-webb.feature, priya-nair.feature, gerald-horton.feature,
                         sandra-okafor.feature, ramon-castillo.feature, aisha-chen.feature,
                         robert-osei.feature, tony-stark.feature,
-                        payer/payer-plans.feature, payer/payer-members.feature (payer HAPI :8081)
+                        payer/payer-plans.feature, payer/payer-members.feature,
+                        payer/payer-questionnaires.feature (payer HAPI :8081)
     src/step-definitions/  background.steps.ts, patient.steps.ts, encounter.steps.ts,
                            vitals.steps.ts, clinical.steps.ts, coverage.steps.ts, payer.steps.ts
     src/support/        api-client.ts, world.ts, date-helpers.ts

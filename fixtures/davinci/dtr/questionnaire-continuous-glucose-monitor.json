@@ -1,0 +1,176 @@
+{
+  "resourceType": "Questionnaire",
+  "id": "continuous-glucose-monitor",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/dtr-std-questionnaire"
+    ]
+  },
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/questionnaireAudience",
+      "valueCode": "clinical"
+    },
+    {
+      "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/estimated-completion-time",
+      "extension": [
+        {
+          "url": "totalTime",
+          "valueCode": "under-3min"
+        },
+        {
+          "url": "clinicalTime",
+          "valueCode": "under-3min"
+        }
+      ]
+    },
+    {
+      "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-launchContext",
+      "extension": [
+        {
+          "url": "name",
+          "valueCoding": {
+            "system": "http://hl7.org/fhir/uv/sdc/CodeSystem/launchContext",
+            "code": "patient"
+          }
+        },
+        {
+          "url": "type",
+          "valueCode": "Patient"
+        }
+      ]
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/cqf-library",
+      "valueCanonical": "http://praxishealthplan.example/fhir/Library/continuous-glucose-monitor-prepopulation"
+    }
+  ],
+  "url": "http://praxishealthplan.example/fhir/Questionnaire/continuous-glucose-monitor",
+  "name": "ContinuousGlucoseMonitor",
+  "title": "Continuous glucose monitor documentation",
+  "status": "active",
+  "subjectType": [
+    "Patient"
+  ],
+  "date": "2026-11-01",
+  "publisher": "Praxis Health Plan",
+  "description": "Documentation Praxis Health Plan needs to review prior authorization for a continuous glucose monitor.",
+  "item": [
+    {
+      "linkId": "instructions",
+      "text": "Praxis Health Plan needs this documentation for a continuous glucose monitor (HCPCS E2103).",
+      "type": "display"
+    },
+    {
+      "linkId": "diagnosis",
+      "text": "Diagnosis",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "diabetes-diagnosis",
+          "text": "Does the patient have a diagnosis of diabetes mellitus?",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "linkId": "diabetes-type",
+          "text": "Type of diabetes",
+          "type": "choice",
+          "required": true,
+          "enableWhen": [
+            {
+              "question": "diabetes-diagnosis",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "answerValueSet": "http://praxishealthplan.example/fhir/ValueSet/diabetes-types"
+        },
+        {
+          "linkId": "most-recent-hba1c",
+          "text": "Most recent HbA1c (%)",
+          "type": "decimal",
+          "enableWhen": [
+            {
+              "question": "diabetes-diagnosis",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ]
+        },
+        {
+          "linkId": "hba1c-date",
+          "text": "Date of the most recent HbA1c",
+          "type": "date",
+          "enableWhen": [
+            {
+              "question": "diabetes-diagnosis",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "treatment",
+      "text": "Treatment",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "insulin-treated",
+          "text": "Is the patient treated with insulin?",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "linkId": "insulin-injections-per-day",
+          "text": "Insulin injections per day (enter 0 for an insulin pump)",
+          "type": "integer",
+          "enableWhen": [
+            {
+              "question": "insulin-treated",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/minValue",
+              "valueInteger": 0
+            },
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/maxValue",
+              "valueInteger": 12
+            }
+          ]
+        },
+        {
+          "linkId": "glucose-checks-per-day",
+          "text": "Fingerstick glucose checks per day",
+          "type": "integer",
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/minValue",
+              "valueInteger": 0
+            },
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/maxValue",
+              "valueInteger": 20
+            }
+          ]
+        },
+        {
+          "linkId": "problematic-hypoglycemia",
+          "text": "Has the patient had problematic hypoglycemia?",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "linkId": "clinical-notes",
+      "text": "Anything else the reviewer should know",
+      "type": "text"
+    }
+  ]
+}
