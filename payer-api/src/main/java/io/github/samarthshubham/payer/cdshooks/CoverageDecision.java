@@ -34,30 +34,38 @@ record CoverageDecision(
     return !verified() || priorAuthNeeded ? "warning" : "info";
   }
 
-  String detail(String payerName, LocalDate today) {
+  String detail(String payerName, LocalDate today, CardSubject subject) {
     if (memberStatus == MemberCoverageCheck.Status.NO_MEMBER_FOUND) {
       return payerName
           + " has no member with the member id on this coverage. Check the patient's insurance"
-          + " details before ordering.";
+          + " details before "
+          + subject.nextStep()
+          + ".";
     }
     if (memberStatus == MemberCoverageCheck.Status.NO_ACTIVE_COVERAGE) {
       return payerName
           + " has no active coverage for this member on "
           + today
-          + ". Check the patient's insurance details before ordering.";
+          + ". Check the patient's insurance details before "
+          + subject.nextStep()
+          + ".";
     }
     if (documentationNeeded) {
       return payerName
-          + " needs prior authorization for this order. Complete the documentation"
+          + " needs prior authorization for "
+          + subject.name()
+          + ". Complete the documentation"
           + " questionnaire, then submit the prior authorization request.";
     }
     if (priorAuthNeeded) {
-      return payerName + " needs prior authorization for this order.";
+      return payerName + " needs prior authorization for " + subject.name() + ".";
     }
     if (priorAuthWaived) {
       return payerName
-          + " covers this order. Prior authorization is waived for stat emergency orders.";
+          + " covers "
+          + subject.name()
+          + ". Prior authorization is waived for stat emergency orders.";
     }
-    return payerName + " covers this order without prior authorization.";
+    return payerName + " covers " + subject.name() + " without prior authorization.";
   }
 }

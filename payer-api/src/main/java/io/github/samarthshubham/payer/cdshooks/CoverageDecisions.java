@@ -33,22 +33,29 @@ public class CoverageDecisions {
   }
 
   CoverageDecision decide(CrdHook hook, ServiceRequest order, MemberCoverageCheck check) {
+    return decide(
+        hook,
+        order.getCode(),
+        order.hasPriority()
+            ? OrderPriority.fromCode(order.getPriority().toCode())
+            : OrderPriority.ROUTINE,
+        check);
+  }
+
+  CoverageDecision decide(
+      CrdHook hook, CodeableConcept code, OrderPriority priority, MemberCoverageCheck check) {
     Coding coding =
-        order.getCode().getCoding().stream()
+        code.getCoding().stream()
             .filter(c -> coverageRuleService.hasRule(c.getSystem(), c.getCode()))
             .findFirst()
-            .orElse(order.getCode().getCodingFirstRep());
+            .orElse(code.getCodingFirstRep());
     boolean known = coverageRuleService.hasRule(coding.getSystem(), coding.getCode());
     CoverageRule rule = coverageRuleService.findRule(coding.getSystem(), coding.getCode());
     String serviceName =
-        known && rule.display() != null ? rule.display() : serviceName(order, coding);
+        known && rule.display() != null ? rule.display() : serviceName(code, coding);
     if (!check.verified()) {
       return new CoverageDecision(check.status(), serviceName, false, false, false, null);
     }
-    OrderPriority priority =
-        order.hasPriority()
-            ? OrderPriority.fromCode(order.getPriority().toCode())
-            : OrderPriority.ROUTINE;
     boolean priorAuthNeeded = rule.priorAuthRequired(priority);
     boolean documentationNeeded = hook.primary() && priorAuthNeeded && rule.docNeeded();
     return new CoverageDecision(
@@ -104,9 +111,9 @@ public class CoverageDecisions {
                 : "The member has no active coverage on this date");
   }
 
-  private static String serviceName(ServiceRequest order, Coding coding) {
-    if (order.getCode().hasText()) {
-      return order.getCode().getText();
+  private static String serviceName(CodeableConcept code, Coding coding) {
+    if (code.hasText()) {
+      return code.getText();
     }
     if (coding.hasDisplay()) {
       return coding.getDisplay();

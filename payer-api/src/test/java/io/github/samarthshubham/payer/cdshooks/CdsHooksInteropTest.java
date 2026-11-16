@@ -35,6 +35,7 @@ import org.hl7.fhir.r4.model.Coverage;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -93,21 +94,35 @@ class CdsHooksInteropTest {
   }
 
   @Test
-  void discoveryIsPublicAndListsBothServicesWithPrefetchTemplates() throws Exception {
+  void discoveryIsPublicAndListsEveryServiceWithPrefetchTemplates() throws Exception {
     HttpResponse<String> response = get("/cds-services");
 
     assertThat(response.statusCode()).isEqualTo(200);
     JsonNode services = objectMapper.readTree(response.body()).path("services");
-    assertThat(services).hasSize(2);
+    assertThat(services).hasSize(5);
     assertThat(services.findValuesAsText("id"))
-        .containsExactly("order-sign-crd", "order-select-crd");
-    assertThat(services.findValuesAsText("hook")).containsExactly("order-sign", "order-select");
+        .containsExactly(
+            "order-sign-crd",
+            "order-select-crd",
+            "appointment-book-crd",
+            "encounter-start-crd",
+            "order-dispatch-crd");
+    assertThat(services.findValuesAsText("hook"))
+        .containsExactly(
+            "order-sign", "order-select", "appointment-book", "encounter-start", "order-dispatch");
+    assertThat(services.get(3).path("prefetch").path("encounter").asText())
+        .isEqualTo("Encounter/{{context.encounterId}}");
+    assertThat(services.get(0).path("prefetch").has("encounter")).isFalse();
+    assertThat(services.get(4).path("prefetch").path("dispatchedOrders").asText())
+        .isEqualTo("ServiceRequest?_id={{context.dispatchedOrders.ServiceRequest.id}}");
+    assertThat(services.get(0).path("prefetch").path("practitioner").asText())
+        .isEqualTo("{{context.userId}}");
+    assertThat(services.get(4).path("prefetch").has("practitioner")).isFalse();
     for (JsonNode service : services) {
       JsonNode prefetch = service.path("prefetch");
       assertThat(prefetch.path("patient").asText()).isEqualTo("Patient/{{context.patientId}}");
       assertThat(prefetch.path("coverage").asText())
           .isEqualTo("Coverage?patient={{context.patientId}}&status=active");
-      assertThat(prefetch.path("practitioner").asText()).isEqualTo("{{context.userId}}");
       assertThat(service.path("extension").path("davinci-crd.version").get(0).asText())
           .isEqualTo("2.2");
     }
@@ -134,6 +149,143 @@ class CdsHooksInteropTest {
             clinicApi());
 
     assertMatchesGolden(response, "order-sign-response-covered.json");
+  }
+
+  @Test
+  void appointmentBookForAnMriAnswersTheGoldenPaNeededResponse() throws Exception {
+    givenPayerCoverage("PHP-10005", Coverage.CoverageStatus.ACTIVE, "2025-11-11", null);
+
+    HttpResponse<String> response =
+        post(
+            "/cds-services/appointment-book-crd",
+            fixture("appointment-book-request.json"),
+            clinicApi());
+
+    assertMatchesGolden(response, "appointment-book-response-pa-needed.json");
+  }
+
+  @Test
+  void appointmentBookWithoutAppointmentsIsABadRequest() throws Exception {
+    ObjectNode request =
+        (ObjectNode) objectMapper.readTree(fixture("appointment-book-request.json"));
+    ((ObjectNode) request.path("context")).remove("appointments");
+
+    assertOperationOutcome(post("/cds-services/appointment-book-crd", request, clinicApi()), 400);
+  }
+
+  @Test
+  void encounterStartForAnMriAnswersTheGoldenPaNeededResponse() throws Exception {
+    givenPayerCoverage("PHP-10005", Coverage.CoverageStatus.ACTIVE, "2025-11-11", null);
+
+    HttpResponse<String> response =
+        post(
+            "/cds-services/encounter-start-crd",
+            fixture("encounter-start-request.json"),
+            clinicApi());
+
+    assertMatchesGolden(response, "encounter-start-response-pa-needed.json");
+  }
+
+  @Test
+  void encounterStartForAnotherEncounterThanTheContextIsABadRequest() throws Exception {
+    ObjectNode request =
+        (ObjectNode) objectMapper.readTree(fixture("encounter-start-request.json"));
+    ((ObjectNode) request.path("context")).put("encounterId", "other-encounter");
+
+    assertOperationOutcome(post("/cds-services/encounter-start-crd", request, clinicApi()), 400);
+  }
+
+  @Test
+  void encounterStartWithAPatientAsTheEncounterPrefetchIsABadRequest() throws Exception {
+    ObjectNode request =
+        (ObjectNode) objectMapper.readTree(fixture("encounter-start-request.json"));
+    ((ObjectNode) request.path("prefetch"))
+        .set("encounter", request.path("prefetch").path("patient"));
+
+    assertOperationOutcome(post("/cds-services/encounter-start-crd", request, clinicApi()), 400);
+  }
+
+  @Test
+  void orderDispatchForAnMriAnswersTheGoldenPaNeededResponse() throws Exception {
+    givenPayerCoverage("PHP-10005", Coverage.CoverageStatus.ACTIVE, "2025-11-11", null);
+
+    HttpResponse<String> response =
+        post(
+            "/cds-services/order-dispatch-crd",
+            fixture("order-dispatch-request.json"),
+            clinicApi());
+
+    assertMatchesGolden(response, "order-dispatch-response-pa-needed.json");
+  }
+
+  @Test
+  void orderDispatchWithoutDispatchedOrdersIsABadRequest() throws Exception {
+    ObjectNode request = (ObjectNode) objectMapper.readTree(fixture("order-dispatch-request.json"));
+    ((ObjectNode) request.path("context")).remove("dispatchedOrders");
+
+    assertOperationOutcome(post("/cds-services/order-dispatch-crd", request, clinicApi()), 400);
+  }
+
+  @Test
+  void orderDispatchWithAPatientAsTheOrdersPrefetchIsABadRequest() throws Exception {
+    ObjectNode request = (ObjectNode) objectMapper.readTree(fixture("order-dispatch-request.json"));
+    ((ObjectNode) request.path("prefetch"))
+        .set("dispatchedOrders", request.path("prefetch").path("patient"));
+
+    assertOperationOutcome(post("/cds-services/order-dispatch-crd", request, clinicApi()), 400);
+  }
+
+  @Test
+  void orderDispatchNamesTheFulfillmentTaskOwnerWhenTheContextHasNoPerformer() throws Exception {
+    givenPayerCoverage("PHP-10005", Coverage.CoverageStatus.ACTIVE, "2025-11-11", null);
+    ObjectNode request = (ObjectNode) objectMapper.readTree(fixture("order-dispatch-request.json"));
+    ObjectNode context = (ObjectNode) request.path("context");
+    context.remove("performer");
+    ((ObjectNode) context.at("/fulfillmentTasks/0/owner")).put("reference", "Organization/other");
+
+    JsonNode response = okJson(post("/cds-services/order-dispatch-crd", request, clinicApi()));
+
+    assertThat(response.at("/cards/0/detail").asText())
+        .startsWith(
+            "Praxis Health Plan needs prior authorization for this order at Organization/other.");
+  }
+
+  @Test
+  void orderDispatchWithoutPerformerOrTasksStillAnswers() throws Exception {
+    givenPayerCoverage("PHP-10005", Coverage.CoverageStatus.ACTIVE, "2025-11-11", null);
+    ObjectNode request = (ObjectNode) objectMapper.readTree(fixture("order-dispatch-request.json"));
+    ((ObjectNode) request.path("context")).remove(List.of("performer", "fulfillmentTasks"));
+
+    JsonNode response = okJson(post("/cds-services/order-dispatch-crd", request, clinicApi()));
+
+    assertThat(response.at("/cards/0/detail").asText())
+        .startsWith("Praxis Health Plan needs prior authorization for this order.");
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @CsvSource({
+    "performer that is not a reference, /performer, not a reference",
+    "task for another order, /fulfillmentTasks/0/focus/reference, ServiceRequest/other",
+    "task owner that is not a reference, /fulfillmentTasks/0/owner/reference, not a reference",
+    "task that is a Patient, /fulfillmentTasks/0/resourceType, Patient",
+  })
+  void orderDispatchWithABadPerformerOrTaskIsABadRequest(String name, String pointer, String value)
+      throws Exception {
+    ObjectNode request = (ObjectNode) objectMapper.readTree(fixture("order-dispatch-request.json"));
+    JsonNode context = request.path("context");
+    String parent = pointer.substring(0, pointer.lastIndexOf('/'));
+    ((ObjectNode) (parent.isEmpty() ? context : context.at(parent)))
+        .put(pointer.substring(pointer.lastIndexOf('/') + 1), value);
+
+    assertOperationOutcome(post("/cds-services/order-dispatch-crd", request, clinicApi()), 400);
+  }
+
+  @Test
+  void orderDispatchWithFulfillmentTasksThatAreNotAnArrayIsABadRequest() throws Exception {
+    ObjectNode request = (ObjectNode) objectMapper.readTree(fixture("order-dispatch-request.json"));
+    ((ObjectNode) request.path("context")).putObject("fulfillmentTasks");
+
+    assertOperationOutcome(post("/cds-services/order-dispatch-crd", request, clinicApi()), 400);
   }
 
   @Test

@@ -69,7 +69,7 @@ class PrefetchResolverTest {
   void unknownPrefetchKeyIsAProgrammingError() throws Exception {
     CdsHookRequest request = request("{\"context\":{}}");
 
-    assertThatThrownBy(() -> resolver.resolve(request, "encounter", parser))
+    assertThatThrownBy(() -> resolver.resolve(request, "medications", parser))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
@@ -82,6 +82,30 @@ class PrefetchResolverTest {
         .isEqualTo("Coverage?patient=p-1.a&status=active");
     assertThat(PrefetchResolver.render(CrdHook.PREFETCH.get("practitioner"), request))
         .isEqualTo("Practitioner/u1");
+  }
+
+  @Test
+  void referenceTemplatesListTheIdsOfThatResourceType() throws Exception {
+    CdsHookRequest request =
+        request(
+            "{\"context\":{\"dispatchedOrders\":[\"ServiceRequest/a\",\"MedicationRequest/m\","
+                + "\"ServiceRequest/b\"]}}");
+
+    assertThat(
+            PrefetchResolver.render(
+                CrdHook.ORDER_DISPATCH.prefetch().get("dispatchedOrders"), request))
+        .isEqualTo("ServiceRequest?_id=a,b");
+  }
+
+  @Test
+  void referenceTemplatesRejectBadOrMissingIds() throws Exception {
+    String template = "ServiceRequest?_id={{context.dispatchedOrders.ServiceRequest.id}}";
+    CdsHookRequest injection =
+        request("{\"context\":{\"dispatchedOrders\":[\"ServiceRequest/a&_include=*\"]}}");
+    CdsHookRequest none = request("{\"context\":{\"dispatchedOrders\":[\"MedicationRequest/m\"]}}");
+
+    assertStatus(() -> PrefetchResolver.render(template, injection), 400);
+    assertStatus(() -> PrefetchResolver.render(template, none), 400);
   }
 
   @Test

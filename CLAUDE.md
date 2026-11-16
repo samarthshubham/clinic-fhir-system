@@ -73,7 +73,7 @@ payer-api/          Payer Spring Boot service (Maven, port 9095), client of the 
     interop/        PayerFhirServer (HAPI RestfulServer at /fhir), ImplementationGuideCapabilityInterceptor,
                     QuestionnairePackageProvider (DTR Questionnaire/$questionnaire-package, system tokens only),
                     ScopeInterceptor (SMART scopes + member compartment); auth per docs/15-payer-auth.md
-    cdshooks/       CRD over CDS Hooks: GET /cds-services (public), POST /cds-services/{order-sign,order-select}-crd
+    cdshooks/       CRD over CDS Hooks: GET /cds-services (public), POST /cds-services/{order-sign,order-select,appointment-book,encounter-start,order-dispatch}-crd
                     (system/Coverage.r); CrdHookService, CoverageDecisions, PrefetchResolver (docs/11-payer-architecture.md §3)
     config/         FhirConfig, RestfulServerConfig, ImplementationGuideProperties (IGs listed in /fhir/metadata),
                     CrdProperties (payer.crd: payer identifiers, prefetch fallback allow-list), ClockConfig
