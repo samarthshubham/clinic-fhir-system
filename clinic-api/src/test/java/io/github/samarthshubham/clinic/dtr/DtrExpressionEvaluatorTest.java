@@ -16,6 +16,8 @@ import org.hl7.fhir.r4.model.Expression;
 import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.StringType;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class DtrExpressionEvaluatorTest {
 
@@ -46,6 +48,62 @@ class DtrExpressionEvaluatorTest {
             variables);
 
     assertThat(result).containsExactly(conditions);
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "https://elsewhere.example/Condition?patient={{%patient.id}}",
+        "//elsewhere.example/Condition?patient={{%patient.id}}",
+        "/Condition?patient={{%patient.id}}",
+        "Condition/1?patient={{%patient.id}}",
+        "Patient?_count=100",
+        "Condition?clinical-status=active",
+        "Condition?patient=other",
+        "Condition?patient={{%patient.id}},other",
+        "Condition?patient={{%patient.id}}&_include=Condition:asserter",
+        "Condition?patient={{%patient.id}}&_revinclude=Provenance:target",
+        "Condition?patient={{%patient.id}}&_has:Encounter:patient:status=finished"
+      })
+  void fhirQueryOutsideTheLaunchPatientsChartIsRejectedWithoutACall(String query) {
+    Expression expression =
+        new Expression().setLanguage(DtrExpressionEvaluator.FHIR_QUERY).setExpression(query);
+
+    assertThatThrownBy(() -> evaluator.evaluate(expression, variables))
+        .isInstanceOf(DtrExpressionEvaluator.UnsupportedExpressionException.class);
+    assertThat(fhir.searchedUrls()).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "Patient?_id={{%patient.id}}",
+        "Encounter?subject=Patient/{{%patient.id}}&_sort=date",
+        "Observation?patient:Patient={{%patient.id}}&code=8480-6"
+      })
+  void fhirQueryLimitedToTheLaunchPatientRuns(String query) {
+    Bundle bundle = bundleOf(new Condition());
+    String url = query.replace("{{%patient.id}}", "p+1");
+    fhir.givenSearchByUrl(url, bundle);
+
+    List<Base> result =
+        evaluator.evaluate(
+            new Expression().setLanguage(DtrExpressionEvaluator.FHIR_QUERY).setExpression(query),
+            variables);
+
+    assertThat(result).containsExactly(bundle);
+  }
+
+  @Test
+  void fhirQueryWithoutALaunchPatientIsRejected() {
+    Expression expression =
+        new Expression()
+            .setLanguage(DtrExpressionEvaluator.FHIR_QUERY)
+            .setExpression("Condition?clinical-status=active");
+
+    assertThatThrownBy(() -> evaluator.evaluate(expression, Map.of()))
+        .isInstanceOf(DtrExpressionEvaluator.UnsupportedExpressionException.class);
+    assertThat(fhir.searchedUrls()).isEmpty();
   }
 
   @Test

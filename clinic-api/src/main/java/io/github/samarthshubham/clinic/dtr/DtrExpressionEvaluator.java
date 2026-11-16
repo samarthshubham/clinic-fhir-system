@@ -2,10 +2,12 @@ package io.github.samarthshubham.clinic.dtr;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.hl7.fhir.r4.fhirpath.FHIRPathEngine;
@@ -15,6 +17,7 @@ import org.hl7.fhir.r4.hapi.ctx.HapiWorkerContext;
 import org.hl7.fhir.r4.model.Base;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Expression;
+import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.ValueSet;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +28,9 @@ public class DtrExpressionEvaluator {
   static final String FHIR_QUERY = "application/x-fhir-query";
 
   private static final Pattern EMBEDDED_FHIRPATH = Pattern.compile("\\{\\{(.+?)}}");
+  private static final Pattern RELATIVE_SEARCH = Pattern.compile("([A-Z][A-Za-z]+)\\?(.+)");
+  private static final Set<String> PATIENT_PARAMETERS =
+      Set.of("patient", "patient:Patient", "subject", "subject:Patient");
 
   private final FHIRPathEngine engine;
   private final IGenericClient fhirClient;
@@ -60,7 +66,42 @@ public class DtrExpressionEvaluator {
           url, Matcher.quoteReplacement(URLEncoder.encode(value, StandardCharsets.UTF_8)));
     }
     embedded.appendTail(url);
+    requireLaunchPatientSearch(url.toString(), variables);
     return fhirClient.search().byUrl(url.toString()).returnBundle(Bundle.class).execute();
+  }
+
+  private static void requireLaunchPatientSearch(String url, Map<String, List<Base>> variables) {
+    Matcher search = RELATIVE_SEARCH.matcher(url);
+    if (!search.matches()) {
+      throw new UnsupportedExpressionException("x-fhir-query is not a relative search");
+    }
+    String patientId =
+        variables.getOrDefault("patient", List.of()).stream()
+            .findFirst()
+            .map(patient -> ((Resource) patient).getIdElement().getIdPart())
+            .orElseThrow(
+                () -> new UnsupportedExpressionException("x-fhir-query needs a launch patient"));
+    boolean limitedToPatient = false;
+    for (String parameter : search.group(2).split("&")) {
+      String[] nameAndValue = parameter.split("=", 2);
+      String name = URLDecoder.decode(nameAndValue[0], StandardCharsets.UTF_8);
+      String value =
+          nameAndValue.length > 1 ? URLDecoder.decode(nameAndValue[1], StandardCharsets.UTF_8) : "";
+      if (name.startsWith("_include")
+          || name.startsWith("_revinclude")
+          || name.startsWith("_has")) {
+        throw new UnsupportedExpressionException("x-fhir-query may not use " + name);
+      }
+      boolean patientParameter =
+          PATIENT_PARAMETERS.contains(name)
+              || (search.group(1).equals("Patient") && name.equals("_id"));
+      if (patientParameter && (value.equals(patientId) || value.equals("Patient/" + patientId))) {
+        limitedToPatient = true;
+      }
+    }
+    if (!limitedToPatient) {
+      throw new UnsupportedExpressionException("x-fhir-query is not limited to the launch patient");
+    }
   }
 
   static class UnsupportedExpressionException extends RuntimeException {
