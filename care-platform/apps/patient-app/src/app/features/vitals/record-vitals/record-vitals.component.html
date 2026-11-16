@@ -253,7 +253,7 @@
         <button
           class="pa-btn pa-btn-primary pa-btn-fullwidth"
           (click)="goNext()"
-          [disabled]="saving()"
+          [disabled]="saving() || !canContinue()"
         >
           @if (saving()) {
             Saving…

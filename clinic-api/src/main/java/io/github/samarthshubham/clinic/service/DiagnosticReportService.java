@@ -5,12 +5,14 @@ import ca.uhn.fhir.rest.gclient.ReferenceClientParam;
 import io.github.samarthshubham.clinic.dto.DiagnosticReportRequest;
 import io.github.samarthshubham.clinic.dto.DiagnosticReportResponse;
 import io.github.samarthshubham.clinic.dto.PageResponse;
+import io.github.samarthshubham.clinic.exception.ReferenceValidationException;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.DiagnosticReportMapper;
 import io.github.samarthshubham.clinic.mapper.PageMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.DiagnosticReport;
+import org.hl7.fhir.r4.model.ServiceRequest;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -31,19 +33,34 @@ public class DiagnosticReportService {
   }
 
   public DiagnosticReportResponse createDiagnosticReport(DiagnosticReportRequest request) {
+    ServiceRequest order = findOrderOfSamePatient(request);
     var outcome = fhirClient.create().resource(diagnosticReportMapper.toFhir(request)).execute();
     String id = outcome.getId().getIdPart();
-    if (request.serviceRequestId() != null) {
-      try {
-        serviceRequestService.complete(request.serviceRequestId());
-      } catch (ResourceNotFoundException e) {
-        log.warn(
-            "ServiceRequest {} not found when completing for DiagnosticReport — skipping",
-            request.serviceRequestId());
-      }
+    if (order != null) {
+      serviceRequestService.complete(request.serviceRequestId());
     }
     return diagnosticReportMapper.toResponse(
         fhirClient.read().resource(DiagnosticReport.class).withId(id).execute());
+  }
+
+  private ServiceRequest findOrderOfSamePatient(DiagnosticReportRequest request) {
+    if (request.serviceRequestId() == null) {
+      return null;
+    }
+    ServiceRequest order;
+    try {
+      order = serviceRequestService.findServiceRequest(request.serviceRequestId());
+    } catch (ResourceNotFoundException e) {
+      log.warn(
+          "ServiceRequest {} not found when completing for DiagnosticReport — skipping",
+          request.serviceRequestId());
+      return null;
+    }
+    if (!request.patientId().equals(order.getSubject().getReferenceElement().getIdPart())) {
+      throw new ReferenceValidationException(
+          "ServiceRequest", request.serviceRequestId(), request.patientId());
+    }
+    return order;
   }
 
   public DiagnosticReport getDiagnosticReport(String id) {

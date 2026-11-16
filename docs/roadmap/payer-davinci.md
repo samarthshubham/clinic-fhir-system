@@ -128,6 +128,15 @@ Data rules:
 
 The critical path is M0 → M4. M5–M7 can then ship in any order. E8 stories run alongside the other epics, with S1 and S2 closing last.
 
+**Schedule from 16 Nov 2026.** M0, M1 and E2-S1 are done. The rest runs in two weeks, in this order:
+
+| Week | Dates | Stories |
+|---|---|---|
+| 1 | 16–22 Nov | E2-S3, E2-S4, E2-S2 → E3-S1, E3-S3, E3-S4, E3-S2 → E4-S1 to E4-S7 → E5 (S3 last) → E4-S8 → E8-S2 journey steps 1–7 (`Part of`); E8-S4 delivers `docs/12-prior-auth-crd-dtr-pas.md` and the README / `CLAUDE.md` payer sections at the end of the week (`Part of`) |
+| 2 | 23–29 Nov | E8-S1 CRD, DTR and PAS kits (`Part of`) → E6-S1 to E6-S5 → E8-S2 step 8 (closes it) → rest of E8-S4 → E8-S3 → E7 → E8-S1 PDex, Plan-Net and Formulary kits (closes it) |
+
+Dropped first if time runs short: E3-S5 (CQL), E6-S6 (Payer-to-Payer), E8-S5 (payer dashboard).
+
 One story = one PR. A PR names its story in the `Roadmap story:` line of the PR template and closes the story's issue.
 
 ## 7. Backlog

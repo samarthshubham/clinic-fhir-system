@@ -97,21 +97,26 @@ public class TrendsService {
             .execute();
 
     List<DataPoint> points = new ArrayList<>();
-    if (bundle.getEntry() == null) return points;
-    for (var entry : bundle.getEntry()) {
-      Observation obs = (Observation) entry.getResource();
-      if (!(obs.getValue() instanceof Quantity q) || !q.hasValue()) continue;
-      double value = q.getValue().doubleValue();
-      String date =
-          obs.hasEffectiveDateTimeType()
-              ? obs.getEffectiveDateTimeType()
-                  .getValue()
-                  .toInstant()
-                  .atZone(ZoneId.systemDefault())
-                  .toLocalDate()
-                  .toString()
+    while (bundle != null) {
+      for (var entry : bundle.getEntry()) {
+        Observation obs = (Observation) entry.getResource();
+        if (!(obs.getValue() instanceof Quantity q) || !q.hasValue()) continue;
+        double value = q.getValue().doubleValue();
+        String date =
+            obs.hasEffectiveDateTimeType()
+                ? obs.getEffectiveDateTimeType()
+                    .getValue()
+                    .toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                    .toString()
+                : null;
+        if (date != null) points.add(new DataPoint(date, value));
+      }
+      bundle =
+          bundle.getLink(Bundle.LINK_NEXT) != null
+              ? fhirClient.loadPage().next(bundle).execute()
               : null;
-      if (date != null) points.add(new DataPoint(date, value));
     }
     return points;
   }

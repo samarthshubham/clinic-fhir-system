@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.samarthshubham.clinic.dto.DiagnosticReportRequest;
 import io.github.samarthshubham.clinic.dto.DiagnosticReportResponse;
+import io.github.samarthshubham.clinic.exception.ReferenceValidationException;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.DiagnosticReportMapper;
 import io.github.samarthshubham.clinic.mapper.ServiceRequestMapper;
@@ -14,6 +15,7 @@ import io.github.samarthshubham.clinic.support.FhirClientStub;
 import java.time.LocalDate;
 import java.util.List;
 import org.hl7.fhir.r4.model.DiagnosticReport;
+import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.ServiceRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,9 +47,7 @@ class DiagnosticReportServiceTest {
 
   @Test
   void createCompletesTheLinkedOrder() {
-    ServiceRequest order =
-        new ServiceRequest().setStatus(ServiceRequest.ServiceRequestStatus.ACTIVE);
-    fhir.givenStored(order, "sr1");
+    fhir.givenStored(activeOrderFor("p1"), "sr1");
 
     service.createDiagnosticReport(request("sr1"));
 
@@ -57,12 +57,23 @@ class DiagnosticReportServiceTest {
   }
 
   @Test
-  void otherFailureCompletingTheOrderPropagatesAfterTheReportIsCreated() {
+  void orderOfAnotherPatientIsRejectedAndNothingIsStored() {
+    fhir.givenStored(activeOrderFor("p2"), "sr1");
+
+    assertThatThrownBy(() -> service.createDiagnosticReport(request("sr1")))
+        .isInstanceOf(ReferenceValidationException.class)
+        .hasMessage("Referenced ServiceRequest with id 'sr1' does not belong to Patient 'p1'");
+    assertThat(fhir.created()).isEmpty();
+    assertThat(fhir.updated()).isEmpty();
+  }
+
+  @Test
+  void otherFailureReadingTheOrderPropagatesBeforeTheReportIsCreated() {
     fhir.givenReadFails(ServiceRequest.class, "sr1", new InternalErrorException("down"));
 
     assertThatThrownBy(() -> service.createDiagnosticReport(request("sr1")))
         .isInstanceOf(InternalErrorException.class);
-    assertThat(fhir.created()).hasSize(1);
+    assertThat(fhir.created()).isEmpty();
     assertThat(fhir.updated()).isEmpty();
   }
 
@@ -118,6 +129,13 @@ class DiagnosticReportServiceTest {
 
     assertThat(fhir.lastSearchCriteria(DiagnosticReport.class))
         .containsExactlyInAnyOrder("subject=Patient/p1", "_sort=-issued", "_count=1");
+  }
+
+  private static ServiceRequest activeOrderFor(String patientId) {
+    ServiceRequest order =
+        new ServiceRequest().setStatus(ServiceRequest.ServiceRequestStatus.ACTIVE);
+    order.setSubject(new Reference("Patient/" + patientId));
+    return order;
   }
 
   private static DiagnosticReportRequest request(String serviceRequestId) {
