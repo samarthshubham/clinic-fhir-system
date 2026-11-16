@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 public enum CrdHook {
@@ -20,11 +21,34 @@ public enum CrdHook {
       "Praxis Health Plan coverage requirements on order select",
       "Tells early whether the selected orders are covered and need prior authorization, and adds"
           + " the CRD coverage-information extension to each selected order.",
-      false);
+      false),
+  APPOINTMENT_BOOK(
+      "appointment-book-crd",
+      "appointment-book",
+      "Praxis Health Plan coverage requirements on appointment booking",
+      "Tells whether the booked appointments are covered and need prior authorization or"
+          + " documentation, and adds the CRD coverage-information extension to each appointment.",
+      true),
+  ENCOUNTER_START(
+      "encounter-start-crd",
+      "encounter-start",
+      "Praxis Health Plan coverage requirements on encounter start",
+      "Tells whether the starting encounter is covered and needs prior authorization, and adds"
+          + " the CRD coverage-information extension to the encounter.",
+      false),
+  ORDER_DISPATCH(
+      "order-dispatch-crd",
+      "order-dispatch",
+      "Praxis Health Plan coverage requirements on order dispatch",
+      "Tells the performer whether the dispatched orders are covered and need prior authorization"
+          + " or documentation, and adds the CRD coverage-information extension to each order.",
+      true);
 
   public static final String PATIENT_PREFETCH = "patient";
   public static final String COVERAGE_PREFETCH = "coverage";
   public static final String PRACTITIONER_PREFETCH = "practitioner";
+  public static final String ENCOUNTER_PREFETCH = "encounter";
+  public static final String DISPATCHED_ORDERS_PREFETCH = "dispatchedOrders";
 
   static final Map<String, String> PREFETCH = prefetchTemplates();
 
@@ -62,9 +86,36 @@ public enum CrdHook {
     return description;
   }
 
-  /** A primary hook may ask for documentation; CRD 2.2 limits order-select to coverage and PA. */
+  /**
+   * A primary hook may ask for documentation; CRD 2.2 limits the secondary hooks (order-select,
+   * encounter-start) to coverage and PA.
+   */
   public boolean primary() {
     return primary;
+  }
+
+  public Map<String, String> prefetch() {
+    Map<String, String> templates = new LinkedHashMap<>(PREFETCH);
+    switch (this) {
+      case ENCOUNTER_START ->
+          templates.put(ENCOUNTER_PREFETCH, "Encounter/{{context.encounterId}}");
+      case ORDER_DISPATCH -> {
+        templates.remove(PRACTITIONER_PREFETCH);
+        templates.put(
+            DISPATCHED_ORDERS_PREFETCH,
+            "ServiceRequest?_id={{context.dispatchedOrders.ServiceRequest.id}}");
+      }
+      default -> {}
+    }
+    return Collections.unmodifiableMap(templates);
+  }
+
+  static String prefetchTemplate(String key) {
+    return Arrays.stream(values())
+        .map(hook -> hook.prefetch().get(key))
+        .filter(Objects::nonNull)
+        .findFirst()
+        .orElse(null);
   }
 
   private static Map<String, String> prefetchTemplates() {
