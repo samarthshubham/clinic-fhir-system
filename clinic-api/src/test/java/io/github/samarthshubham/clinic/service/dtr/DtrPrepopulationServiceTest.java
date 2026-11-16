@@ -1,4 +1,4 @@
-package io.github.samarthshubham.clinic.dtr;
+package io.github.samarthshubham.clinic.service.dtr;
 
 import static io.github.samarthshubham.clinic.support.FhirClientStub.bundleOf;
 import static io.github.samarthshubham.clinic.support.GoldenFhir.assertMatchesGolden;

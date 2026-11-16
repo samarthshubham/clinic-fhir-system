@@ -44,7 +44,7 @@ clinic-api/         Spring Boot backend (Maven)
                     DashboardService, ConditionEvaluationService,
                     HighBpAlertService, Notifier, LoggingSmsNotifier, FlagNotifier, AlertService,
                     AuthService, TokenService, StaffAccountBootstrap
-    dtr/            DtrPrepopulationService (prefills a DTR Questionnaire from the provider chart into a
+    service/dtr/    DtrPrepopulationService (prefills a DTR Questionnaire from the provider chart into a
                     QuestionnaireResponse, `information-origin` = auto-client), DtrExpressionEvaluator
                     (FHIRPath `initialExpression` / `variable` and `x-fhir-query` via the HL7 FHIRPathEngine)
     mapper/         PatientMapper, EncounterMapper, ObservationMapper,

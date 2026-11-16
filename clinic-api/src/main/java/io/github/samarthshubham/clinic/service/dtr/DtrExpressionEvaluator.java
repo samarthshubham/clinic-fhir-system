@@ -1,4 +1,4 @@
-package io.github.samarthshubham.clinic.dtr;
+package io.github.samarthshubham.clinic.service.dtr;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.client.api.IGenericClient;

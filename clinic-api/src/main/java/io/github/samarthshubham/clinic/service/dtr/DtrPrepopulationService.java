@@ -1,4 +1,4 @@
-package io.github.samarthshubham.clinic.dtr;
+package io.github.samarthshubham.clinic.service.dtr;
 
 import io.github.samarthshubham.clinic.service.PatientService;
 import java.util.ArrayList;
