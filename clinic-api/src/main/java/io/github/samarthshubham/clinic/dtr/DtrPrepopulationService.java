@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r4.model.Base;
 import org.hl7.fhir.r4.model.BaseDateTimeType;
@@ -42,6 +43,7 @@ public class DtrPrepopulationService {
   static final String INFORMATION_ORIGIN =
       "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/information-origin";
   static final String AUTO_CLIENT = "auto-client";
+  private static final Set<String> CONTEXT_VARIABLES = Set.of("patient", "questionnaire", "qitem");
 
   private final PatientService patientService;
   private final DtrExpressionEvaluator evaluator;
@@ -97,6 +99,13 @@ public class DtrPrepopulationService {
         List<Extension> variables, Map<String, List<Base>> scope, String linkId) {
       for (Extension variable : variables) {
         if (!(variable.getValue() instanceof Expression expression) || !expression.hasName()) {
+          continue;
+        }
+        if (CONTEXT_VARIABLES.contains(expression.getName())) {
+          logFailure(
+              "variable " + expression.getName(),
+              linkId,
+              new IllegalArgumentException("Context variables cannot be redefined"));
           continue;
         }
         try {

@@ -150,6 +150,30 @@ class DtrPrepopulationServiceTest {
     assertThat(answered(response)).containsExactly("inside");
   }
 
+  @ParameterizedTest
+  @CsvSource({"patient, %questionnaire", "questionnaire, %patient", "qitem, %patient"})
+  void aQuestionnaireVariableCannotReplaceTheContextVariables(
+      String name, String expression, CapturedOutput output) {
+    givenPatient();
+    QuestionnaireItemComponent family =
+        question("family", QuestionnaireItemType.STRING, "%patient.name.family");
+    family.addExtension(DtrPrepopulationService.VARIABLE, fhirPath(name, expression));
+    QuestionnaireItemComponent linkId =
+        question("link-id", QuestionnaireItemType.STRING, "%qitem.linkId");
+    linkId.addExtension(DtrPrepopulationService.VARIABLE, fhirPath(name, expression));
+    Questionnaire questionnaire =
+        questionnaire(
+            family, linkId, question("form", QuestionnaireItemType.STRING, "%questionnaire.id"));
+    questionnaire.addExtension(DtrPrepopulationService.VARIABLE, fhirPath(name, expression));
+
+    QuestionnaireResponse response = service.prepopulate(questionnaire, PATIENT_ID);
+
+    assertThat(questions(response.getItem()))
+        .map(item -> item.getAnswerFirstRep().getValue().primitiveValue())
+        .containsExactly("Okafor", "link-id", "test");
+    assertThat(output).contains("variable " + name + " failed");
+  }
+
   @Test
   void withoutAPatientLaunchContextThereIsNoPatientVariable() {
     givenPatient();
