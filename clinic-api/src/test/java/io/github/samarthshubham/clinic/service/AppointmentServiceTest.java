@@ -3,8 +3,14 @@ package io.github.samarthshubham.clinic.service;
 import static io.github.samarthshubham.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
+import io.github.samarthshubham.clinic.client.CrdClient;
+import io.github.samarthshubham.clinic.client.CrdResult;
 import io.github.samarthshubham.clinic.dto.AppointmentRequest;
 import io.github.samarthshubham.clinic.dto.AppointmentResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
@@ -14,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.hl7.fhir.r4.model.Appointment;
+import org.hl7.fhir.r4.model.Extension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -21,11 +28,28 @@ class AppointmentServiceTest {
 
   private FhirClientStub fhir;
   private AppointmentService service;
+  private CrdService crd;
 
   @BeforeEach
   void setUp() {
     fhir = new FhirClientStub();
-    service = new AppointmentService(fhir.client(), new AppointmentMapper());
+    crd = mock(CrdService.class);
+    when(crd.checkAppointment(any(), any(), any())).thenReturn(CrdResult.none());
+    service = new AppointmentService(fhir.client(), new AppointmentMapper(), crd);
+  }
+
+  @Test
+  void createCallsAppointmentBookAndStoresTheCoverageInformation() {
+    Extension coverageInformation = new Extension(CrdClient.COVERAGE_INFORMATION);
+    when(crd.checkAppointment(any(Appointment.class), eq("p1"), eq("dr1")))
+        .thenReturn(new CrdResult(List.of(coverageInformation), List.of()));
+    LocalDateTime start = LocalDateTime.of(2026, 6, 1, 9, 30);
+
+    service.createAppointment(
+        new AppointmentRequest("p1", "dr1", start, start.plusMinutes(30), "MRI", "booked"));
+
+    Appointment stored = fhir.stored(Appointment.class, "1");
+    assertThat(stored.getExtensionsByUrl(CrdClient.COVERAGE_INFORMATION)).hasSize(1);
   }
 
   @Test

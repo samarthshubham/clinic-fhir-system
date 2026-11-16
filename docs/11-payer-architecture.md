@@ -59,6 +59,7 @@ Rules enforced by ArchUnit ([ADR 0002](adr/0002-fhir-at-the-payer-boundary.md)):
 clinic-api gets two additions:
 
 - A `client` package with `CrdClient`, `DtrClient`, `PasClient`, `CdexClient` and `PdexClient`, each calling payer-api. Calls are wrapped by services, and controllers still see DTOs only.
+  - `CrdClient` (built): `ServiceRequestService` and `AppointmentService` call it through `CrdService` before saving, with the draft resource, the patient's active Coverage and a filled prefetch, but only when that Coverage's payor identifier is `clinic.payer.payer-id` (no patient data goes to a payer the patient is not covered by). `PayerTokenClient` gets a `client_credentials` token from payer-api `/oauth/token` (`clinic.payer.client-id` / `client-secret`, scope `system/Coverage.r`) and caches it until 10 s before `expires_in`; a 401 from a hook evicts it. Both use one `RestClient` with a 2 s connect and read timeout (`clinic.payer.timeout`). Any failure fails open with a "Coverage unknown" card, and the log line has the hook, hook instance and resource ids only.
 - An `interop` package with one inbound FHIR endpoint, `POST /fhir/Task`, for CDex attachment requests, authenticated with a payer system token.
 
 ### JSON endpoints for payer-app

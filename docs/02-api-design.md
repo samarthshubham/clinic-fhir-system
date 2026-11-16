@@ -310,6 +310,18 @@ Send only the vitals you have — null fields are skipped. Each non-null vital i
 
 **Response `201 Created` — `ServiceRequestResponse`:** the same fields plus `id`. The list returns `PageResponse<ServiceRequestResponse>`.
 
+`ServiceRequestResponse` also has `coverage` and `cards[]`, the payer's CRD answer. Before the order is saved, clinic-api calls the payer's `order-sign` hook (`POST /cds-services/order-sign-crd` on payer-api, with a `system/Coverage.r` token) with the draft order, the patient and their active Coverage. The returned `coverage-information` is stored on the ServiceRequest and the cards are stored with it, so `GET` returns them too.
+
+```json
+{ "id": "sr-02", "patientId": "sandra-okafor", "display": "MRI lumbar spine without contrast", "codeSystem": "http://www.ama-assn.org/go/cpt", "code": "72148", "category": "imaging", "status": "active", "priority": "routine", "authoredOn": "2026-11-11",
+  "coverage": { "coverageId": "coverage-sandra-okafor", "covered": "covered", "paNeeded": "auth-needed", "docNeeded": "clinical", "reason": "Clinical documentation is needed for the prior authorization request", "questionnaire": "http://praxishealthplan.example/fhir/Questionnaire/mri-lumbar-spine", "date": "2026-11-11", "coverageAssertionId": "65f84693-1eca-398b-b3da-1bec7a3a0125" },
+  "cards": [{ "summary": "Prior authorization needed: MRI lumbar spine without contrast", "indicator": "warning", "detail": "Praxis Health Plan needs prior authorization for this order. Complete the documentation questionnaire, then submit the prior authorization request.", "source": "Praxis Health Plan" }] }
+```
+
+- `coverage` is `null` when the patient has no active Coverage with this payer (`clinic.payer.payer-id`, matched on the Coverage's payor identifier; no hook call and no patient data sent, `cards` is `[]`) or when the payer could not be reached.
+- The call fails open (NFR-REL-2): after a 2 s timeout, a 5xx or a connection error the order is still saved, with `coverage: null` and one `"Coverage unknown"` warning card from `clinic-api`.
+- `POST /api/appointments` calls `appointment-book` the same way and stores the returned `coverage-information` on the Appointment; `AppointmentResponse` is unchanged.
+
 **Note:** When a DiagnosticReport is created with `serviceRequestId`, the linked ServiceRequest is automatically marked `completed`. If that ServiceRequest belongs to a different patient, the request fails with `422` and nothing is stored.
 
 ---

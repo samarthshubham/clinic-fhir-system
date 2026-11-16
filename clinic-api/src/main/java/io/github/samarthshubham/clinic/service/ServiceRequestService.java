@@ -3,6 +3,7 @@ package io.github.samarthshubham.clinic.service;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.ReferenceClientParam;
 import ca.uhn.fhir.rest.gclient.TokenClientParam;
+import io.github.samarthshubham.clinic.client.CrdResult;
 import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.dto.ServiceRequestRequest;
 import io.github.samarthshubham.clinic.dto.ServiceRequestResponse;
@@ -18,15 +19,20 @@ public class ServiceRequestService {
 
   private final IGenericClient fhirClient;
   private final ServiceRequestMapper serviceRequestMapper;
+  private final CrdService crdService;
 
   public ServiceRequestService(
-      IGenericClient fhirClient, ServiceRequestMapper serviceRequestMapper) {
+      IGenericClient fhirClient, ServiceRequestMapper serviceRequestMapper, CrdService crdService) {
     this.fhirClient = fhirClient;
     this.serviceRequestMapper = serviceRequestMapper;
+    this.crdService = crdService;
   }
 
   public ServiceRequestResponse createServiceRequest(ServiceRequestRequest request) {
-    var outcome = fhirClient.create().resource(serviceRequestMapper.toFhir(request)).execute();
+    ServiceRequest order = serviceRequestMapper.toFhir(request);
+    CrdResult crd = crdService.checkOrder(order, request.patientId(), request.practitionerId());
+    serviceRequestMapper.addCrdResult(order, crd.coverageInformation(), crd.cards());
+    var outcome = fhirClient.create().resource(order).execute();
     String id = outcome.getId().getIdPart();
     return serviceRequestMapper.toResponse(
         fhirClient.read().resource(ServiceRequest.class).withId(id).execute());

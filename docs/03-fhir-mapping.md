@@ -79,6 +79,11 @@ public Patient toFhir(PatientRequest request) {
 | `priority` | `ServiceRequest.priority` |
 | `authoredOn` | `ServiceRequest.authoredOn` |
 | *(fixed)* | `ServiceRequest.intent` = `order` |
+| *(active Coverage)* | `ServiceRequest.insurance[0]` → `Coverage/{id}` |
+| *(CRD `order-sign` answer)* | `ServiceRequest.extension[url=http://hl7.org/fhir/us/davinci-crd/StructureDefinition/ext-coverage-information]` as payer-api returned it in `systemActions` → response `coverage` |
+| *(CRD cards)* | `ServiceRequest.extension[url=http://praxis.clinic/fhir/extension/crd-card]`, one per card, with `summary`, `indicator`, `detail`, `source` string sub-extensions → response `cards[]` |
+
+The draft sent to `order-sign` gets the CRD ServiceRequest profile, `status = draft` and a `draft-<hookInstance>` id; the stored order keeps the US Core profile. `appointment-book` sends the draft Appointment (`status = proposed`) and its `coverage-information` is stored on the Appointment.
 
 ---
 

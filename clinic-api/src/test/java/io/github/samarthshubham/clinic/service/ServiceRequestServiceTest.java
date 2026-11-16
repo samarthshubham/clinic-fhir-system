@@ -3,14 +3,24 @@ package io.github.samarthshubham.clinic.service;
 import static io.github.samarthshubham.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
+import io.github.samarthshubham.clinic.client.CrdClient;
+import io.github.samarthshubham.clinic.client.CrdResult;
+import io.github.samarthshubham.clinic.dto.CrdCard;
 import io.github.samarthshubham.clinic.dto.ServiceRequestRequest;
 import io.github.samarthshubham.clinic.dto.ServiceRequestResponse;
 import io.github.samarthshubham.clinic.exception.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.mapper.ServiceRequestMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
 import java.time.LocalDate;
+import java.util.List;
+import org.hl7.fhir.r4.model.CodeType;
+import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.ServiceRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,11 +32,56 @@ class ServiceRequestServiceTest {
 
   private FhirClientStub fhir;
   private ServiceRequestService service;
+  private CrdService crd;
 
   @BeforeEach
   void setUp() {
     fhir = new FhirClientStub();
-    service = new ServiceRequestService(fhir.client(), new ServiceRequestMapper());
+    crd = mock(CrdService.class);
+    when(crd.checkOrder(any(), any(), any())).thenReturn(CrdResult.none());
+    service = new ServiceRequestService(fhir.client(), new ServiceRequestMapper(), crd);
+  }
+
+  @Test
+  void createStoresTheCoverageInformationAndCardsFromOrderSign() {
+    Extension coverageInformation = new Extension(CrdClient.COVERAGE_INFORMATION);
+    coverageInformation.addExtension("covered", new CodeType("covered"));
+    coverageInformation.addExtension("pa-needed", new CodeType("auth-needed"));
+    CrdCard card = new CrdCard("Prior authorization needed", "warning", "Detail", "Praxis");
+    when(crd.checkOrder(any(ServiceRequest.class), eq("p1"), eq("dr1")))
+        .thenReturn(new CrdResult(List.of(coverageInformation), List.of(card)));
+
+    ServiceRequestResponse order = service.createServiceRequest(mriRequest("p1", "dr1"));
+
+    assertThat(order.coverage().covered()).isEqualTo("covered");
+    assertThat(order.coverage().paNeeded()).isEqualTo("auth-needed");
+    assertThat(order.cards()).containsExactly(card);
+    assertThat(service.getServiceRequest(order.id()).cards()).containsExactly(card);
+  }
+
+  @Test
+  void createSavesTheOrderWithACoverageUnknownCardWhenCrdFailsOpen() {
+    when(crd.checkOrder(any(), any(), any())).thenReturn(CrdResult.coverageUnknown());
+
+    ServiceRequestResponse order = service.createServiceRequest(mriRequest("p1", null));
+
+    assertThat(fhir.created()).singleElement().isInstanceOf(ServiceRequest.class);
+    assertThat(order.coverage()).isNull();
+    assertThat(order.cards()).containsExactly(CrdResult.COVERAGE_UNKNOWN);
+  }
+
+  private static ServiceRequestRequest mriRequest(String patientId, String practitionerId) {
+    return new ServiceRequestRequest(
+        patientId,
+        null,
+        practitionerId,
+        "MRI lumbar spine without contrast",
+        "http://www.ama-assn.org/go/cpt",
+        "72148",
+        "imaging",
+        "active",
+        "routine",
+        LocalDate.now());
   }
 
   @Test
@@ -59,7 +114,9 @@ class ServiceRequestServiceTest {
                 "laboratory",
                 "active",
                 "routine",
-                LocalDate.now()));
+                LocalDate.now(),
+                null,
+                List.of()));
   }
 
   @Test

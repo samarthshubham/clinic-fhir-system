@@ -29,7 +29,10 @@ PostgreSQL 15  (owned entirely by HAPI — Spring Boot never queries it directly
 ```
 clinic-api/         Spring Boot backend (Maven)
   src/main/java/io/github/samarthshubham/clinic/
-    config/         FhirConfig, ClinicalThresholds, SecurityConfig, JwtConfig, AuthProperties
+    client/         CrdClient (payer-api CRD order-sign / appointment-book, 2 s timeout, fails open),
+                    PayerTokenClient (client_credentials system token, cached until expiry), CrdResult
+    config/         FhirConfig, ClinicalThresholds, SecurityConfig, JwtConfig, AuthProperties,
+                    PayerApiConfig + PayerApiProperties (clinic.payer.*)
     security/       Role, Permission, RolePermissions, PatientAccess, JsonSecurityErrorHandler
     controller/     PatientController, EncounterController, VitalsController,
                     PractitionerController, ConditionController, MedicationController,
@@ -39,7 +42,7 @@ clinic-api/         Spring Boot backend (Maven)
     service/        PatientService, EncounterService, VitalsService,
                     PractitionerService, ConditionService, MedicationService,
                     AppointmentService, ServiceRequestService, DiagnosticReportService,
-                    CarePlanService, GoalService, CoverageService,
+                    CarePlanService, GoalService, CoverageService, CrdService,
                     SnapshotService, TrendsService, TimelineService,
                     DashboardService, ConditionEvaluationService,
                     HighBpAlertService, Notifier, LoggingSmsNotifier, FlagNotifier, AlertService,
@@ -358,6 +361,7 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 | `priority` | `ServiceRequest.priority` |
 | `authoredOn` | `ServiceRequest.authoredOn` |
 | *(fixed)* | `ServiceRequest.intent` = `order` |
+| *(CRD)* | `coverage-information` extension from `order-sign` + `http://praxis.clinic/fhir/extension/crd-card` per card → response `coverage`, `cards[]` |
 
 ### DiagnosticReport
 | Request field | FHIR path |
@@ -425,6 +429,11 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 | `clinic.alerts.webhook-url` | `http://host.docker.internal:9090/api/alerts/bp-subscription` | Rest-hook endpoint HAPI calls for critical systolic BP |
 | `clinic.alerts.webhook-secret` | `${CLINIC_ALERTS_WEBHOOK_SECRET:dev-only-alert-secret}` | Shared secret HAPI sends as `X-Alert-Secret`; webhook returns 401 otherwise |
 | `clinic.alerts.first-lookback` | `24h` | How far back the first notification after a restart searches (may re-alert) |
+| `clinic.payer.base-url` | `${CLINIC_PAYER_API_URL:http://localhost:9095}` | payer-api base URL for CRD hooks and `/oauth/token` |
+| `clinic.payer.client-id` / `scope` | `clinic-api` / `system/Coverage.r` | clinic-api's `client_credentials` client at payer-api |
+| `clinic.payer.client-secret` | `${CLINIC_PAYER_CLIENT_SECRET}`; dev profile default `dev-only-clinic-api-client-secret` | Startup fails when empty |
+| `clinic.payer.payer-id` | `praxis-health-plan` | Hooks are called only when the active Coverage's payor identifier (`http://praxis.clinic/fhir/identifier/payer`) is this payer; otherwise no patient data is sent |
+| `clinic.payer.timeout` | `2s` | Connect and read timeout per payer-api call; on timeout, 5xx or connection error the order is saved with a "Coverage unknown" card |
 
 ---
 
@@ -461,9 +470,9 @@ Every other `/api/**` endpoint needs `Authorization: Bearer <accessToken>` (exce
 | `GET` | `/api/conditions?patientId={id}` | List conditions |
 | `POST` | `/api/medications` | Record medication |
 | `GET` | `/api/medications?patientId={id}` | List medications |
-| `POST` | `/api/appointments` | Schedule appointment |
+| `POST` | `/api/appointments` | Schedule appointment; calls CRD `appointment-book` (fails open) |
 | `GET` | `/api/appointments?patientId={id}` | List appointments |
-| `POST` | `/api/service-requests` | Place lab/imaging order |
+| `POST` | `/api/service-requests` | Place lab/imaging order; calls CRD `order-sign` and returns `coverage` + `cards[]` (fails open) |
 | `GET` | `/api/service-requests/{id}` | Get order |
 | `GET` | `/api/service-requests?patientId={id}&status=active` | List orders (optional status filter) |
 | `POST` | `/api/diagnostic-reports` | Create report (auto-completes linked ServiceRequest) |

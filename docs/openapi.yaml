@@ -646,7 +646,10 @@ paths:
     post:
       tags: [Appointments]
       summary: Schedule an appointment
-      description: Requires the `appointment:write` permission (all roles).
+      description: >-
+        Requires the `appointment:write` permission (all roles). When the patient has an active
+        Coverage, clinic-api first calls the payer's CRD `appointment-book` hook and stores the
+        returned coverage-information on the Appointment; it fails open.
       requestBody:
         required: true
         content:
@@ -702,7 +705,11 @@ paths:
     post:
       tags: [Service Requests]
       summary: Place a lab or imaging order
-      description: Requires the `order:write` permission (ADMIN, CLINICIAN).
+      description: >-
+        Requires the `order:write` permission (ADMIN, CLINICIAN). When the patient has an active
+        Coverage, clinic-api first calls the payer's CRD `order-sign` hook and stores the returned
+        coverage-information and cards on the order; if the payer cannot be reached the order is
+        still saved, with a "Coverage unknown" card.
       requestBody:
         required: true
         content:
@@ -1618,6 +1625,77 @@ components:
           format: date
           nullable: true
           example: "2026-04-14"
+        coverage:
+          allOf:
+            - $ref: '#/components/schemas/CoverageInformation'
+          nullable: true
+          description: >-
+            The payer's CRD coverage-information for this order. Null when the patient has no active
+            Coverage or the payer could not be reached.
+        cards:
+          type: array
+          description: >-
+            CRD cards from the payer's order-sign hook. Empty when the patient has no active Coverage;
+            one "Coverage unknown" warning card from clinic-api when the payer could not be reached
+            (2 s timeout, 5xx or connection error).
+          items:
+            $ref: '#/components/schemas/CrdCard'
+
+    CoverageInformation:
+      type: object
+      properties:
+        coverageId:
+          type: string
+          nullable: true
+          example: "coverage-sandra-okafor"
+        covered:
+          type: string
+          nullable: true
+          example: "covered"
+        paNeeded:
+          type: string
+          nullable: true
+          example: "auth-needed"
+        docNeeded:
+          type: string
+          nullable: true
+          example: "clinical"
+        reason:
+          type: string
+          nullable: true
+          example: "Clinical documentation is needed for the prior authorization request"
+        questionnaire:
+          type: string
+          nullable: true
+          example: "http://praxishealthplan.example/fhir/Questionnaire/mri-lumbar-spine"
+        date:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-11-11"
+        coverageAssertionId:
+          type: string
+          nullable: true
+          example: "65f84693-1eca-398b-b3da-1bec7a3a0125"
+
+    CrdCard:
+      type: object
+      properties:
+        summary:
+          type: string
+          nullable: true
+          example: "Prior authorization needed: MRI lumbar spine without contrast"
+        indicator:
+          type: string
+          nullable: true
+          example: "warning"
+        detail:
+          type: string
+          nullable: true
+        source:
+          type: string
+          nullable: true
+          example: "Praxis Health Plan"
 
     DiagnosticReportResponse:
       type: object

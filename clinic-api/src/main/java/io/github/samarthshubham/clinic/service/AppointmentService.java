@@ -19,14 +19,24 @@ public class AppointmentService {
 
   private final IGenericClient fhirClient;
   private final AppointmentMapper appointmentMapper;
+  private final CrdService crdService;
 
-  public AppointmentService(IGenericClient fhirClient, AppointmentMapper appointmentMapper) {
+  public AppointmentService(
+      IGenericClient fhirClient, AppointmentMapper appointmentMapper, CrdService crdService) {
     this.fhirClient = fhirClient;
     this.appointmentMapper = appointmentMapper;
+    this.crdService = crdService;
   }
 
   public AppointmentResponse createAppointment(AppointmentRequest request) {
-    var outcome = fhirClient.create().resource(appointmentMapper.toFhir(request)).execute();
+    Appointment appointment = appointmentMapper.toFhir(request);
+    appointment
+        .getExtension()
+        .addAll(
+            crdService
+                .checkAppointment(appointment, request.patientId(), request.practitionerId())
+                .coverageInformation());
+    var outcome = fhirClient.create().resource(appointment).execute();
     String id = outcome.getId().getIdPart();
     return appointmentMapper.toResponse(
         fhirClient.read().resource(Appointment.class).withId(id).execute());

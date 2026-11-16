@@ -61,6 +61,11 @@ public class CoverageService {
   }
 
   public CoverageResponse findActiveCoverage(String patientId) {
+    Coverage coverage = findActiveCoverageResource(patientId);
+    return coverage == null ? null : coverageMapper.toResponse(coverage);
+  }
+
+  public Coverage findActiveCoverageResource(String patientId) {
     Bundle bundle =
         fhirClient
             .search()
@@ -72,7 +77,10 @@ public class CoverageService {
             .count(1)
             .returnBundle(Bundle.class)
             .execute();
-    return PageMapper.toPage(bundle, Coverage.class, coverageMapper::toResponse).items().stream()
+    return bundle.getEntry().stream()
+        .map(Bundle.BundleEntryComponent::getResource)
+        .filter(Coverage.class::isInstance)
+        .map(Coverage.class::cast)
         .findFirst()
         .orElse(null);
   }

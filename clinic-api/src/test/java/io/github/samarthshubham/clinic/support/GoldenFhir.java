@@ -28,7 +28,7 @@ public final class GoldenFhir {
     assertThat(actual).as("mapper output vs golden fixture %s", fixture).isEqualTo(expected);
   }
 
-  private static String read(String fixture) {
+  public static String read(String fixture) {
     try (InputStream in = GoldenFhir.class.getResourceAsStream(FIXTURES + fixture)) {
       if (in == null) {
         throw new AssertionError("Missing golden fixture fixtures/davinci/" + fixture);
