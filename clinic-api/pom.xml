@@ -62,6 +62,17 @@
 			<artifactId>hapi-fhir-structures-r4</artifactId>
 			<version>${hapi.fhir.version}</version>
 		</dependency>
+		<!-- Runtime needs of the FHIRPath engine in hapi-fhir-structures-r4 (DTR prepopulation) -->
+		<dependency>
+			<groupId>ca.uhn.hapi.fhir</groupId>
+			<artifactId>hapi-fhir-caching-caffeine</artifactId>
+			<version>${hapi.fhir.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.fhir</groupId>
+			<artifactId>ucum</artifactId>
+			<version>1.0.8</version>
+		</dependency>
 
 		<!-- Dev: auto-restart on classpath changes (excluded from production jar) -->
 		<dependency>
