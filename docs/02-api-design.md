@@ -310,7 +310,7 @@ Send only the vitals you have — null fields are skipped. Each non-null vital i
 
 **Response `201 Created` — `ServiceRequestResponse`:** the same fields plus `id`. The list returns `PageResponse<ServiceRequestResponse>`.
 
-**Note:** When a DiagnosticReport is created with `serviceRequestId`, the linked ServiceRequest is automatically marked `completed`.
+**Note:** When a DiagnosticReport is created with `serviceRequestId`, the linked ServiceRequest is automatically marked `completed`. If that ServiceRequest belongs to a different patient, the request fails with `422` and nothing is stored.
 
 ---
 
