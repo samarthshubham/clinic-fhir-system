@@ -943,6 +943,15 @@ paths:
                 $ref: '#/components/schemas/DiagnosticReportResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '422':
+          description: The linked ServiceRequest belongs to a different patient
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: 422
+                message: "Referenced ServiceRequest with id 'sr789' does not belong to Patient 'abc123'"
 
     get:
       tags: [Diagnostic Reports]
