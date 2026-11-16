@@ -1,0 +1,45 @@
+<div class="app-crd-cards" [class.app-crd-cards--compact]="compact()">
+  <span
+    class="cp-status-badge app-crd-cards__badge"
+    [class]="'cp-status-badge--' + badge().tone"
+    >{{ badge().label }}</span
+  >
+
+  @if (visibleCards().length) {
+    <ul class="app-crd-cards__list">
+      @for (card of visibleCards(); track $index) {
+        <li
+          class="app-crd-card"
+          [class]="'app-crd-card--' + (card.indicator ?? 'info')"
+        >
+          <p class="app-crd-card__summary">{{ card.summary }}</p>
+          @if (!compact()) {
+            @if (card.detail) {
+              <p class="app-crd-card__detail">{{ card.detail }}</p>
+            }
+            @if (card.source) {
+              <p class="app-crd-card__source">{{ card.source }}</p>
+            }
+          }
+        </li>
+      }
+    </ul>
+  } @else if (!compact()) {
+    <p class="app-crd-cards__empty">
+      No coverage answer from the payer for this order.
+    </p>
+  }
+
+  @if (showDocumentationAction()) {
+    <button
+      mat-stroked-button
+      type="button"
+      class="app-crd-cards__documentation"
+      disabled
+      disabledInteractive
+      matTooltip="Documentation forms are not available yet"
+    >
+      Complete documentation
+    </button>
+  }
+</div>
