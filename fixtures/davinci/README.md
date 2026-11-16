@@ -16,6 +16,12 @@ Each file starts from an example in the published IG package (all CC0-1.0) and i
 | `crd/order-sign-request-covered.json` | the same request with a CBC order for Priya Nair | hl7.fhir.us.davinci-crd#2.2.1 |
 | `crd/order-sign-response-pa-needed.json` | `Binary/CRDServiceResponse3` (coverage-information `systemAction`), payer-api's answer to `order-sign-request.json` | hl7.fhir.us.davinci-crd#2.2.1 |
 | `crd/order-sign-response-covered.json` | `Binary/CRDServiceResponse3`, payer-api's answer to `order-sign-request-covered.json` | hl7.fhir.us.davinci-crd#2.2.1 |
+| `crd/appointment-book-request.json` | `crd/order-sign-request.json` with the MRI as a proposed `Appointment` (`profile-appointment-no-order`) in `context.appointments` (`profile-bundle-appointment`); the Patient and Practitioner are contained in the Appointment so its participant slices resolve | hl7.fhir.us.davinci-crd#2.2.1 |
+| `crd/appointment-book-response-pa-needed.json` | `Binary/CRDServiceResponse3`, payer-api's answer to `appointment-book-request.json` | hl7.fhir.us.davinci-crd#2.2.1 |
+| `crd/encounter-start-request.json` | `crd/order-sign-request.json` with an in-progress MRI `Encounter` (`profile-encounter`) in `prefetch.encounter` | hl7.fhir.us.davinci-crd#2.2.1 |
+| `crd/encounter-start-response-pa-needed.json` | `Binary/CRDServiceResponse3`, payer-api's answer to `encounter-start-request.json` | hl7.fhir.us.davinci-crd#2.2.1 |
+| `crd/order-dispatch-request.json` | `crd/order-sign-request.json` with the MRI order active and dispatched to an imaging center, in `prefetch.dispatchedOrders`, and its fulfillment `Task` (`profile-task-dispatch`) in `context.fulfillmentTasks` | hl7.fhir.us.davinci-crd#2.2.1 |
+| `crd/order-dispatch-response-pa-needed.json` | `Binary/CRDServiceResponse3`, payer-api's answer to `order-dispatch-request.json` | hl7.fhir.us.davinci-crd#2.2.1 |
 | `dtr/questionnaire-package-input.json` | `Parameters/QuestionnairePackageInputParamsExample` | hl7.fhir.us.davinci-dtr#2.2.0 |
 | `dtr/questionnaire-package-output-cgm.json` | `Parameters/QuestionnairePackageOutputParamsExample`; payer-api's answer to `questionnaire-package-input.json` | hl7.fhir.us.davinci-dtr#2.2.0 |
 | `dtr/questionnaire-*.json`, `dtr/library-*.json`, `dtr/valueset-*.json` | `Questionnaire/home-o2-std-questionnaire`, written for the four §6 orders; SNOMED codes checked with tx.fhir.org | hl7.fhir.us.davinci-dtr#2.2.0 |
@@ -34,7 +40,7 @@ Each file starts from an example in the published IG package (all CC0-1.0) and i
 
 `provider/` holds what clinic-api builds for its own FHIR server (E0-S5).
 
-The `crd/order-sign-*` files are CDS Hooks JSON, not FHIR resources. `GoldenFixturesTest` and `ig-validate` check the FHIR resources inside them (draft orders, prefetch and the updated orders in `systemActions`). `CdsHooksInteropTest` posts each request to payer-api and expects exactly the matching response; it writes what payer-api answered to `payer-api/target/cds-out/` for diffing. The responses are dated 2026-11-11, the test's fixed clock.
+The `crd/order-sign-*`, `crd/order-dispatch-*`, `crd/appointment-book-*` and `crd/encounter-start-*` files are CDS Hooks JSON, not FHIR resources. `GoldenFixturesTest` and `ig-validate` check the FHIR resources inside them (draft orders, prefetch and the updated orders in `systemActions`). `CdsHooksInteropTest` posts each request to payer-api and expects exactly the matching response; it writes what payer-api answered to `payer-api/target/cds-out/` for diffing. The responses are dated 2026-11-11, the test's fixed clock.
 
 ## Running the validator locally
 

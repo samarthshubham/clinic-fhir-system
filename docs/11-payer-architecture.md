@@ -92,15 +92,20 @@ The `cdshooks` package serves [CRD 2.2.1](https://hl7.org/fhir/us/davinci-crd/ST
 
 | Method | Path | Auth | Returns |
 |---|---|---|---|
-| `GET` | `/cds-services` | public | discovery: `order-sign-crd` and `order-select-crd`, each with `davinci-crd.version: ["2.2"]` and the prefetch templates below |
+| `GET` | `/cds-services` | public | discovery: `order-sign-crd`, `order-select-crd`, `appointment-book-crd`, `encounter-start-crd` and `order-dispatch-crd`, each with `davinci-crd.version: ["2.2"]` and the prefetch templates below |
 | `POST` | `/cds-services/order-sign-crd` | system token with `system/Coverage.r` | cards + `systemActions` |
 | `POST` | `/cds-services/order-select-crd` | same | same, without documentation |
+| `POST` | `/cds-services/appointment-book-crd` | same | same as order-sign, for each `Appointment` in `context.appointments` (code: `serviceType[0]`) |
+| `POST` | `/cds-services/encounter-start-crd` | same | same as order-select (a CRD secondary hook, so no documentation), for the `encounter` prefetch, which must be `context.encounterId` (code: `type[0]`) |
+| `POST` | `/cds-services/order-dispatch-crd` | same | same as order-sign, for the `ServiceRequest`s in the `dispatchedOrders` prefetch named in `context.dispatchedOrders`; the card names the performer (`context.performer`, else the `owner` of the order's Task in `context.fulfillmentTasks`). Each fulfillment Task's `focus` must be a dispatched order, and performer and owner must be references, else 400 |
 
 | Prefetch key | Template |
 |---|---|
 | `patient` | `Patient/{{context.patientId}}` |
 | `coverage` | `Coverage?patient={{context.patientId}}&status=active` |
-| `practitioner` | `{{context.userId}}` |
+| `practitioner` | `{{context.userId}}` (not on order-dispatch, which has no `userId`) |
+| `encounter` | `Encounter/{{context.encounterId}}` (encounter-start only) |
+| `dispatchedOrders` | `ServiceRequest?_id={{context.dispatchedOrders.ServiceRequest.id}}` (order-dispatch only) |
 
 How a hook is answered:
 
@@ -109,13 +114,13 @@ How a hook is answered:
 3. The Coverage must name Praxis Health Plan when its `payor` carries an identifier (`payer.crd.payer-identifiers`), else 400. Its member id (`identifier[system=…/member-id]`, else `subscriberId`) is looked up in the payer HAPI (`Coverage?identifier=…`). The member is verified when one of their Coverages is `active` and its period covers today.
 4. Each order's code goes to `CoverageRuleService` (§6) with the order's `priority`.
 
-Each order gets a `systemActions` entry of type `update`: the draft order with the `ext-coverage-information` extension added.
+Each order, appointment or encounter gets a `systemActions` entry of type `update`: the resource with the `ext-coverage-information` extension added. The card detail names what it is about ("this order", "this appointment", "this encounter", "this order at Organization/…").
 
 | Case | `covered` | `pa-needed` | Also | Card |
 |---|---|---|---|---|
 | no PA (or waived for `stat`) | `covered` | `no-auth` | | info, "Covered, no prior authorization needed: …" |
 | PA, no documentation | `covered` | `auth-needed` | | warning, "Prior authorization needed: …" |
-| PA + documentation (order-sign only) | `covered` | `auth-needed` | `doc-needed=clinical`, `reason`, `questionnaire` | warning, "Prior authorization needed: …" |
+| PA + documentation (order-sign, appointment-book, order-dispatch) | `covered` | `auth-needed` | `doc-needed=clinical`, `reason`, `questionnaire` | warning, "Prior authorization needed: …" |
 | member not found / no active coverage | `not-covered` | | `reason` = CRD `temp#no-member-found` / `no-active-coverage` | warning, "Coverage could not be verified" |
 
 Every extension also has `coverage` (the client's Coverage), `date` and a `coverage-assertion-id`. Card and assertion ids are UUIDs derived from `hookInstance` and the order, so a retried hook gets the same ids.
