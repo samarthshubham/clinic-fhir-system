@@ -3,13 +3,13 @@ import {
   Component,
   computed,
   inject,
-  OnInit,
   signal,
 } from '@angular/core';
+import { formatDate } from '@angular/common';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { forkJoin } from 'rxjs';
 import { PatientAppService } from '../../../shared/services/patient-app.service';
 import { PatientSelectService } from '../../../shared/services/patient-select.service';
 import { PostVitalsRequest } from '../../../shared/models/patient-app.models';
@@ -46,11 +46,22 @@ export class RecordVitalsComponent {
   readonly weight = signal(70.0);
   readonly spo2 = signal(97);
 
+  private readonly bpValue = toSignal(this.bpForm.valueChanges, {
+    initialValue: this.bpForm.value,
+  });
+  private readonly bpStatus = toSignal(this.bpForm.statusChanges, {
+    initialValue: this.bpForm.status,
+  });
+
   readonly bpHigh = computed(() => {
-    const s = this.bpForm.value.systolic ?? 0;
-    const d = this.bpForm.value.diastolic ?? 0;
+    const s = this.bpValue().systolic ?? 0;
+    const d = this.bpValue().diastolic ?? 0;
     return s >= 140 || d >= 90;
   });
+
+  readonly canContinue = computed(
+    () => this.step() !== 0 || this.bpStatus() === 'VALID',
+  );
 
   readonly spo2Low = computed(() => this.spo2() < 94);
 
@@ -70,6 +81,9 @@ export class RecordVitalsComponent {
   }
 
   goNext(): void {
+    if (!this.canContinue()) {
+      return;
+    }
     if (this.step() < 3) {
       this.step.update((s) => (s + 1) as 0 | 1 | 2 | 3 | 4);
     } else {
@@ -87,36 +101,16 @@ export class RecordVitalsComponent {
 
   private save(): void {
     this.saving.set(true);
-    const today = new Date().toISOString().split('T')[0];
-    const patientId = this.patientId;
-
-    const systolicReq: PostVitalsRequest = {
-      patientId,
-      effectiveDate: today,
+    const readings: PostVitalsRequest = {
+      patientId: this.patientId,
+      effectiveDate: formatDate(new Date(), 'yyyy-MM-dd', 'en-US'),
       systolicBp: this.bpForm.value.systolic ?? undefined,
-    };
-    const diastolicReq: PostVitalsRequest = {
-      patientId,
-      effectiveDate: today,
       diastolicBp: this.bpForm.value.diastolic ?? undefined,
-    };
-    const weightReq: PostVitalsRequest = {
-      patientId,
-      effectiveDate: today,
       weightKg: this.weight(),
-    };
-    const spo2Req: PostVitalsRequest = {
-      patientId,
-      effectiveDate: today,
       spo2Percent: this.spo2(),
     };
 
-    forkJoin([
-      this.svc.postVitals(systolicReq),
-      this.svc.postVitals(diastolicReq),
-      this.svc.postVitals(weightReq),
-      this.svc.postVitals(spo2Req),
-    ]).subscribe({
+    this.svc.postVitals(readings).subscribe({
       next: () => {
         this.saving.set(false);
         this.step.set(4);
