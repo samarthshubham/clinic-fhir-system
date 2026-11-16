@@ -102,7 +102,7 @@ An HTML report is written to `apps/seed-demo-data/reports/seed-data-report.html`
 | Marcus Webb | 1965-03-12 M | Hypertensive, ongoing BP management | 4 (42, 28, 14, 3 days ago) | Systolic 158 → 138 mmHg; no SpO₂ recorded |
 | Priya Nair | 1992-07-28 F | Healthy, preventive care | 2 (38, 10 days ago) | All normal; SpO₂ 99% |
 | Gerald Horton | 1974-11-04 M | Overweight, sleep apnea workup + CPAP | 4 (45, 30, 15, 2 days ago) | SpO₂ 93% → 97%; weight 118 → 115 kg |
-| Sandra Okafor | 1980-02-19 F | Post-cholecystectomy recovery | 4 (44, 35, 21, 7 days ago) | All vitals normalizing; weight 72 → 69 kg |
+| Sandra Okafor | 1980-02-19 F | Post-cholecystectomy recovery; lumbar radiculopathy (MRI prior auth case) | 9 (44, 35, 21, 7 days ago; back pain 34 days ago, physical therapy 30, 23, 16, 6 days ago) | All vitals normalizing; weight 72 → 69 kg |
 | Ramon Castillo | 1958-09-30 M | Type 2 diabetes management | 4 (40, 25, 12, 1 days ago) | BP 136/86 → 128/80; SpO₂ stable 96-97% |
 
 The profiles are chosen to exercise a range of UI states:
@@ -110,6 +110,7 @@ The profiles are chosen to exercise a range of UI states:
 - **Marcus** — no SpO₂ data; tests optional-vital handling in charts
 - **Priya** — only 2 encounters; tests sparse data rendering
 - **Gerald** — SpO₂ starts at 93%; tests critical/warning threshold display
+- **Sandra** — back pain chart for DTR prepopulation of the MRI lumbar spine form: active lumbar radiculopathy (onset 42 days ago), naproxen, a lumbar spine X-ray report and 4 physical therapy visits, so 4 weeks of conservative therapy, under the payer's 6 weeks
 - **Ages 34–68** — exercises age and gender display across the roster
 
 ---
