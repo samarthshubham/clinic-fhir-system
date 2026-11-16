@@ -4,6 +4,7 @@ import {
   computed,
   inject,
   input,
+  output,
   signal,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
@@ -17,17 +18,27 @@ import {
   startWith,
   switchMap,
 } from 'rxjs';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { AuthService } from '@care-platform/auth';
+import { ToastService } from '@core/toast.service';
 import { DashboardService } from '@features/dashboard/dashboard.service';
 import {
   ActiveCarePlan,
   BpSeries,
   PendingOrder,
+  ServiceRequestResponse,
   SimpleSeries,
   TrendsResponse,
 } from '@features/dashboard/dashboard.model';
 import { CpGoalRowComponent } from '@features/dashboard/components/cp-goal-row/cp-goal-row.component';
 import { CpTrendChartComponent } from '@features/dashboard/components/cp-trend-chart/cp-trend-chart.component';
+import { CpCrdCardsComponent } from '@features/dashboard/components/cp-crd-cards/cp-crd-cards.component';
+import {
+  CpOrderDialogComponent,
+  OrderDialogData,
+} from '@features/dashboard/components/cp-order-dialog/cp-order-dialog.component';
 
 type AsyncState<T> = T | null | 'error';
 
@@ -50,16 +61,31 @@ const CATEGORY_ICONS: Record<string, string> = {
   selector: 'cp-care-panel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CpGoalRowComponent, CpTrendChartComponent, MatIconModule, DatePipe],
+  imports: [
+    CpGoalRowComponent,
+    CpTrendChartComponent,
+    CpCrdCardsComponent,
+    MatButtonModule,
+    MatIconModule,
+    DatePipe,
+  ],
   templateUrl: './cp-care-panel.component.html',
   styleUrl: './cp-care-panel.component.scss',
 })
 export class CpCarePanelComponent {
   private readonly svc = inject(DashboardService);
+  private readonly dialog = inject(MatDialog);
+  private readonly auth = inject(AuthService);
+  private readonly toast = inject(ToastService);
 
   readonly patientId = input.required<string>();
   readonly carePlan = input.required<ActiveCarePlan | null>();
   readonly pending = input.required<PendingOrder[]>();
+  readonly orderPlaced = output<ServiceRequestResponse>();
+
+  protected readonly canOrder = computed(() =>
+    this.auth.hasRole('ADMIN', 'CLINICIAN'),
+  );
 
   readonly periods = PERIODS;
   readonly period = signal<Period>('30d');
@@ -121,6 +147,26 @@ export class CpCarePanelComponent {
 
   getCategoryIcon(cat: string | null): string {
     return CATEGORY_ICONS[cat?.toLowerCase() ?? ''] ?? 'checklist';
+  }
+
+  openOrderDialog(): void {
+    this.dialog
+      .open<CpOrderDialogComponent, OrderDialogData, ServiceRequestResponse>(
+        CpOrderDialogComponent,
+        {
+          data: {
+            patientId: this.patientId(),
+            practitionerId: this.auth.user()?.practitionerId ?? null,
+          },
+          width: '560px',
+        },
+      )
+      .afterClosed()
+      .pipe(filter((order): order is ServiceRequestResponse => !!order))
+      .subscribe((order) => {
+        this.toast.show('Order placed');
+        this.orderPlaced.emit(order);
+      });
   }
 
   setPeriod(p: Period): void {

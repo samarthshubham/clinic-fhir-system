@@ -57,6 +57,7 @@
           [patientId]="patientId()"
           [carePlan]="carePlan()"
           [pending]="pendingOrders()"
+          (orderPlaced)="onOrderPlaced($event)"
         />
       }
     </aside>

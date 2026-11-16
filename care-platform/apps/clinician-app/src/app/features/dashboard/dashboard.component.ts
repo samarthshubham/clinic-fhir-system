@@ -18,6 +18,7 @@ import {
   exhaustMap,
   map,
   of,
+  scan,
   shareReplay,
   startWith,
   switchMap,
@@ -30,10 +31,12 @@ import {
   DashboardResponse,
   PatientHeaderData,
   PendingOrder,
+  ServiceRequestResponse,
   SnapshotResponse,
   TimelineEvent,
   TrendsResponse,
   extractPatientHeader,
+  toPendingOrder,
 } from './dashboard.model';
 import { CpPatientHeaderComponent } from './components/cp-patient-header/cp-patient-header.component';
 import { CpPatientHeaderSkeletonComponent } from './components/cp-patient-header-skeleton/cp-patient-header-skeleton.component';
@@ -203,11 +206,27 @@ export class DashboardComponent implements AfterViewInit {
     return d.activeCarePlan;
   });
 
-  readonly pendingOrders = computed<PendingOrder[]>(() => {
-    const d = this.dashboard();
-    if (!d || d === 'error') return [];
-    return d.pendingServiceRequests;
-  });
+  private readonly orderPlaced$ = new Subject<ServiceRequestResponse>();
+
+  readonly pendingOrders = toSignal(
+    this.dashboard$.pipe(
+      switchMap((d) =>
+        !d || d === 'error'
+          ? of<PendingOrder[]>([])
+          : this.orderPlaced$.pipe(
+              scan(
+                (orders: PendingOrder[], placed) => [
+                  toPendingOrder(placed),
+                  ...orders,
+                ],
+                d.pendingServiceRequests,
+              ),
+              startWith(d.pendingServiceRequests),
+            ),
+      ),
+    ),
+    { initialValue: [] as PendingOrder[] },
+  );
 
   // Draggable resizer
   private readonly panelsGrid =
@@ -272,6 +291,10 @@ export class DashboardComponent implements AfterViewInit {
 
   onCoverageSaved(coverage: CoverageResponse): void {
     this.coverageSaved$.next(coverage);
+  }
+
+  onOrderPlaced(order: ServiceRequestResponse): void {
+    this.orderPlaced$.next(order);
   }
 
   onLoadMore(): void {
