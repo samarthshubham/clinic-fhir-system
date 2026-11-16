@@ -5,9 +5,16 @@ import static io.github.samarthshubham.clinic.support.GoldenFhir.assertMatchesGo
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ca.uhn.fhir.context.FhirContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.samarthshubham.clinic.client.CrdClient;
+import io.github.samarthshubham.clinic.dto.CoverageInformation;
+import io.github.samarthshubham.clinic.dto.CrdCard;
 import io.github.samarthshubham.clinic.dto.ServiceRequestRequest;
 import io.github.samarthshubham.clinic.dto.ServiceRequestResponse;
+import io.github.samarthshubham.clinic.support.GoldenFhir;
 import java.time.LocalDate;
+import java.util.List;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.ServiceRequest;
 import org.junit.jupiter.api.Test;
@@ -126,7 +133,9 @@ class ServiceRequestMapperTest {
                 "laboratory",
                 "active",
                 "urgent",
-                AUTHORED));
+                AUTHORED,
+                null,
+                List.of()));
   }
 
   @Test
@@ -137,7 +146,8 @@ class ServiceRequestMapperTest {
     assertThat(mapper.toResponse(serviceRequest))
         .isEqualTo(
             new ServiceRequestResponse(
-                "sr1", null, null, null, null, null, null, null, null, null, null));
+                "sr1", null, null, null, null, null, null, null, null, null, null, null,
+                List.of()));
   }
 
   @Test
@@ -194,5 +204,40 @@ class ServiceRequestMapperTest {
                 "routine",
                 AUTHORED)),
         "provider/service-request.json");
+  }
+
+  @Test
+  void toResponseReadsTheStoredCoverageInformationAndCards() throws Exception {
+    ServiceRequest systemAction =
+        FhirContext.forR4Cached()
+            .newJsonParser()
+            .parseResource(
+                ServiceRequest.class,
+                new ObjectMapper()
+                    .readTree(GoldenFhir.read("crd/order-sign-response-pa-needed.json"))
+                    .path("systemActions")
+                    .path(0)
+                    .path("resource")
+                    .toString());
+    ServiceRequest stored = new ServiceRequest();
+    stored.setId("sr1");
+    CrdCard card = new CrdCard("Prior authorization needed", "warning", null, "Praxis Health Plan");
+    mapper.addCrdResult(
+        stored, systemAction.getExtensionsByUrl(CrdClient.COVERAGE_INFORMATION), List.of(card));
+
+    ServiceRequestResponse response = mapper.toResponse(stored);
+
+    assertThat(response.coverage())
+        .isEqualTo(
+            new CoverageInformation(
+                "coverage-sandra-okafor",
+                "covered",
+                "auth-needed",
+                "clinical",
+                "Clinical documentation is needed for the prior authorization request",
+                "http://praxishealthplan.example/fhir/Questionnaire/mri-lumbar-spine",
+                LocalDate.of(2026, 11, 11),
+                "65f84693-1eca-398b-b3da-1bec7a3a0125"));
+    assertThat(response.cards()).containsExactly(card);
   }
 }

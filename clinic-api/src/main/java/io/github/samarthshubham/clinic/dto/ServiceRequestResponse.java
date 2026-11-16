@@ -1,6 +1,7 @@
 package io.github.samarthshubham.clinic.dto;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public record ServiceRequestResponse(
     String id,
@@ -13,4 +14,6 @@ public record ServiceRequestResponse(
     String category,
     String status,
     String priority,
-    LocalDate authoredOn) {}
+    LocalDate authoredOn,
+    CoverageInformation coverage,
+    List<CrdCard> cards) {}

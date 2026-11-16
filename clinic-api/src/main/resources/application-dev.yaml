@@ -1,6 +1,8 @@
 # Local development only. `./mvnw spring-boot:run` activates this profile (see pom.xml);
 # a packaged jar does not, so production has no demo users and no default JWT secret.
 clinic:
+  payer:
+    client-secret: ${CLINIC_PAYER_CLIENT_SECRET:dev-only-clinic-api-client-secret}
   auth:
     jwt-secret: ${CLINIC_JWT_SECRET:dev-only-jwt-secret-change-me-in-prod-0123456789}
     users:

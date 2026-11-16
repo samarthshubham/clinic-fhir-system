@@ -147,6 +147,7 @@
 					<argLine>@{argLine} -Duser.timezone=America/New_York</argLine>
 					<environmentVariables>
 						<CLINIC_JWT_SECRET>test-only-jwt-secret-0123456789abcdef</CLINIC_JWT_SECRET>
+						<CLINIC_PAYER_CLIENT_SECRET>test-only-payer-client-secret</CLINIC_PAYER_CLIENT_SECRET>
 					</environmentVariables>
 				</configuration>
 			</plugin>

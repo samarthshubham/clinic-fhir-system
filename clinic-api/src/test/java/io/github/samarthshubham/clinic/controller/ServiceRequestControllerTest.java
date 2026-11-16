@@ -7,6 +7,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.github.samarthshubham.clinic.config.SecurityConfig;
+import io.github.samarthshubham.clinic.dto.CoverageInformation;
+import io.github.samarthshubham.clinic.dto.CrdCard;
 import io.github.samarthshubham.clinic.dto.PageResponse;
 import io.github.samarthshubham.clinic.dto.ServiceRequestRequest;
 import io.github.samarthshubham.clinic.dto.ServiceRequestResponse;
@@ -41,13 +43,29 @@ class ServiceRequestControllerTest {
           "laboratory",
           "active",
           "routine",
-          LocalDate.of(2024, 5, 1));
+          LocalDate.of(2024, 5, 1),
+          new CoverageInformation(
+              "cov1",
+              "covered",
+              "auth-needed",
+              "clinical",
+              "Documentation needed",
+              "http://praxishealthplan.example/fhir/Questionnaire/mri-lumbar-spine",
+              LocalDate.of(2024, 5, 1),
+              "a1"),
+          List.of(new CrdCard("Prior authorization needed", "warning", "Detail", "Praxis")));
 
   private static final String LIPID_PANEL_JSON =
       """
       {"id":"sr1","patientId":"p1","encounterId":"e1","practitionerId":"pr1",
        "display":"Lipid panel","codeSystem":"http://loinc.org","code":"57698-3",
-       "category":"laboratory","status":"active","priority":"routine","authoredOn":"2024-05-01"}
+       "category":"laboratory","status":"active","priority":"routine","authoredOn":"2024-05-01",
+       "coverage":{"coverageId":"cov1","covered":"covered","paNeeded":"auth-needed",
+        "docNeeded":"clinical","reason":"Documentation needed",
+        "questionnaire":"http://praxishealthplan.example/fhir/Questionnaire/mri-lumbar-spine",
+        "date":"2024-05-01","coverageAssertionId":"a1"},
+       "cards":[{"summary":"Prior authorization needed","indicator":"warning",
+        "detail":"Detail","source":"Praxis"}]}
       """;
 
   @Autowired private MockMvcTester mvc;

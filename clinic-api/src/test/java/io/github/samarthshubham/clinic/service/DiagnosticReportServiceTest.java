@@ -3,6 +3,7 @@ package io.github.samarthshubham.clinic.service;
 import static io.github.samarthshubham.clinic.support.FhirClientStub.bundleOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.samarthshubham.clinic.dto.DiagnosticReportRequest;
@@ -29,7 +30,8 @@ class DiagnosticReportServiceTest {
   void setUp() {
     fhir = new FhirClientStub();
     ServiceRequestService orders =
-        new ServiceRequestService(fhir.client(), new ServiceRequestMapper());
+        new ServiceRequestService(
+            fhir.client(), new ServiceRequestMapper(), mock(CrdService.class));
     service = new DiagnosticReportService(fhir.client(), new DiagnosticReportMapper(), orders);
   }
 
