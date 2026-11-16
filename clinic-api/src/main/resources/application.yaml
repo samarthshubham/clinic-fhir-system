@@ -35,6 +35,7 @@ clinic:
     client-secret: ${CLINIC_PAYER_CLIENT_SECRET:}
     scope: system/Coverage.r
     timeout: 2s
+    payer-id: praxis-health-plan
 
 logging:
   level:

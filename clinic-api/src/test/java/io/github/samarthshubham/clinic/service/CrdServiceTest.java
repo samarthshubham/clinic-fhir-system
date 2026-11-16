@@ -10,14 +10,18 @@ import static org.mockito.Mockito.when;
 
 import io.github.samarthshubham.clinic.client.CrdClient;
 import io.github.samarthshubham.clinic.client.CrdResult;
+import io.github.samarthshubham.clinic.config.PayerApiProperties;
 import io.github.samarthshubham.clinic.mapper.CoverageMapper;
 import io.github.samarthshubham.clinic.mapper.PatientMapper;
 import io.github.samarthshubham.clinic.mapper.PractitionerMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
+import java.time.Duration;
 import org.hl7.fhir.r4.model.Appointment;
 import org.hl7.fhir.r4.model.Coverage;
+import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.Practitioner;
+import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.ServiceRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,14 +41,29 @@ class CrdServiceTest {
             crdClient,
             new CoverageService(fhir.client(), new CoverageMapper()),
             new PatientService(fhir.client(), new PatientMapper()),
-            new PractitionerService(fhir.client(), new PractitionerMapper()));
+            new PractitionerService(fhir.client(), new PractitionerMapper()),
+            new PayerApiProperties(
+                "http://payer.test",
+                "clinic-api",
+                "secret",
+                "system/Coverage.r",
+                Duration.ofSeconds(2),
+                "praxis-health-plan"));
     fhir.givenStored(new Patient(), "p1");
     fhir.givenStored(new Practitioner(), "dr1");
   }
 
   private void givenActiveCoverage() {
+    givenActiveCoverageWith("praxis-health-plan");
+  }
+
+  private void givenActiveCoverageWith(String payerId) {
     Coverage coverage = new Coverage();
     coverage.setId("cov1");
+    coverage.addPayor(
+        new Reference("Organization/org1")
+            .setIdentifier(
+                new Identifier().setSystem(CoverageMapper.PAYER_SYSTEM).setValue(payerId)));
     fhir.givenSearchResultWhen(Coverage.class, bundleOf(coverage), "status=active");
   }
 
@@ -87,6 +106,28 @@ class CrdServiceTest {
   void checkAppointmentWithoutCoverageSkipsTheHook() {
     assertThat(service.checkAppointment(new Appointment(), "p1", "dr1"))
         .isEqualTo(CrdResult.none());
+    verifyNoInteractions(crdClient);
+  }
+
+  @Test
+  void coverageWithAnotherPayerSendsNothingToThePayer() {
+    givenActiveCoverageWith("aetna");
+    ServiceRequest order = new ServiceRequest();
+
+    assertThat(service.checkOrder(order, "p1", "dr1")).isEqualTo(CrdResult.none());
+    assertThat(service.checkAppointment(new Appointment(), "p1", "dr1"))
+        .isEqualTo(CrdResult.none());
+    assertThat(order.hasInsurance()).isFalse();
+    verifyNoInteractions(crdClient);
+  }
+
+  @Test
+  void coverageWithoutAPayerIdentifierSendsNothingToThePayer() {
+    Coverage coverage = new Coverage();
+    coverage.setId("cov1");
+    fhir.givenSearchResultWhen(Coverage.class, bundleOf(coverage), "status=active");
+
+    assertThat(service.checkOrder(new ServiceRequest(), "p1", "dr1")).isEqualTo(CrdResult.none());
     verifyNoInteractions(crdClient);
   }
 }

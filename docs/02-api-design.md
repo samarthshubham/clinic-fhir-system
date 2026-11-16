@@ -318,7 +318,7 @@ Send only the vitals you have — null fields are skipped. Each non-null vital i
   "cards": [{ "summary": "Prior authorization needed: MRI lumbar spine without contrast", "indicator": "warning", "detail": "Praxis Health Plan needs prior authorization for this order. Complete the documentation questionnaire, then submit the prior authorization request.", "source": "Praxis Health Plan" }] }
 ```
 
-- `coverage` is `null` when the patient has no active Coverage (no hook call, `cards` is `[]`) or when the payer could not be reached.
+- `coverage` is `null` when the patient has no active Coverage with this payer (`clinic.payer.payer-id`, matched on the Coverage's payor identifier; no hook call and no patient data sent, `cards` is `[]`) or when the payer could not be reached.
 - The call fails open (NFR-REL-2): after a 2 s timeout, a 5xx or a connection error the order is still saved, with `coverage: null` and one `"Coverage unknown"` warning card from `clinic-api`.
 - `POST /api/appointments` calls `appointment-book` the same way and stores the returned `coverage-information` on the Appointment; `AppointmentResponse` is unchanged.
 

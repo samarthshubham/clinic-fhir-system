@@ -51,7 +51,12 @@ class CrdClientTest {
       "{\"access_token\":\"system-token\",\"token_type\":\"bearer\",\"expires_in\":300}";
   private static final PayerApiProperties PROPERTIES =
       new PayerApiProperties(
-          PAYER, "clinic-api", "test-secret", "system/Coverage.r", Duration.ofSeconds(2));
+          PAYER,
+          "clinic-api",
+          "test-secret",
+          "system/Coverage.r",
+          Duration.ofSeconds(2),
+          "praxis-health-plan");
 
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final JsonNode golden = CrdFixtures.json("order-sign-request.json");

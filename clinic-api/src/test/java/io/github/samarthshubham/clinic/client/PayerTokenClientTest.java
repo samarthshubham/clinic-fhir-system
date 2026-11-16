@@ -36,7 +36,12 @@ class PayerTokenClientTest {
         new PayerTokenClient(
             builder.build(),
             new PayerApiProperties(
-                PAYER, "clinic-api", "test-secret", "system/Coverage.r", Duration.ofSeconds(2)),
+                PAYER,
+                "clinic-api",
+                "test-secret",
+                "system/Coverage.r",
+                Duration.ofSeconds(2),
+                "praxis-health-plan"),
             clock);
   }
 

@@ -432,6 +432,7 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 | `clinic.payer.base-url` | `${CLINIC_PAYER_API_URL:http://localhost:9095}` | payer-api base URL for CRD hooks and `/oauth/token` |
 | `clinic.payer.client-id` / `scope` | `clinic-api` / `system/Coverage.r` | clinic-api's `client_credentials` client at payer-api |
 | `clinic.payer.client-secret` | `${CLINIC_PAYER_CLIENT_SECRET}`; dev profile default `dev-only-clinic-api-client-secret` | Startup fails when empty |
+| `clinic.payer.payer-id` | `praxis-health-plan` | Hooks are called only when the active Coverage's payor identifier (`http://praxis.clinic/fhir/identifier/payer`) is this payer; otherwise no patient data is sent |
 | `clinic.payer.timeout` | `2s` | Connect and read timeout per payer-api call; on timeout, 5xx or connection error the order is saved with a "Coverage unknown" card |
 
 ---

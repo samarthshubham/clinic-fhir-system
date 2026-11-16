@@ -24,7 +24,8 @@ class PayerApiConfigTest {
             "clinic-api",
             secret,
             "system/Coverage.r",
-            Duration.ofSeconds(2));
+            Duration.ofSeconds(2),
+            "praxis-health-plan");
 
     assertThatThrownBy(() -> config.payerApiRestClient(RestClient.builder(), properties))
         .isInstanceOf(IllegalStateException.class)
@@ -39,7 +40,8 @@ class PayerApiConfigTest {
             "clinic-api",
             "secret",
             "system/Coverage.r",
-            Duration.ofSeconds(2));
+            Duration.ofSeconds(2),
+            "praxis-health-plan");
 
     assertThat(config.payerApiRestClient(RestClient.builder(), properties)).isNotNull();
   }

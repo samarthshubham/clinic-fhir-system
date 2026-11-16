@@ -5,4 +5,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "clinic.payer")
 public record PayerApiProperties(
-    String baseUrl, String clientId, String clientSecret, String scope, Duration timeout) {}
+    String baseUrl,
+    String clientId,
+    String clientSecret,
+    String scope,
+    Duration timeout,
+    String payerId) {}
