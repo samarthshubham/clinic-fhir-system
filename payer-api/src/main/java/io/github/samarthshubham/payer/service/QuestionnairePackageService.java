@@ -113,7 +113,10 @@ public class QuestionnairePackageService {
         search(
             Library.class,
             Library.URL,
-            packages.keySet().stream().flatMap(QuestionnairePackageService::libraryUrls).toList());
+            packages.keySet().stream()
+                .flatMap(QuestionnairePackageService::libraryUrls)
+                .map(QuestionnairePackageService::withoutVersion)
+                .toList());
     List<ValueSet> valueSets =
         search(
             ValueSet.class,

@@ -10,10 +10,12 @@ import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
 import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.CanonicalType;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Coverage;
 import org.hl7.fhir.r4.model.DeviceRequest;
+import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.Library;
 import org.hl7.fhir.r4.model.MedicationRequest;
 import org.hl7.fhir.r4.model.OperationOutcome;
@@ -201,6 +203,22 @@ class QuestionnairePackageServiceTest {
         .isNull();
     assertThat(payerHapi.lastSearchCriteria(Questionnaire.class))
         .containsExactly("url=" + PSG, "_count=100");
+  }
+
+  @Test
+  void versionedLibraryCanonicalIsSearchedWithoutItsVersion() {
+    Library library = fixture(Library.class, "dtr/library-polysomnography.json");
+    library.setVersion("2.0.0");
+    payerHapi.givenSearchResult(Library.class, FhirClientStub.bundleOf(library));
+    Extension cqfLibrary =
+        polysomnography.getExtensionByUrl("http://hl7.org/fhir/StructureDefinition/cqf-library");
+    String libraryUrl = ((CanonicalType) cqfLibrary.getValue()).getValue();
+    cqfLibrary.setValue(new CanonicalType(libraryUrl + "|2.0.0"));
+
+    assertThat(onlyPackage(packages(List.of(), List.of(PSG), null)).getEntry())
+        .extracting(entry -> entry.getResource().fhirType())
+        .contains("Library");
+    assertThat(payerHapi.lastSearchCriteria(Library.class)).contains("url=" + libraryUrl);
   }
 
   @Test

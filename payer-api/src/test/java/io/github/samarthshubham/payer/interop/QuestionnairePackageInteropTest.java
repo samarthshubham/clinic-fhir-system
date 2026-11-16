@@ -23,6 +23,7 @@ import org.hl7.fhir.r4.model.Library;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.Parameters;
 import org.hl7.fhir.r4.model.Questionnaire;
+import org.hl7.fhir.r4.model.StringType;
 import org.hl7.fhir.r4.model.ValueSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -121,7 +122,18 @@ class QuestionnairePackageInteropTest {
 
     assertThatThrownBy(() -> questionnairePackage(input))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessageContaining("order, questionnaire or context");
+        .hasMessageContaining("at least one order or questionnaire");
+  }
+
+  @Test
+  void requestWithOnlyAContextIsABadRequest() {
+    Parameters input = new Parameters();
+    input.addParameter().setName("coverage").setResource(coverage());
+    input.addParameter().setName("context").setValue(new StringType("QuestionnaireResponse/qr-1"));
+
+    assertThatThrownBy(() -> questionnairePackage(input))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessageContaining("by context is not supported");
   }
 
   @Test

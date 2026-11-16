@@ -57,8 +57,11 @@ public class QuestionnairePackageProvider implements IResourceProvider {
                 .map(CanonicalType::getValue)
                 .filter(Objects::nonNull)
                 .toList();
-    if (orderResources.isEmpty() && canonicals.isEmpty() && context == null) {
-      throw new InvalidRequestException("Send at least one order, questionnaire or context");
+    if (orderResources.isEmpty() && canonicals.isEmpty()) {
+      throw new InvalidRequestException(
+          context == null
+              ? "Send at least one order or questionnaire"
+              : "Looking up a package by context is not supported; send an order or questionnaire");
     }
     return questionnairePackages.questionnairePackages(
         coverage,
