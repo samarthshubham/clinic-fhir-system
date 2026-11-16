@@ -59,6 +59,15 @@ class AuthorizationMatrixTest {
   private static final String JSON = "application/json";
   private static final String FHIR_JSON = "application/fhir+json";
   private static final String EMPTY_PARAMETERS = "{\"resourceType\":\"Parameters\"}";
+  private static final String QUESTIONNAIRE_PACKAGE_FOR_A_CBC =
+      """
+      {"resourceType":"Parameters","parameter":[
+        {"name":"coverage","resource":{"resourceType":"Coverage","id":"c1","status":"active",
+          "beneficiary":{"reference":"Patient/member-a"},"payor":[{"display":"Praxis"}]}},
+        {"name":"order","resource":{"resourceType":"ServiceRequest","id":"cbc","status":"draft",
+          "intent":"order","subject":{"reference":"Patient/member-a"},
+          "code":{"coding":[{"system":"http://loinc.org","code":"58410-2"}]}}}]}
+      """;
 
   private static final List<Endpoint> ENDPOINTS =
       List.of(
@@ -83,6 +92,11 @@ class AuthorizationMatrixTest {
           fhir(
               "POST", "/fhir/Claim/$test-unmapped", EMPTY_PARAMETERS, EnumSet.noneOf(Caller.class)),
           fhir("GET", "/fhir/Questionnaire/q1", null, EnumSet.of(CLINIC_API, SYSTEM_READER)),
+          fhir(
+              "POST",
+              "/fhir/Questionnaire/$questionnaire-package",
+              QUESTIONNAIRE_PACKAGE_FOR_A_CBC,
+              EnumSet.of(CLINIC_API, SYSTEM_READER)),
           json("GET", "/cds-services", null, null, EVERYONE),
           cdsHook("/cds-services/order-sign-crd", EnumSet.of(CLINIC_API, SYSTEM_READER)),
           cdsHook("/cds-services/order-select-crd", EnumSet.of(CLINIC_API, SYSTEM_READER)));

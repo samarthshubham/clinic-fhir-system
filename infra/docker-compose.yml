@@ -89,9 +89,18 @@ services:
       hapi.fhir.implementationguides.terminology.installMode: STORE_AND_INSTALL
       hapi.fhir.implementationguides.terminology.reloadExisting: "false"
       hapi.fhir.implementationguides.extensions.name: hl7.fhir.uv.extensions.r4
-      hapi.fhir.implementationguides.extensions.version: 5.2.0
+      hapi.fhir.implementationguides.extensions.version: 5.3.0-ballot-tc1
       hapi.fhir.implementationguides.extensions.installMode: STORE_AND_INSTALL
       hapi.fhir.implementationguides.extensions.reloadExisting: "false"
+      hapi.fhir.implementationguides.xver.name: hl7.fhir.uv.xver-r5.r4
+      hapi.fhir.implementationguides.xver.version: 0.1.0
+      hapi.fhir.implementationguides.xver.installMode: STORE_AND_INSTALL
+      hapi.fhir.implementationguides.xver.installResourceTypes: StructureDefinition
+      hapi.fhir.implementationguides.xver.reloadExisting: "false"
+      hapi.fhir.implementationguides.sdc.name: hl7.fhir.uv.sdc
+      hapi.fhir.implementationguides.sdc.version: 4.0.0
+      hapi.fhir.implementationguides.sdc.installMode: STORE_AND_INSTALL
+      hapi.fhir.implementationguides.sdc.reloadExisting: "false"
       hapi.fhir.implementationguides.uscore.name: hl7.fhir.us.core
       hapi.fhir.implementationguides.uscore.version: 7.0.0
       hapi.fhir.implementationguides.uscore.installMode: STORE_AND_INSTALL

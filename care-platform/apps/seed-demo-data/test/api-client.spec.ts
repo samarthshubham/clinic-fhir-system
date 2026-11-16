@@ -884,3 +884,77 @@ describe('cascadeDeletePatient', () => {
     expect(calls().every(({ init }) => init?.method !== 'DELETE')).toBe(true);
   });
 });
+
+describe('DTR questionnaires', () => {
+  const PSG =
+    'http://praxishealthplan.example/fhir/Questionnaire/polysomnography';
+  const order = { system: 'http://snomed.info/sct', code: '60554003' };
+
+  it('PUTs a payer resource under its own id', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({}));
+    const questionnaire = {
+      resourceType: 'Questionnaire',
+      id: 'polysomnography',
+    };
+
+    await apiClient.putPayerResource(questionnaire);
+
+    const [{ url, init }] = calls();
+    expect(url).toBe(`${PAYER_HAPI}/Questionnaire/polysomnography`);
+    expect(init?.method).toBe('PUT');
+    expect(JSON.parse(init?.body as string)).toEqual(questionnaire);
+  });
+
+  it('refuses to PUT a payer resource without an id', async () => {
+    await expect(
+      apiClient.putPayerResource({ resourceType: 'Library' }),
+    ).rejects.toThrow('The Library has no id to PUT under');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('asks payer-api for the package of an order and returns each form url', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'packagebundle',
+            resource: { entry: [{ resource: { url: PSG } }] },
+          },
+          { name: 'outcome', resource: { resourceType: 'OperationOutcome' } },
+        ],
+      }),
+    );
+
+    await expect(apiClient.questionnairePackage('t', order)).resolves.toEqual([
+      PSG,
+    ]);
+
+    const [{ url, init }] = calls();
+    expect(url).toBe(`${PAYER_API}/fhir/Questionnaire/$questionnaire-package`);
+    expect(init?.method).toBe('POST');
+    expect((init?.headers as Record<string, string>)['Authorization']).toBe(
+      'Bearer t',
+    );
+    const body = JSON.parse(init?.body as string);
+    expect(body.parameter[1].resource.code.coding).toEqual([order]);
+  });
+
+  it('returns no forms when the output has no package', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ resourceType: 'Parameters' }),
+    );
+
+    await expect(apiClient.questionnairePackage('t', order)).resolves.toEqual(
+      [],
+    );
+  });
+
+  it('fails with the status and body when payer-api rejects the request', async () => {
+    fetchMock.mockResolvedValueOnce(textResponse('forbidden', 403));
+
+    await expect(apiClient.questionnairePackage('t', order)).rejects.toThrow(
+      '$questionnaire-package failed [403]: forbidden',
+    );
+  });
+});

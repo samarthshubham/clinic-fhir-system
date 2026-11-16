@@ -1,0 +1,87 @@
+{
+  "resourceType": "ValueSet",
+  "id": "echocardiogram-indications",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/StructureDefinition/shareablevalueset"
+    ]
+  },
+  "url": "http://praxishealthplan.example/fhir/ValueSet/echocardiogram-indications",
+  "version": "1.0.0",
+  "name": "EchocardiogramIndications",
+  "title": "Echocardiogram indications",
+  "status": "active",
+  "experimental": false,
+  "date": "2026-11-01",
+  "publisher": "Praxis Health Plan",
+  "description": "Findings Praxis Health Plan accepts as the indication for a transthoracic echocardiogram.",
+  "compose": {
+    "include": [
+      {
+        "system": "http://snomed.info/sct",
+        "concept": [
+          {
+            "code": "84114007",
+            "display": "Heart failure"
+          },
+          {
+            "code": "49436004",
+            "display": "Atrial fibrillation"
+          },
+          {
+            "code": "88610006",
+            "display": "Heart murmur"
+          },
+          {
+            "code": "267036007",
+            "display": "Dyspnea"
+          },
+          {
+            "code": "29857009",
+            "display": "Chest pain"
+          },
+          {
+            "code": "271594007",
+            "display": "Syncope"
+          }
+        ]
+      }
+    ]
+  },
+  "expansion": {
+    "timestamp": "2026-11-01T00:00:00Z",
+    "total": 6,
+    "contains": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "84114007",
+        "display": "Heart failure"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "49436004",
+        "display": "Atrial fibrillation"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "88610006",
+        "display": "Heart murmur"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "267036007",
+        "display": "Dyspnea"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "29857009",
+        "display": "Chest pain"
+      },
+      {
+        "system": "http://snomed.info/sct",
+        "code": "271594007",
+        "display": "Syncope"
+      }
+    ]
+  }
+}
