@@ -16,7 +16,7 @@ Each file starts from an example in the published IG package (all CC0-1.0) and i
 | `crd/order-sign-request-covered.json` | the same request with a CBC order for Priya Nair | hl7.fhir.us.davinci-crd#2.2.1 |
 | `crd/order-sign-response-pa-needed.json` | `Binary/CRDServiceResponse3` (coverage-information `systemAction`), payer-api's answer to `order-sign-request.json` | hl7.fhir.us.davinci-crd#2.2.1 |
 | `crd/order-sign-response-covered.json` | `Binary/CRDServiceResponse3`, payer-api's answer to `order-sign-request-covered.json` | hl7.fhir.us.davinci-crd#2.2.1 |
-| `crd/appointment-book-request.json` | `crd/order-sign-request.json` with the MRI as a proposed `Appointment` (`profile-appointment`) in `context.appointments` | hl7.fhir.us.davinci-crd#2.2.1 |
+| `crd/appointment-book-request.json` | `crd/order-sign-request.json` with the MRI as a proposed `Appointment` (`profile-appointment-no-order`) in `context.appointments` (`profile-bundle-appointment`) | hl7.fhir.us.davinci-crd#2.2.1 |
 | `crd/appointment-book-response-pa-needed.json` | `Binary/CRDServiceResponse3`, payer-api's answer to `appointment-book-request.json` | hl7.fhir.us.davinci-crd#2.2.1 |
 | `crd/encounter-start-request.json` | `crd/order-sign-request.json` with an in-progress MRI `Encounter` (`profile-encounter`) in `prefetch.encounter` | hl7.fhir.us.davinci-crd#2.2.1 |
 | `crd/encounter-start-response-pa-needed.json` | `Binary/CRDServiceResponse3`, payer-api's answer to `encounter-start-request.json` | hl7.fhir.us.davinci-crd#2.2.1 |

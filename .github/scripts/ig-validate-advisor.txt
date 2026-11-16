@@ -1,3 +1,6 @@
 # Validator messages ig-validate suppresses. One rule per line: -<message id>@<path>, a leading ^ makes the path a regex.
 # HRex 1.2.0's required hrex-consent-policy codes are page anchors (…hrex-consent.html#regular), which the validator tries and fails to resolve.
 -Type_Specific_Checks_DT_URL_Resolve@^.*Consent.*\.policy\[\d+\]\.uri
+# CRD 2.2.1 slices Appointment.participant on actor.resolve(); the Patient and Practitioner it points to are in the hook's prefetch, which the validator can't resolve from the appointments Bundle.
+-Validation_VAL_Profile_Minimum_SLICE@^(Bundle\.entry\[\d+\]\.resource/\*Appointment/[^*]+\*/|Appointment)$
+-BUNDLE_BUNDLE_ENTRY_MULTIPLE_PROFILES_NO_MATCH@^Bundle\.entry\[\d+\]\.resource/\*Appointment/[^*]+\*/$
