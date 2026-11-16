@@ -11,7 +11,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.hl7.fhir.r4.model.Appointment;
 import org.hl7.fhir.r4.model.ServiceRequest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -61,6 +63,28 @@ class CrdClientContractTest {
     Files.createDirectories(OUTPUT_DIR);
     Files.writeString(
         OUTPUT_DIR.resolve(fixture),
+        objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(request) + "\n");
+    assertThat(request).isEqualTo(golden);
+  }
+
+  @Test
+  void appointmentBookRequestEqualsTheGoldenFile() throws IOException {
+    JsonNode golden = CrdFixtures.json("appointment-book-request.json");
+    Appointment booked = CrdFixtures.bookedAppointment(golden);
+    booked.setId("draft-mri-appointment");
+
+    JsonNode request =
+        client.buildRequest(
+            CrdClient.Hook.APPOINTMENT_BOOK,
+            golden.path("hookInstance").asText(),
+            booked,
+            CrdFixtures.patient(golden),
+            CrdFixtures.coverage(golden),
+            CrdFixtures.practitioner(golden));
+
+    Files.createDirectories(OUTPUT_DIR);
+    Files.writeString(
+        OUTPUT_DIR.resolve("appointment-book-request.json"),
         objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(request) + "\n");
     assertThat(request).isEqualTo(golden);
   }

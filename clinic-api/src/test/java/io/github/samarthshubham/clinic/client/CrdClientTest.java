@@ -19,6 +19,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.github.samarthshubham.clinic.config.PayerApiConfig;
 import io.github.samarthshubham.clinic.config.PayerApiProperties;
+import io.github.samarthshubham.clinic.dto.CrdCard;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -28,7 +29,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
-import org.hl7.fhir.r4.model.Appointment;
 import org.hl7.fhir.r4.model.Coverage;
 import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.Patient;
@@ -138,31 +138,51 @@ class CrdClientTest {
   }
 
   @Test
-  void appointmentBookPostsTheDraftAppointmentToTheAppointmentBookService() {
+  void appointmentBookPostsTheGoldenRequestAndReturnsTheCoverageInformation() {
+    JsonNode goldenAppointmentBook = CrdFixtures.json("appointment-book-request.json");
     expectToken();
     server
         .expect(once(), requestTo(PAYER + "/cds-services/appointment-book-crd"))
+        .andExpect(header("Authorization", "Bearer system-token"))
         .andExpect(
             request -> {
               JsonNode body = body(request);
-              assertThat(body.path("hook").asText()).isEqualTo("appointment-book");
-              JsonNode appointment =
-                  body.path("context").path("appointments").path("entry").path(0).path("resource");
-              assertThat(appointment.path("resourceType").asText()).isEqualTo("Appointment");
-              assertThat(appointment.path("status").asText()).isEqualTo("proposed");
-              assertThat(appointment.path("meta").path("profile").path(0).asText())
-                  .endsWith("profile-appointment-no-order");
-              assertThat(body.path("prefetch").path("coverage").path("total").asInt()).isEqualTo(1);
+              String hookInstance = body.path("hookInstance").asText();
+              String expected =
+                  CrdFixtures.read("appointment-book-request.json")
+                      .replace(goldenAppointmentBook.path("hookInstance").asText(), hookInstance)
+                      .replace("draft-mri-appointment", "draft-" + hookInstance);
+              assertThat(body).isEqualTo(objectMapper.readTree(expected));
             })
-        .andRespond(withSuccess("{\"cards\":[]}", MediaType.APPLICATION_JSON));
-    Appointment appointment = new Appointment();
-    appointment.setStatus(Appointment.AppointmentStatus.BOOKED);
-    appointment.addParticipant().setActor(new Reference("Patient/seed-sandra-okafor"));
+        .andRespond(
+            request ->
+                withSuccess(
+                        CrdFixtures.read("appointment-book-response-pa-needed.json")
+                            .replace(
+                                "draft-mri-appointment",
+                                "draft-" + body(request).path("hookInstance").asText()),
+                        MediaType.APPLICATION_JSON)
+                    .createResponse(request));
 
-    CrdResult result = client.appointmentBook(appointment, patient, coverage, null);
+    CrdResult result =
+        client.appointmentBook(
+            CrdFixtures.bookedAppointment(goldenAppointmentBook),
+            CrdFixtures.patient(goldenAppointmentBook),
+            CrdFixtures.coverage(goldenAppointmentBook),
+            CrdFixtures.practitioner(goldenAppointmentBook));
 
     server.verify();
-    assertThat(result).isEqualTo(CrdResult.none());
+    assertThat(result.cards())
+        .extracting(CrdCard::summary)
+        .containsExactly("Prior authorization needed: MRI lumbar spine without contrast");
+    assertThat(
+            result
+                .coverageInformation()
+                .getFirst()
+                .getExtensionByUrl("pa-needed")
+                .getValue()
+                .primitiveValue())
+        .isEqualTo("auth-needed");
   }
 
   @Test

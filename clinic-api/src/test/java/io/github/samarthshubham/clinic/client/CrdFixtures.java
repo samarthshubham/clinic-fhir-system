@@ -9,7 +9,9 @@ import io.github.samarthshubham.clinic.support.GoldenFhir;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.LocalDate;
+import org.hl7.fhir.r4.model.Appointment;
 import org.hl7.fhir.r4.model.Coverage;
+import org.hl7.fhir.r4.model.Meta;
 import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.Practitioner;
 import org.hl7.fhir.r4.model.Resource;
@@ -54,6 +56,21 @@ final class CrdFixtures {
     coverage.getMeta().getProfile().clear();
     coverage.getMeta().addProfile(US_CORE_COVERAGE);
     return coverage;
+  }
+
+  /**
+   * The golden draft Appointment as clinic-api holds it before the hook: booked, no CRD profile.
+   */
+  static Appointment bookedAppointment(JsonNode hookRequest) {
+    JsonNode draft =
+        hookRequest.path("context").path("appointments").path("entry").path(0).path("resource");
+    Appointment appointment =
+        FhirContext.forR4Cached()
+            .newJsonParser()
+            .parseResource(Appointment.class, draft.toString());
+    appointment.setMeta(new Meta());
+    appointment.setStatus(Appointment.AppointmentStatus.BOOKED);
+    return appointment;
   }
 
   static ServiceRequest mriOrder() {
