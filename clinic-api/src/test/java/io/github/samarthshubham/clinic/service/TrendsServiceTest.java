@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
+import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Observation;
 import org.hl7.fhir.r4.model.Quantity;
 import org.hl7.fhir.r4.model.Resource;
@@ -174,6 +175,27 @@ class TrendsServiceTest {
                 i -> new DataPoint(DAY.plusDays((long) i * step).toString(), (double) i * step))
             .toList();
     assertThat(weight.values()).isEqualTo(expected);
+  }
+
+  @Test
+  void readingsOnLaterPagesAreIncluded() {
+    Bundle first = bundleOf(vital(WEIGHT, 80, DAY));
+    first.addLink().setRelation(Bundle.LINK_NEXT).setUrl("page-2");
+    Bundle second = bundleOf(vital(WEIGHT, 81, DAY.plusDays(1)));
+    second.addLink().setRelation(Bundle.LINK_NEXT).setUrl("page-3");
+    fhir.givenSearchResultWhen(Observation.class, first, "code=http://loinc.org|" + WEIGHT);
+    fhir.givenPage("page-2", second);
+    fhir.givenPage("page-3", bundleOf(vital(WEIGHT, 82, DAY.plusDays(2))));
+
+    SimpleSeries weight =
+        (SimpleSeries) service.getTrends("p1", "weight", "30d").series().get("weight");
+
+    assertThat(fhir.loadedPages()).containsExactly("page-2", "page-3");
+    assertThat(weight.values())
+        .containsExactly(
+            new DataPoint("2026-05-01", 80.0),
+            new DataPoint("2026-05-02", 81.0),
+            new DataPoint("2026-05-03", 82.0));
   }
 
   @ParameterizedTest
