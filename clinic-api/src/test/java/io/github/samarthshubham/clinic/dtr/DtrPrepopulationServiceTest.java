@@ -41,6 +41,8 @@ import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.StringType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 
@@ -168,6 +170,21 @@ class DtrPrepopulationServiceTest {
 
     assertThatThrownBy(() -> service.prepopulate(mriQuestionnaire(), "nobody"))
         .isInstanceOf(ResourceNotFoundException.class);
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "2024, 2024",
+    "2024-05, 2024-05",
+    "2026-10-05, 2026-10-05",
+    "2026-10-05T23:30:00-05:00, 2026-10-05"
+  })
+  void dateAnswersKeepTheSourcePrecisionUpToADay(String source, String expected) {
+    assertThat(
+            DtrPrepopulationService.answerValue(
+                QuestionnaireItemType.DATE, new DateTimeType(source)))
+        .isInstanceOfSatisfying(
+            DateType.class, date -> assertThat(date.getValueAsString()).isEqualTo(expected));
   }
 
   @Test

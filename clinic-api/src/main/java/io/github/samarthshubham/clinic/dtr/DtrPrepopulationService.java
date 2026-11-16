@@ -182,7 +182,9 @@ public class DtrPrepopulationService {
                   : null;
           case DATE ->
               result instanceof BaseDateTimeType date
-                  ? new DateType(date.getValueAsString().substring(0, 10))
+                  ? new DateType(
+                      date.getValueAsString()
+                          .substring(0, Math.min(date.getValueAsString().length(), 10)))
                   : null;
           case DATETIME ->
               result instanceof BaseDateTimeType date
