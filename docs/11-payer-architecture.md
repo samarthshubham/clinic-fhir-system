@@ -152,7 +152,9 @@ The payer HAPI (`hapi-fhir-payer` in `infra/docker-compose.yml`) installs these 
 | hl7.fhir.us.davinci-drug-formulary | 2.1.0 | |
 | hl7.fhir.us.davinci-atr | 2.1.0 | |
 | hl7.terminology.r4 | 7.1.0 | shared dependency |
-| hl7.fhir.uv.extensions.r4 | 5.2.0 | shared dependency |
+| hl7.fhir.uv.extensions.r4 | 5.3.0-ballot-tc1 | shared dependency; DTR 2.2.0 and SDC 4.0.0 need it for `questionnaire-supportHyperlink` |
+| hl7.fhir.uv.sdc | 4.0.0 | profiles behind the DTR Questionnaire and Library profiles |
+| hl7.fhir.uv.xver-r5.r4 | 0.1.0 | StructureDefinitions only: the SDC Questionnaire profiles slice on R5 cross-version extensions, and 10 of its ValueSets have ids over HAPI's 64-character limit (HAPI-0521) |
 
 How the packages are loaded:
 
