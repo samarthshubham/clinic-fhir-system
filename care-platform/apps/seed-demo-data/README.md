@@ -69,8 +69,8 @@ The Spring Boot API requires a JWT, so a Cucumber `BeforeAll` hook (`src/support
 
 Expected output on success:
 ```
-17 scenarios (17 passed)
-212 steps (212 passed)
+18 scenarios (18 passed)
+225 steps (225 passed)
 ```
 
 An HTML report is written to `apps/seed-demo-data/reports/seed-data-report.html` after each run.
