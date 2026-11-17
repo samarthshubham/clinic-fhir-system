@@ -64,7 +64,9 @@ Then(
     pendingOrder(display).within(() => {
       cy.get('.cp-status-badge').should('have.text', label);
       cy.get('.app-crd-card__summary').should('contain.text', summary);
-      cy.contains('button', 'Complete documentation').should('be.visible');
+      cy.contains('button', 'Complete documentation')
+        .scrollIntoView()
+        .should('be.visible');
     });
   },
 );
