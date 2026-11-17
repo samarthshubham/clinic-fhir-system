@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A portfolio/learning project: a FHIR-compliant clinic management system built with Java 25, Spring Boot, HAPI FHIR, and Angular 21.
 
 **Prototype scope.** No real users will use this system. Build it to industry standards, but only these block a merge or are logged as issues:
-- Conformance to the Da Vinci IGs (CRD, DTR, PAS, HRex) and FHIR R4 / US Core: wrong profiles, hooks, card or prefetch shapes, SDC/DTR semantics, fixtures that fail ig-validate, suppressed validator rules.
+- Conformance to every Da Vinci IG on the roadmap (CRD, DTR, PAS, HRex, CDex, PDex, Plan-Net, Formulary) and FHIR R4 / US Core: wrong profiles, hooks, card or prefetch shapes, SDC/DTR semantics, fixtures that fail ig-validate, suppressed validator rules.
 - Security and privacy: PHI sent to the wrong party, auth or scope bypass, injection or SSRF, committed secrets.
 - Correctness of the core flow: wrong coverage, PA or decision data, data loss, a crash on valid IG input, a seed that is not idempotent.
 - Broken project rules and gates: ArchUnit/ADR layering, tests, coverage, CI.
