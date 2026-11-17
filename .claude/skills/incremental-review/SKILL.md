@@ -45,6 +45,8 @@ Every earlier review run left its own summary comment, so read **all** of them, 
 
 Report only findings you are confident are real: a concrete input or state that produces a wrong result, a crash, a security hole, or a broken project rule. No style nits; Spotless and Prettier enforce formatting.
 
+Apply the **Prototype scope** rule in `CLAUDE.md`. Report blocking findings (IG/FHIR conformance, security or PHI, core-flow correctness, broken project rules or gates) as usual, inline and in the summary. Report a real but non-blocking finding (UX polish, double-submit, rare multi-record edge cases, performance, optional doc wording) only in the summary, tagged **(deferrable)**, with no inline comment.
+
 Project rules, from `CLAUDE.md`:
 
 **Backend (`clinic-api`)**
