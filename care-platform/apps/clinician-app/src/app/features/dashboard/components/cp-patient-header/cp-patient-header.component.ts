@@ -3,6 +3,7 @@ import {
   Component,
   inject,
   Input,
+  output,
 } from '@angular/core';
 import { DatePipe, TitleCasePipe } from '@angular/common';
 import { PatientHeaderData } from '@features/dashboard/dashboard.model';
@@ -17,6 +18,8 @@ import { ToastService } from '@core/toast.service';
 })
 export class CpPatientHeaderComponent {
   @Input({ required: true }) data!: PatientHeaderData;
+  @Input() canOrder = true;
+  readonly newOrder = output<void>();
 
   private readonly toastService = inject(ToastService);
 

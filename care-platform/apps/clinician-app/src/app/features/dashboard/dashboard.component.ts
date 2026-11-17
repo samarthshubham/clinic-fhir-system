@@ -5,6 +5,7 @@ import {
   ElementRef,
   HostListener,
   computed,
+  DestroyRef,
   inject,
   signal,
   viewChild,
@@ -23,8 +24,9 @@ import {
   startWith,
   switchMap,
 } from 'rxjs';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { DashboardService } from './dashboard.service';
+import { OrderDialogLauncher } from './order-dialog-launcher.service';
 import {
   ActiveCarePlan,
   CoverageResponse,
@@ -70,6 +72,10 @@ type AsyncState<T> = T | null | 'error';
 export class DashboardComponent implements AfterViewInit {
   private readonly route = inject(ActivatedRoute);
   private readonly svc = inject(DashboardService);
+  private readonly orderDialog = inject(OrderDialogLauncher);
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly canOrder = this.orderDialog.canOrder();
 
   private readonly patientId$ = this.route.paramMap.pipe(
     map((p) => p.get('id') ?? ''),
@@ -295,6 +301,13 @@ export class DashboardComponent implements AfterViewInit {
 
   onOrderPlaced(order: ServiceRequestResponse): void {
     this.orderPlaced$.next(order);
+  }
+
+  openNewOrder(): void {
+    this.orderDialog
+      .open(this.patientId())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((order) => this.onOrderPlaced(order));
   }
 
   onLoadMore(): void {

@@ -1,12 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, ParamMap } from '@angular/router';
-import { BehaviorSubject, Subject } from 'rxjs';
+import { BehaviorSubject, Subject, of } from 'rxjs';
 import { DashboardComponent } from './dashboard.component';
 import { AuthService } from '@care-platform/auth';
 import { DashboardService } from './dashboard.service';
+import { OrderDialogLauncher } from './order-dialog-launcher.service';
 import {
   CoverageResponse,
   DashboardResponse,
+  ServiceRequestResponse,
   TimelineEvent,
   TrendsResponse,
 } from './dashboard.model';
@@ -102,6 +104,10 @@ describe('DashboardComponent', () => {
   let dashboardCalls: Call<DashboardResponse>[];
   let timelineCalls: Call<TimelineEvent[]>[];
   let trendsCalls: Call<TrendsResponse>[];
+  let launcher: {
+    open: ReturnType<typeof vi.fn>;
+    canOrder: () => boolean;
+  };
 
   function recorder<T>(calls: Call<T>[]) {
     return vi.fn((...args: unknown[]) => {
@@ -118,11 +124,13 @@ describe('DashboardComponent', () => {
     dashboardCalls = [];
     timelineCalls = [];
     trendsCalls = [];
+    launcher = { open: vi.fn(() => of()), canOrder: () => true };
     await TestBed.configureTestingModule({
       imports: [DashboardComponent],
       providers: [
         { provide: ActivatedRoute, useValue: { paramMap: params } },
         { provide: AuthService, useValue: { hasRole: () => true } },
+        { provide: OrderDialogLauncher, useValue: launcher },
         {
           provide: DashboardService,
           useValue: {
@@ -234,6 +242,38 @@ describe('DashboardComponent', () => {
       ...dashboard.pendingServiceRequests,
     ]);
     expect(dashboardCalls.length).toBe(1);
+  });
+
+  it('should open the order dialog from the patient header and put the order on top', async () => {
+    const placed: ServiceRequestResponse = {
+      id: 'sr-hdr',
+      patientId: 'p1',
+      encounterId: null,
+      practitionerId: null,
+      display: 'MRI lumbar spine without contrast',
+      codeSystem: 'http://www.ama-assn.org/go/cpt',
+      code: '72148',
+      category: 'imaging',
+      status: 'active',
+      priority: 'routine',
+      authoredOn: '2026-11-17',
+      coverage: null,
+      cards: [],
+    };
+    launcher.open = vi.fn(() => of(placed));
+    const fixture = await render();
+    dashboardCalls[0].response.next(dashboard);
+    await fixture.whenStable();
+
+    const button = Array.from(
+      (
+        fixture.nativeElement as HTMLElement
+      ).querySelectorAll<HTMLButtonElement>('cp-patient-header button'),
+    ).find((b) => b.textContent?.includes('New order'));
+    button?.click();
+
+    expect(launcher.open).toHaveBeenCalledWith('p1');
+    expect(fixture.componentInstance.pendingOrders()[0].id).toBe('sr-hdr');
   });
 
   it('should drop the coverage from the snapshot when it is saved as not active', async () => {
