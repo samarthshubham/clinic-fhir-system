@@ -73,19 +73,47 @@ describe('CpPatientHeaderComponent', () => {
     expect(fixture.componentInstance.initials).toBe('C');
   });
 
-  it('should show a placeholder toast for each action button', async () => {
+  it('should emit newOrder from the New order button without a toast', async () => {
+    const fixture = await render(data);
+    const show = vi.spyOn(TestBed.inject(ToastService), 'show');
+    let emitted = 0;
+    fixture.componentInstance.newOrder.subscribe(() => emitted++);
+
+    newOrderButton(fixture.nativeElement)?.click();
+
+    expect(emitted).toBe(1);
+    expect(show).not.toHaveBeenCalled();
+  });
+
+  it('should hide the New order button when the user cannot order', async () => {
+    const fixture = TestBed.createComponent(CpPatientHeaderComponent);
+    fixture.componentRef.setInput('data', data);
+    fixture.componentRef.setInput('canOrder', false);
+    await fixture.whenStable();
+
+    expect(newOrderButton(fixture.nativeElement)).toBeUndefined();
+  });
+
+  it('should show a placeholder toast for Note and Open chart', async () => {
     const fixture = await render(data);
     const show = vi.spyOn(TestBed.inject(ToastService), 'show');
     const buttons: HTMLButtonElement[] = Array.from(
       fixture.nativeElement.querySelectorAll('button'),
     );
 
-    buttons.forEach((b) => b.click());
+    buttons
+      .filter((b) => !b.textContent?.includes('New order'))
+      .forEach((b) => b.click());
 
     expect(show.mock.calls.map((c) => c[0])).toEqual([
-      'New order is a placeholder in this prototype',
       'Note is a placeholder in this prototype',
       'Open chart is a placeholder in this prototype',
     ]);
   });
 });
+
+function newOrderButton(el: HTMLElement): HTMLButtonElement | undefined {
+  return Array.from(el.querySelectorAll<HTMLButtonElement>('button')).find(
+    (b) => b.textContent?.includes('New order'),
+  );
+}

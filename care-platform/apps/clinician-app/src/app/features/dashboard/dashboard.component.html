@@ -8,7 +8,11 @@
         (retry)="reload()"
       />
     } @else {
-      <cp-patient-header [data]="patientHeader()!" />
+      <cp-patient-header
+        [data]="patientHeader()!"
+        [canOrder]="canOrder"
+        (newOrder)="openNewOrder()"
+      />
     }
   </div>
 

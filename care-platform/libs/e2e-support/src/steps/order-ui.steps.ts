@@ -9,21 +9,36 @@ function choose(control: string, option: string): void {
   cy.contains('mat-option', option).click();
 }
 
+function placeOrder(
+  entryPoint: string,
+  display: string,
+  system: string,
+  code: string,
+  category: string,
+): void {
+  cy.get(entryPoint)
+    .contains('button', 'New order', { timeout: 15_000 })
+    .click();
+  orderDialog().find('input[formcontrolname="display"]').type(display).blur();
+  choose('category', category);
+  choose('codeSystem', system);
+  orderDialog().find('input[formcontrolname="code"]').type(code).blur();
+  orderDialog().contains('button', 'Place order').click();
+  orderDialog()
+    .find('h2', { timeout: 15_000 })
+    .should('contain.text', 'Order placed');
+}
+
 When(
   'I place the order {string} with {word} code {string} in category {string}',
-  (display: string, system: string, code: string, category: string) => {
-    cy.get('cp-care-panel')
-      .contains('button', 'New order', { timeout: 15_000 })
-      .click();
-    orderDialog().find('input[formcontrolname="display"]').type(display).blur();
-    choose('category', category);
-    choose('codeSystem', system);
-    orderDialog().find('input[formcontrolname="code"]').type(code).blur();
-    orderDialog().contains('button', 'Place order').click();
-    orderDialog()
-      .find('h2', { timeout: 15_000 })
-      .should('contain.text', 'Order placed');
-  },
+  (display: string, system: string, code: string, category: string) =>
+    placeOrder('cp-care-panel', display, system, code, category),
+);
+
+When(
+  'I place the order {string} with {word} code {string} in category {string} from the patient header',
+  (display: string, system: string, code: string, category: string) =>
+    placeOrder('cp-patient-header', display, system, code, category),
 );
 
 Then('the order dialog shows the coverage badge {string}', (label: string) => {
