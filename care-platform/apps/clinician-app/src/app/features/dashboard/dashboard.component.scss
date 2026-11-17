@@ -61,6 +61,11 @@
 }
 
 @media (max-width: 1024px) {
+  .dashboard {
+    height: auto;
+    overflow: visible;
+  }
+
   .dashboard__panels {
     display: block;
     height: auto;
