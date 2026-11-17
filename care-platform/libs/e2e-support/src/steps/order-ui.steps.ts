@@ -12,7 +12,9 @@ function choose(control: string, option: string): void {
 When(
   'I place the order {string} with {word} code {string} in category {string}',
   (display: string, system: string, code: string, category: string) => {
-    cy.contains('button', 'New order', { timeout: 15_000 }).click();
+    cy.get('cp-care-panel')
+      .contains('button', 'New order', { timeout: 15_000 })
+      .click();
     orderDialog().find('input[formcontrolname="display"]').type(display).blur();
     choose('category', category);
     choose('codeSystem', system);
