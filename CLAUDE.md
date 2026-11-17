@@ -12,7 +12,7 @@ A portfolio/learning project: a FHIR-compliant clinic management system built wi
 - Correctness of the core flow: wrong coverage, PA or decision data, data loss, a crash on valid IG input, a seed that is not idempotent.
 - Broken project rules and gates: ArchUnit/ADR layering, tests, coverage, CI.
 
-Anything else (UX polish and double-submit, rare multi-record edge cases outside the demo scenarios, performance, optional doc wording, tests beyond the AC) gets one review reply, `Deferred (prototype scope): <reason>`, and no issue. When the work belongs to a later roadmap story, add a one-line comment on that story's issue linking the PR comment. This never allows lowering gates, skipping tests or editing AC.
+Anything else (UX polish and double-submit, rare multi-record edge cases outside the demo scenarios, performance, optional doc wording, tests beyond the AC) gets one review reply, `Deferred (prototype scope): <reason>`, and no issue. When the work belongs to a later roadmap story, add a one-line comment on that story's issue linking the PR comment. This never allows lowering gates, skipping tests or editing AC. Exception: a placeholder or missing UI entry point for a backend feature that is already built (e.g. a header button for a merged flow) is in scope. Log an issue and wire it, so the delivered work can be demonstrated.
 
 ---
 
