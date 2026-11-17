@@ -19,10 +19,7 @@ import {
   switchMap,
 } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { AuthService } from '@care-platform/auth';
-import { ToastService } from '@core/toast.service';
 import { DashboardService } from '@features/dashboard/dashboard.service';
 import {
   ActiveCarePlan,
@@ -35,10 +32,7 @@ import {
 import { CpGoalRowComponent } from '@features/dashboard/components/cp-goal-row/cp-goal-row.component';
 import { CpTrendChartComponent } from '@features/dashboard/components/cp-trend-chart/cp-trend-chart.component';
 import { CpCrdCardsComponent } from '@features/dashboard/components/cp-crd-cards/cp-crd-cards.component';
-import {
-  CpOrderDialogComponent,
-  OrderDialogData,
-} from '@features/dashboard/components/cp-order-dialog/cp-order-dialog.component';
+import { OrderDialogLauncher } from '@features/dashboard/order-dialog-launcher.service';
 
 type AsyncState<T> = T | null | 'error';
 
@@ -74,18 +68,14 @@ const CATEGORY_ICONS: Record<string, string> = {
 })
 export class CpCarePanelComponent {
   private readonly svc = inject(DashboardService);
-  private readonly dialog = inject(MatDialog);
-  private readonly auth = inject(AuthService);
-  private readonly toast = inject(ToastService);
+  private readonly orderDialog = inject(OrderDialogLauncher);
 
   readonly patientId = input.required<string>();
   readonly carePlan = input.required<ActiveCarePlan | null>();
   readonly pending = input.required<PendingOrder[]>();
   readonly orderPlaced = output<ServiceRequestResponse>();
 
-  protected readonly canOrder = computed(() =>
-    this.auth.hasRole('ADMIN', 'CLINICIAN'),
-  );
+  protected readonly canOrder = computed(() => this.orderDialog.canOrder());
 
   readonly periods = PERIODS;
   readonly period = signal<Period>('30d');
@@ -150,23 +140,9 @@ export class CpCarePanelComponent {
   }
 
   openOrderDialog(): void {
-    this.dialog
-      .open<CpOrderDialogComponent, OrderDialogData, ServiceRequestResponse>(
-        CpOrderDialogComponent,
-        {
-          data: {
-            patientId: this.patientId(),
-            practitionerId: this.auth.user()?.practitionerId ?? null,
-          },
-          width: '560px',
-        },
-      )
-      .afterClosed()
-      .pipe(filter((order): order is ServiceRequestResponse => !!order))
-      .subscribe((order) => {
-        this.toast.show('Order placed');
-        this.orderPlaced.emit(order);
-      });
+    this.orderDialog
+      .open(this.patientId())
+      .subscribe((order) => this.orderPlaced.emit(order));
   }
 
   setPeriod(p: Period): void {
