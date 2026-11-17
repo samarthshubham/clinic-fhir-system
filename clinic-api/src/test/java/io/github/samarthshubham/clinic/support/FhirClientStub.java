@@ -67,6 +67,9 @@ public final class FhirClientStub {
   private final List<String> deletedTags = new ArrayList<>();
   private final Map<String, Bundle> pages = new HashMap<>();
   private final List<String> loadedPages = new ArrayList<>();
+  private final Map<String, Bundle> urlSearchResults = new HashMap<>();
+  private final Map<String, RuntimeException> urlSearchFailures = new HashMap<>();
+  private final List<String> searchedUrls = new ArrayList<>();
   private int nextId = 1;
 
   public FhirClientStub() {
@@ -76,6 +79,7 @@ public final class FhirClientStub {
         .doAnswer(inv -> startQuery(inv.getArgument(0)))
         .when(untypedQuery)
         .forResource(any(Class.class));
+    lenient().doAnswer(inv -> urlQuery(inv.getArgument(0))).when(untypedQuery).byUrl(anyString());
 
     ICreate create = lenientMock(ICreate.class, Answers.RETURNS_DEFAULTS);
     lenient().doReturn(create).when(client).create();
@@ -149,6 +153,18 @@ public final class FhirClientStub {
     searchRules
         .computeIfAbsent(type, k -> new ArrayList<>())
         .add(new SearchRule(List.of(criteria), null, e));
+  }
+
+  public void givenSearchByUrl(String url, Bundle bundle) {
+    urlSearchResults.put(url, bundle);
+  }
+
+  public void givenSearchByUrlFails(String url, RuntimeException e) {
+    urlSearchFailures.put(url, e);
+  }
+
+  public List<String> searchedUrls() {
+    return List.copyOf(searchedUrls);
   }
 
   public void givenStored(IBaseResource resource, String id) {
@@ -256,6 +272,26 @@ public final class FhirClientStub {
         type,
         internal.getParameterName() + "=" + internal.getParameterValue(FhirContext.forR4Cached()),
         query);
+  }
+
+  private IQuery<?> urlQuery(String url) {
+    IQuery<?> query = lenientMock(IQuery.class, Answers.RETURNS_SELF);
+    lenient()
+        .doAnswer(
+            inv -> {
+              searchedUrls.add(url);
+              if (urlSearchFailures.containsKey(url)) {
+                throw urlSearchFailures.get(url);
+              }
+              Bundle result = urlSearchResults.get(url);
+              if (result == null) {
+                throw new AssertionError("No search result given for " + url);
+              }
+              return result;
+            })
+        .when(query)
+        .execute();
+    return query;
   }
 
   private IQuery<?> record(Class<?> type, String criterion, IQuery<?> query) {
