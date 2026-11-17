@@ -1,0 +1,208 @@
+{
+  "resourceType": "QuestionnaireResponse",
+  "questionnaire": "http://praxishealthplan.example/fhir/Questionnaire/mri-lumbar-spine",
+  "status": "in-progress",
+  "subject": {
+    "reference": "Patient/seed-sandra-okafor"
+  },
+  "item": [
+    {
+      "linkId": "clinical-indication",
+      "text": "Clinical indication",
+      "item": [
+        {
+          "linkId": "primary-diagnosis",
+          "text": "Primary diagnosis",
+          "answer": [
+            {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/information-origin",
+                  "extension": [
+                    {
+                      "url": "source",
+                      "valueCode": "auto-client"
+                    }
+                  ]
+                }
+              ],
+              "valueString": "Lumbar radiculopathy"
+            }
+          ]
+        },
+        {
+          "linkId": "symptom-onset-date",
+          "text": "When did the symptoms start?",
+          "answer": [
+            {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/information-origin",
+                  "extension": [
+                    {
+                      "url": "source",
+                      "valueCode": "auto-client"
+                    }
+                  ]
+                }
+              ],
+              "valueDate": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "linkId": "pain-location",
+          "text": "Where is the pain (side and level)?"
+        }
+      ]
+    },
+    {
+      "linkId": "conservative-therapy",
+      "text": "Conservative therapy",
+      "item": [
+        {
+          "linkId": "conservative-therapy-weeks",
+          "text": "How many weeks of conservative therapy has the patient completed?",
+          "answer": [
+            {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/information-origin",
+                  "extension": [
+                    {
+                      "url": "source",
+                      "valueCode": "auto-client"
+                    }
+                  ]
+                }
+              ],
+              "valueInteger": 4
+            }
+          ]
+        },
+        {
+          "linkId": "conservative-therapy-types",
+          "text": "Which conservative therapies were tried?",
+          "answer": [
+            {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/information-origin",
+                  "extension": [
+                    {
+                      "url": "source",
+                      "valueCode": "auto-client"
+                    }
+                  ]
+                }
+              ],
+              "valueCoding": {
+                "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+                "code": "physical-therapy",
+                "display": "Physical therapy"
+              }
+            },
+            {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/information-origin",
+                  "extension": [
+                    {
+                      "url": "source",
+                      "valueCode": "auto-client"
+                    }
+                  ]
+                }
+              ],
+              "valueCoding": {
+                "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+                "code": "nsaids-other-analgesics",
+                "display": "NSAIDs or other analgesics"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "neurological-findings",
+      "text": "Neurological findings",
+      "item": [
+        {
+          "linkId": "neurological-deficit",
+          "text": "Does the patient have a progressive or severe neurological deficit?",
+          "answer": [
+            {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/information-origin",
+                  "extension": [
+                    {
+                      "url": "source",
+                      "valueCode": "auto-client"
+                    }
+                  ]
+                }
+              ],
+              "valueBoolean": false
+            }
+          ]
+        },
+        {
+          "linkId": "neurological-deficit-description",
+          "text": "Describe the deficit (motor weakness, reflex or sensory loss, bowel or bladder changes)."
+        }
+      ]
+    },
+    {
+      "linkId": "prior-imaging",
+      "text": "Prior imaging",
+      "item": [
+        {
+          "linkId": "prior-imaging-done",
+          "text": "Has the lumbar spine been imaged before?",
+          "answer": [
+            {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/information-origin",
+                  "extension": [
+                    {
+                      "url": "source",
+                      "valueCode": "auto-client"
+                    }
+                  ]
+                }
+              ],
+              "valueBoolean": true
+            }
+          ]
+        },
+        {
+          "linkId": "prior-imaging-date",
+          "text": "Date of the most recent imaging",
+          "answer": [
+            {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/information-origin",
+                  "extension": [
+                    {
+                      "url": "source",
+                      "valueCode": "auto-client"
+                    }
+                  ]
+                }
+              ],
+              "valueDate": "2026-10-14"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "clinical-notes",
+      "text": "Anything else the reviewer should know"
+    }
+  ]
+}
