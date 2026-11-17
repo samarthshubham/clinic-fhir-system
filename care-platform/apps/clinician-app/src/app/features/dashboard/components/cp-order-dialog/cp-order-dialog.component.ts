@@ -20,7 +20,7 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { Subject, catchError, exhaustMap, map, of, startWith, tap } from 'rxjs';
+import { Subject, catchError, exhaustMap, map, of, startWith } from 'rxjs';
 import { OrderService } from '@features/dashboard/order.service';
 import {
   OrderCategory,
@@ -129,14 +129,17 @@ export class CpOrderDialogComponent {
 
   protected readonly state = toSignal(
     this.submit$.pipe(
-      exhaustMap((request) =>
-        this.orderService.placeOrder(request).pipe(
-          tap(() => (this.dialogRef.disableClose = true)),
+      exhaustMap((request) => {
+        this.dialogRef.disableClose = true;
+        return this.orderService.placeOrder(request).pipe(
           map((order): SaveState => ({ status: 'saved', order })),
-          catchError((error) => of(this.failure(error))),
+          catchError((error) => {
+            this.dialogRef.disableClose = false;
+            return of(this.failure(error));
+          }),
           startWith<SaveState>({ status: 'saving' }),
-        ),
-      ),
+        );
+      }),
     ),
     { initialValue: { status: 'idle' } as SaveState },
   );

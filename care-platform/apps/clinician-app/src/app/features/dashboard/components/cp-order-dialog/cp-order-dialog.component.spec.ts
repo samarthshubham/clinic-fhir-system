@@ -225,6 +225,25 @@ describe('CpOrderDialogComponent', () => {
     expect(dialogRef.disableClose).toBe(false);
   });
 
+  it('should block closing while saving and allow it again after an error', async () => {
+    const fixture = await render();
+    await type(fixture, 'display', 'Chest X-ray');
+    await submit(fixture);
+    const cancel = (): HTMLButtonElement =>
+      Array.from(fixture.nativeElement.querySelectorAll('button')).find(
+        (b) => (b as HTMLButtonElement).textContent?.trim() === 'Cancel',
+      ) as HTMLButtonElement;
+
+    expect(dialogRef.disableClose).toBe(true);
+    expect(cancel().disabled).toBe(true);
+
+    saves[0].error(new Error('offline'));
+    await fixture.whenStable();
+
+    expect(dialogRef.disableClose).toBe(false);
+    expect(cancel().disabled).toBe(false);
+  });
+
   it('should fall back to a generic message for other errors', async () => {
     const fixture = await render();
     await type(fixture, 'display', 'Chest X-ray');
