@@ -1,0 +1,91 @@
+@if (state(); as s) {
+  @if (s.status === 'saved') {
+    <h2 mat-dialog-title>Order placed</h2>
+    <mat-dialog-content class="app-order-dialog__result">
+      <p class="app-order-dialog__order">{{ s.order.display }}</p>
+      <section aria-label="Payer coverage">
+        <cp-crd-cards [coverage]="s.order.coverage" [cards]="s.order.cards" />
+      </section>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-flat-button type="button" (click)="done(s.order)">
+        Done
+      </button>
+    </mat-dialog-actions>
+  } @else {
+    <h2 mat-dialog-title>New order</h2>
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <mat-dialog-content class="app-order-dialog__fields">
+        <mat-form-field appearance="outline" class="app-order-dialog__wide">
+          <mat-label>Order</mat-label>
+          <input matInput formControlName="display" required />
+          <mat-hint>For example MRI lumbar spine without contrast</mat-hint>
+          @if (form.controls.display.hasError('required')) {
+            <mat-error>Order is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Category</mat-label>
+          <mat-select formControlName="category" required>
+            @for (c of categories; track c.value) {
+              <mat-option [value]="c.value">{{ c.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Priority</mat-label>
+          <mat-select formControlName="priority" required>
+            @for (p of priorities; track p.value) {
+              <mat-option [value]="p.value">{{ p.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Code system</mat-label>
+          <mat-select formControlName="codeSystem">
+            @for (system of codeSystems; track system.value) {
+              <mat-option [value]="system.value">{{ system.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Code</mat-label>
+          <input
+            matInput
+            class="cp-font-mono"
+            formControlName="code"
+            [errorStateMatcher]="codeMatcher"
+          />
+          <mat-hint>The payer checks coverage by code</mat-hint>
+          <mat-error>Give both a code system and a code, or neither</mat-error>
+        </mat-form-field>
+
+        @if (s.status === 'error') {
+          <p class="app-order-dialog__error" role="alert">{{ s.message }}</p>
+        }
+      </mat-dialog-content>
+
+      <mat-dialog-actions align="end">
+        <button
+          mat-button
+          type="button"
+          mat-dialog-close
+          [disabled]="s.status === 'saving'"
+        >
+          Cancel
+        </button>
+        <button
+          mat-flat-button
+          type="submit"
+          [disabled]="s.status === 'saving'"
+        >
+          {{ s.status === 'saving' ? 'Placing…' : 'Place order' }}
+        </button>
+      </mat-dialog-actions>
+    </form>
+  }
+}

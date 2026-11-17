@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import io.github.samarthshubham.clinic.dto.AppointmentRequest;
 import io.github.samarthshubham.clinic.dto.CarePlanRequest;
+import io.github.samarthshubham.clinic.dto.CrdCard;
 import io.github.samarthshubham.clinic.dto.DashboardResponse;
 import io.github.samarthshubham.clinic.dto.DiagnosticReportRequest;
 import io.github.samarthshubham.clinic.dto.EncounterRequest;
@@ -34,6 +35,7 @@ import io.github.samarthshubham.clinic.mapper.PractitionerMapper;
 import io.github.samarthshubham.clinic.mapper.ServiceRequestMapper;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.hl7.fhir.r4.model.Appointment;
@@ -95,6 +97,7 @@ class DashboardServiceTest {
             practitionerService,
             new PatientMapper(),
             new EncounterMapper(),
+            new ServiceRequestMapper(),
             fhir.client(),
             ORG_ID);
     lenient().when(patientService.findPatient("p1")).thenReturn(patient());
@@ -163,17 +166,17 @@ class DashboardServiceTest {
         .containsEntry("description", "Follow-up")
         .containsEntry("status", "booked")
         .containsEntry("provider", "Dr. Gregory House");
-    assertThat(dashboard.pendingServiceRequests())
-        .singleElement()
-        .isEqualTo(
-            Map.of(
-                "id", "sr1",
-                "code", "Lipid panel",
-                "category", "laboratory",
-                "orderedOn", "2026-04-28",
-                "priority", "routine",
-                "status", "active",
-                "orderedBy", "Dr. Gregory House"));
+    Map<String, Object> pendingOrder = new LinkedHashMap<>();
+    pendingOrder.put("id", "sr1");
+    pendingOrder.put("code", "Lipid panel");
+    pendingOrder.put("category", "laboratory");
+    pendingOrder.put("orderedOn", "2026-04-28");
+    pendingOrder.put("priority", "routine");
+    pendingOrder.put("status", "active");
+    pendingOrder.put("orderedBy", "Dr. Gregory House");
+    pendingOrder.put("coverage", null);
+    pendingOrder.put("cards", List.of());
+    assertThat(dashboard.pendingServiceRequests()).containsExactly(pendingOrder);
     assertThat(dashboard.recentDiagnosticReport())
         .containsEntry("id", "r1")
         .containsEntry("title", "Lipid panel")
@@ -181,6 +184,25 @@ class DashboardServiceTest {
         .containsEntry("conclusion", "LDL elevated")
         .containsEntry("status", "final")
         .containsEntry("serviceRequestId", "sr1");
+  }
+
+  @Test
+  void pendingOrdersCarryTheirStoredCrdCards() {
+    ServiceRequest order = serviceRequest();
+    CrdCard card = new CrdCard("Coverage unknown", "warning", "Payer unreachable", "clinic-api");
+    new ServiceRequestMapper().addCrdResult(order, List.of(), List.of(card));
+    when(serviceRequestService.findPendingServiceRequestsForPatient("p1"))
+        .thenReturn(bundleOf(order));
+
+    DashboardResponse dashboard = service.getDashboard("p1");
+
+    assertThat(dashboard.pendingServiceRequests())
+        .singleElement()
+        .satisfies(
+            pending -> {
+              assertThat(pending).containsEntry("coverage", null);
+              assertThat(pending).containsEntry("cards", List.of(card));
+            });
   }
 
   @Test

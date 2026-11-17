@@ -2679,7 +2679,17 @@ components:
           type: array
           items:
             type: object
-          description: Active orders not yet fulfilled
+            additionalProperties: true
+            properties:
+              coverage:
+                allOf:
+                  - $ref: '#/components/schemas/CoverageInformation'
+                nullable: true
+              cards:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CrdCard'
+          description: Active orders not yet fulfilled, each with its stored CRD coverage and cards
         activeCarePlan:
           type: object
           additionalProperties: true

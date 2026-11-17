@@ -46,9 +46,16 @@
         <mat-icon>checklist</mat-icon>
         Pending orders
       </span>
-      <span class="px-card-meta cp-font-mono">{{
-        sortedPending().length
-      }}</span>
+      <span class="orders-head-actions">
+        <span class="px-card-meta cp-font-mono">{{
+          sortedPending().length
+        }}</span>
+        @if (canOrder()) {
+          <button mat-button type="button" (click)="openOrderDialog()">
+            New order
+          </button>
+        }
+      </span>
     </div>
 
     @if (sortedPending().length) {
@@ -70,6 +77,12 @@
               <div class="order-meta cp-font-mono">
                 {{ order.category }} · {{ order.orderedOn | date: 'MMM d' }}
               </div>
+              <cp-crd-cards
+                class="order-coverage"
+                [coverage]="order.coverage"
+                [cards]="order.cards"
+                [compact]="true"
+              />
             </div>
             <span [class]="'order-priority order-priority--' + order.priority">
               {{ order.priority }}
