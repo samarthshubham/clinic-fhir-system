@@ -6,9 +6,11 @@ import ca.uhn.fhir.rest.gclient.TokenClientParam;
 import io.github.samarthshubham.clinic.dto.DashboardResponse;
 import io.github.samarthshubham.clinic.dto.GoalProgress;
 import io.github.samarthshubham.clinic.dto.PatientSummary;
+import io.github.samarthshubham.clinic.dto.ServiceRequestResponse;
 import io.github.samarthshubham.clinic.dto.SnapshotResponse;
 import io.github.samarthshubham.clinic.mapper.EncounterMapper;
 import io.github.samarthshubham.clinic.mapper.PatientMapper;
+import io.github.samarthshubham.clinic.mapper.ServiceRequestMapper;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -47,6 +49,7 @@ public class DashboardService {
   private final PractitionerService practitionerService;
   private final PatientMapper patientMapper;
   private final EncounterMapper encounterMapper;
+  private final ServiceRequestMapper serviceRequestMapper;
   private final IGenericClient fhirClient;
   private final String defaultOrgId;
 
@@ -62,6 +65,7 @@ public class DashboardService {
       PractitionerService practitionerService,
       PatientMapper patientMapper,
       EncounterMapper encounterMapper,
+      ServiceRequestMapper serviceRequestMapper,
       IGenericClient fhirClient,
       @Value("${clinic.default-org-id}") String defaultOrgId) {
     this.patientService = patientService;
@@ -75,6 +79,7 @@ public class DashboardService {
     this.practitionerService = practitionerService;
     this.patientMapper = patientMapper;
     this.encounterMapper = encounterMapper;
+    this.serviceRequestMapper = serviceRequestMapper;
     this.fhirClient = fhirClient;
     this.defaultOrgId = defaultOrgId;
   }
@@ -283,6 +288,9 @@ public class DashboardService {
       if (careTeam.containsKey("primaryDoctor")) {
         m.put("orderedBy", ((Map<?, ?>) careTeam.get("primaryDoctor")).get("name"));
       }
+      ServiceRequestResponse response = serviceRequestMapper.toResponse(sr);
+      m.put("coverage", response.coverage());
+      m.put("cards", response.cards());
       list.add(m);
     }
     return list;

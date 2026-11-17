@@ -1,4 +1,8 @@
-import { PatientSummary, extractPatientHeader } from './dashboard.model';
+import {
+  PatientSummary,
+  extractPatientHeader,
+  toPendingOrder,
+} from './dashboard.model';
 
 const basePatient: PatientSummary = {
   id: 'p1',
@@ -82,5 +86,29 @@ describe('extractPatientHeader', () => {
 
     expect(header.pcp).toBe('—');
     expect(header.org).toBe('—');
+  });
+});
+
+describe('toPendingOrder', () => {
+  it('should default a missing priority to routine', () => {
+    const order = toPendingOrder({
+      id: 'sr1',
+      patientId: 'p1',
+      encounterId: null,
+      practitionerId: null,
+      display: 'Chest X-ray',
+      codeSystem: null,
+      code: null,
+      category: 'imaging',
+      status: 'active',
+      priority: null,
+      authoredOn: '2026-11-16',
+      coverage: null,
+      cards: null,
+    });
+
+    expect(order.priority).toBe('routine');
+    expect(order.code).toBe('Chest X-ray');
+    expect(order.cards).toBeNull();
   });
 });

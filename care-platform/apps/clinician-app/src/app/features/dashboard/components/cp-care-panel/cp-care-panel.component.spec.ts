@@ -1,10 +1,15 @@
 import { TestBed } from '@angular/core/testing';
-import { Subject } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { Subject, of } from 'rxjs';
+import { AuthService } from '@care-platform/auth';
+import { ToastService } from '@core/toast.service';
+import { CpOrderDialogComponent } from '@features/dashboard/components/cp-order-dialog/cp-order-dialog.component';
 import { CpCarePanelComponent } from './cp-care-panel.component';
 import { DashboardService } from '@features/dashboard/dashboard.service';
 import {
   ActiveCarePlan,
   PendingOrder,
+  ServiceRequestResponse,
   TrendsResponse,
 } from '@features/dashboard/dashboard.model';
 
@@ -89,9 +94,19 @@ describe('CpCarePanelComponent', () => {
     period: string;
     response: Subject<TrendsResponse>;
   }[];
+  let canOrder: boolean;
+  let dialogResult: ServiceRequestResponse | undefined;
+  let dialog: { open: ReturnType<typeof vi.fn> };
+  let toast: { show: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     requests = [];
+    canOrder = true;
+    dialogResult = undefined;
+    dialog = {
+      open: vi.fn(() => ({ afterClosed: () => of(dialogResult) })),
+    };
+    toast = { show: vi.fn() };
     const svc = {
       getTrends: vi.fn((id: string, types: string, period: string) => {
         const response = new Subject<TrendsResponse>();
@@ -101,7 +116,18 @@ describe('CpCarePanelComponent', () => {
     };
     await TestBed.configureTestingModule({
       imports: [CpCarePanelComponent],
-      providers: [{ provide: DashboardService, useValue: svc }],
+      providers: [
+        { provide: DashboardService, useValue: svc },
+        {
+          provide: AuthService,
+          useValue: {
+            hasRole: () => canOrder,
+            user: () => ({ practitionerId: 'dr1' }),
+          },
+        },
+        { provide: MatDialog, useValue: dialog },
+        { provide: ToastService, useValue: toast },
+      ],
     }).compileComponents();
   });
 
@@ -276,5 +302,100 @@ describe('CpCarePanelComponent', () => {
     await render('');
 
     expect(requests).toEqual([]);
+  });
+
+  function newOrderButton(el: HTMLElement): HTMLButtonElement | undefined {
+    return Array.from(el.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'New order',
+    );
+  }
+
+  it('should show each pending order with its coverage badge and card', async () => {
+    const el: HTMLElement = (
+      await render('p1', plan, [
+        {
+          ...order('mri', 'routine', 'imaging'),
+          coverage: {
+            coverageId: 'cov1',
+            covered: 'covered',
+            paNeeded: 'auth-needed',
+            docNeeded: 'clinical',
+            reason: null,
+            questionnaire: null,
+            date: '2026-11-16',
+            coverageAssertionId: 'a1',
+          },
+          cards: [
+            {
+              summary: 'Prior authorization needed: MRI lumbar spine',
+              indicator: 'warning',
+              detail: 'Complete the questionnaire.',
+              source: 'Praxis Health Plan',
+            },
+          ],
+        },
+        order('cbc', 'routine', 'laboratory'),
+      ])
+    ).nativeElement;
+
+    const rows = Array.from(el.querySelectorAll('.order-row'));
+    expect(
+      rows.map((r) => r.querySelector('.cp-status-badge')?.textContent?.trim()),
+    ).toEqual(['PA needed', 'Coverage unknown']);
+    expect(rows[0].querySelector('.app-crd-card__summary')?.textContent).toBe(
+      'Prior authorization needed: MRI lumbar spine',
+    );
+    expect(rows[0].querySelector('.app-crd-card__detail')).toBeNull();
+    expect(rows[0].textContent).toContain('Complete documentation');
+    expect(rows[1].textContent).not.toContain('Complete documentation');
+  });
+
+  it('should hide New order from roles that cannot order', async () => {
+    canOrder = false;
+    const el: HTMLElement = (await render()).nativeElement;
+
+    expect(newOrderButton(el)).toBeUndefined();
+  });
+
+  it('should open the order dialog and emit the placed order', async () => {
+    const placed: ServiceRequestResponse = {
+      id: 'sr1',
+      patientId: 'p1',
+      encounterId: null,
+      practitionerId: 'dr1',
+      display: 'MRI lumbar spine',
+      codeSystem: 'http://www.ama-assn.org/go/cpt',
+      code: '72148',
+      category: 'imaging',
+      status: 'active',
+      priority: 'routine',
+      authoredOn: '2026-11-16',
+      coverage: null,
+      cards: [],
+    };
+    dialogResult = placed;
+    const fixture = await render();
+    const emitted: ServiceRequestResponse[] = [];
+    fixture.componentInstance.orderPlaced.subscribe((o) => emitted.push(o));
+
+    newOrderButton(fixture.nativeElement)?.click();
+
+    expect(dialog.open).toHaveBeenCalledWith(CpOrderDialogComponent, {
+      data: { patientId: 'p1', practitionerId: 'dr1' },
+      width: '560px',
+    });
+    expect(toast.show).toHaveBeenCalledWith('Order placed');
+    expect(emitted).toEqual([placed]);
+  });
+
+  it('should emit nothing when the order dialog is cancelled', async () => {
+    const fixture = await render();
+    const emitted: ServiceRequestResponse[] = [];
+    fixture.componentInstance.orderPlaced.subscribe((o) => emitted.push(o));
+
+    newOrderButton(fixture.nativeElement)?.click();
+
+    expect(toast.show).not.toHaveBeenCalled();
+    expect(emitted).toEqual([]);
   });
 });

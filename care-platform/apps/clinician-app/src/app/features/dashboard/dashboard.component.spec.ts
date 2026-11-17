@@ -197,6 +197,45 @@ describe('DashboardComponent', () => {
     expect(dashboardCalls.length).toBe(1);
   });
 
+  it('should put a placed order at the top of the pending orders', async () => {
+    const fixture = await render();
+    const c = fixture.componentInstance;
+    dashboardCalls[0].response.next(dashboard);
+    await fixture.whenStable();
+
+    c.onOrderPlaced({
+      id: 'sr-new',
+      patientId: 'p1',
+      encounterId: null,
+      practitionerId: null,
+      display: 'MRI lumbar spine without contrast',
+      codeSystem: 'http://www.ama-assn.org/go/cpt',
+      code: '72148',
+      category: 'imaging',
+      status: 'active',
+      priority: 'routine',
+      authoredOn: '2026-11-16',
+      coverage: null,
+      cards: [],
+    });
+
+    expect(c.pendingOrders()).toEqual([
+      {
+        id: 'sr-new',
+        code: 'MRI lumbar spine without contrast',
+        category: 'imaging',
+        orderedOn: '2026-11-16',
+        priority: 'routine',
+        status: 'active',
+        orderedBy: null,
+        coverage: null,
+        cards: [],
+      },
+      ...dashboard.pendingServiceRequests,
+    ]);
+    expect(dashboardCalls.length).toBe(1);
+  });
+
   it('should drop the coverage from the snapshot when it is saved as not active', async () => {
     const fixture = await render();
     const c = fixture.componentInstance;

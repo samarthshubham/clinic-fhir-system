@@ -41,6 +41,86 @@
       ]
     },
     {
+      "url": "http://hl7.org/fhir/StructureDefinition/variable",
+      "valueExpression": {
+        "name": "conditions",
+        "language": "application/x-fhir-query",
+        "expression": "Condition?patient={{%patient.id}}&clinical-status=active&_count=100"
+      }
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/variable",
+      "valueExpression": {
+        "name": "medications",
+        "language": "application/x-fhir-query",
+        "expression": "MedicationStatement?patient={{%patient.id}}&_sort=effective&_count=100"
+      }
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/variable",
+      "valueExpression": {
+        "name": "encounters",
+        "language": "application/x-fhir-query",
+        "expression": "Encounter?patient={{%patient.id}}&_sort=date&_count=100"
+      }
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/variable",
+      "valueExpression": {
+        "name": "reports",
+        "language": "application/x-fhir-query",
+        "expression": "DiagnosticReport?patient={{%patient.id}}&_sort=-issued&_count=100"
+      }
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/variable",
+      "valueExpression": {
+        "name": "lumbarCondition",
+        "language": "text/fhirpath",
+        "expression": "%conditions.entry.resource.where(code.coding.where(code in ('279039007' | '128196005' | '23056005' | '18347007' | '202708005' | '192970008')).exists()).first()"
+      }
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/variable",
+      "valueExpression": {
+        "name": "nsaids",
+        "language": "text/fhirpath",
+        "expression": "%medications.entry.resource.where(medication.text.lower().matches('naproxen|ibuprofen|diclofenac|meloxicam|celecoxib'))"
+      }
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/variable",
+      "valueExpression": {
+        "name": "physicalTherapy",
+        "language": "text/fhirpath",
+        "expression": "%encounters.entry.resource.where(status = 'finished' and reasonCode.text.lower().contains('physical therapy'))"
+      }
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/variable",
+      "valueExpression": {
+        "name": "therapyStart",
+        "language": "text/fhirpath",
+        "expression": "iif(%nsaids.exists() and (%physicalTherapy.empty() or %nsaids.first().effective.start <= %physicalTherapy.first().period.start), %nsaids.first().effective.start, %physicalTherapy.first().period.start)"
+      }
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/variable",
+      "valueExpression": {
+        "name": "therapyEnd",
+        "language": "text/fhirpath",
+        "expression": "%physicalTherapy.last().period.start"
+      }
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/variable",
+      "valueExpression": {
+        "name": "lumbarImaging",
+        "language": "text/fhirpath",
+        "expression": "%reports.entry.resource.where(code.text.lower().contains('lumbar')).first()"
+      }
+    },
+    {
       "url": "http://hl7.org/fhir/StructureDefinition/cqf-library",
       "valueCanonical": "http://praxishealthplan.example/fhir/Library/mri-lumbar-spine-prepopulation"
     }
@@ -68,6 +148,15 @@
       "item": [
         {
           "linkId": "primary-diagnosis",
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-initialExpression",
+              "valueExpression": {
+                "language": "text/fhirpath",
+                "expression": "%lumbarCondition.code.text"
+              }
+            }
+          ],
           "text": "Primary diagnosis",
           "type": "open-choice",
           "required": true,
@@ -75,6 +164,15 @@
         },
         {
           "linkId": "symptom-onset-date",
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-initialExpression",
+              "valueExpression": {
+                "language": "text/fhirpath",
+                "expression": "%lumbarCondition.onset"
+              }
+            }
+          ],
           "text": "When did the symptoms start?",
           "type": "date",
           "required": true
@@ -93,9 +191,6 @@
       "item": [
         {
           "linkId": "conservative-therapy-weeks",
-          "text": "How many weeks of conservative therapy has the patient completed?",
-          "type": "integer",
-          "required": true,
           "extension": [
             {
               "url": "http://hl7.org/fhir/StructureDefinition/minValue",
@@ -104,11 +199,30 @@
             {
               "url": "http://hl7.org/fhir/StructureDefinition/maxValue",
               "valueInteger": 520
+            },
+            {
+              "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-initialExpression",
+              "valueExpression": {
+                "language": "text/fhirpath",
+                "expression": "iif(%therapyStart.exists() and %therapyEnd.exists(), 0.repeat(iif($this < 520, $this + 1, {})).where(%therapyStart <= %therapyEnd - ($this.toString() + ' weeks').toQuantity()).count(), {})"
+              }
             }
-          ]
+          ],
+          "text": "How many weeks of conservative therapy has the patient completed?",
+          "type": "integer",
+          "required": true
         },
         {
           "linkId": "conservative-therapy-types",
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-initialExpression",
+              "valueExpression": {
+                "language": "text/fhirpath",
+                "expression": "%qitem.answerOption.value.where((code = 'physical-therapy' and %physicalTherapy.exists()) or (code = 'nsaids-other-analgesics' and %nsaids.exists()))"
+              }
+            }
+          ],
           "text": "Which conservative therapies were tried?",
           "type": "choice",
           "answerOption": [
@@ -159,6 +273,15 @@
       "item": [
         {
           "linkId": "neurological-deficit",
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-initialExpression",
+              "valueExpression": {
+                "language": "text/fhirpath",
+                "expression": "iif(%conditions.exists(), %conditions.entry.resource.where(code.coding.where(code in ('192970008' | '6077001')).exists()).exists(), {})"
+              }
+            }
+          ],
           "text": "Does the patient have a progressive or severe neurological deficit?",
           "type": "boolean",
           "required": true
@@ -185,12 +308,30 @@
       "item": [
         {
           "linkId": "prior-imaging-done",
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-initialExpression",
+              "valueExpression": {
+                "language": "text/fhirpath",
+                "expression": "iif(%reports.exists(), %lumbarImaging.exists(), {})"
+              }
+            }
+          ],
           "text": "Has the lumbar spine been imaged before?",
           "type": "boolean",
           "required": true
         },
         {
           "linkId": "prior-imaging-date",
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-initialExpression",
+              "valueExpression": {
+                "language": "text/fhirpath",
+                "expression": "%lumbarImaging.issued"
+              }
+            }
+          ],
           "text": "Date of the most recent imaging",
           "type": "date",
           "enableWhen": [

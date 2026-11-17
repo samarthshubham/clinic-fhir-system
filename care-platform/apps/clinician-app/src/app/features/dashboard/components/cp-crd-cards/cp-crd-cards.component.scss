@@ -1,0 +1,57 @@
+// CRD coverage badge and cards — layout only. Colors via --px-* tokens.
+
+.app-crd-cards {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+
+  &--compact {
+    gap: 4px;
+  }
+}
+
+.app-crd-cards__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.app-crd-card {
+  padding: 4px 0 4px 8px;
+  border-left: 2px solid var(--px-accent);
+
+  &--warning {
+    border-left-color: var(--px-warn);
+  }
+
+  &--critical {
+    border-left-color: var(--px-crit);
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+.app-crd-cards--compact .app-crd-card {
+  padding: 0 0 0 8px;
+}
+
+.app-crd-card__summary {
+  color: var(--px-text);
+}
+
+.app-crd-card__detail,
+.app-crd-cards__empty {
+  margin: 0;
+  color: var(--px-text-muted);
+}
+
+.app-crd-card__source {
+  color: var(--px-text-sub);
+}

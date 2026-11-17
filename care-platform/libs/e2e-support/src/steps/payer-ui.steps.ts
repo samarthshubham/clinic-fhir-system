@@ -1,6 +1,6 @@
 import { Given, Then, When } from '@badeball/cypress-cucumber-preprocessor';
-import { PASSWORDS } from '../support/api';
-import { ctx, resolveId, runId } from '../support/context';
+import { PASSWORDS, asStaff } from '../support/api';
+import { ctx, isoDate, resolveId, runId } from '../support/context';
 
 const payerUrl = (path: string): string => `${Cypress.env('payerUrl')}${path}`;
 const memberIdKey = (alias: string): string => `${alias}:memberId`;
@@ -45,6 +45,25 @@ Given('a Praxis Gold PPO member {string}', (alias: string) => {
     },
   );
 });
+
+Given(
+  'the test patient has Praxis Gold PPO coverage as member {string}',
+  (alias: string) => {
+    asStaff('clinician', 'POST', '/api/coverages', {
+      patientId: ctx.ids['patient'],
+      payerId: 'praxis-health-plan',
+      payerName: 'Praxis Health Plan',
+      memberId: ctx.names[memberIdKey(alias)],
+      planName: 'Praxis Gold PPO',
+      status: 'active',
+      periodStart: isoDate(-30),
+      periodEnd: null,
+      relationship: 'self',
+    }).then((response) => {
+      expect(response.status, 'record provider coverage').to.eq(201);
+    });
+  },
+);
 
 When('the reviewer opens the members page', () => {
   cy.get('nav[aria-label="Main"]').contains('a', 'Members').click();

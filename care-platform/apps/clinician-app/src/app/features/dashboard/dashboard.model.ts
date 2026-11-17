@@ -109,6 +109,56 @@ export interface ActiveCarePlan {
   goals: GoalSummary[];
 }
 
+export interface CoverageInformation {
+  coverageId: string | null;
+  covered: string | null;
+  paNeeded: string | null;
+  docNeeded: string | null;
+  reason: string | null;
+  questionnaire: string | null;
+  date: string | null;
+  coverageAssertionId: string | null;
+}
+
+export interface CrdCard {
+  summary: string | null;
+  indicator: string | null;
+  detail: string | null;
+  source: string | null;
+}
+
+export type OrderCategory = 'laboratory' | 'imaging' | 'procedure' | 'referral';
+export type OrderPriority = 'routine' | 'urgent' | 'asap' | 'stat';
+
+export interface ServiceRequestRequest {
+  patientId: string;
+  encounterId: string | null;
+  practitionerId: string | null;
+  display: string;
+  codeSystem: string | null;
+  code: string | null;
+  category: OrderCategory;
+  status: 'active';
+  priority: OrderPriority;
+  authoredOn: string;
+}
+
+export interface ServiceRequestResponse {
+  id: string;
+  patientId: string | null;
+  encounterId: string | null;
+  practitionerId: string | null;
+  display: string | null;
+  codeSystem: string | null;
+  code: string | null;
+  category: string | null;
+  status: string | null;
+  priority: string | null;
+  authoredOn: string | null;
+  coverage: CoverageInformation | null;
+  cards: CrdCard[] | null;
+}
+
 export interface PendingOrder {
   id: string;
   code: string | null;
@@ -117,6 +167,22 @@ export interface PendingOrder {
   priority: string;
   status: string | null;
   orderedBy: string | null;
+  coverage?: CoverageInformation | null;
+  cards?: CrdCard[] | null;
+}
+
+export function toPendingOrder(order: ServiceRequestResponse): PendingOrder {
+  return {
+    id: order.id,
+    code: order.display,
+    category: order.category,
+    orderedOn: order.authoredOn,
+    priority: order.priority ?? 'routine',
+    status: order.status,
+    orderedBy: null,
+    coverage: order.coverage,
+    cards: order.cards,
+  };
 }
 
 export interface DataPoint {

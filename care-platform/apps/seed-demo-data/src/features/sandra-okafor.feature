@@ -1,9 +1,12 @@
-Feature: Seed Patient — Sandra Okafor (post-cholecystectomy recovery)
+Feature: Seed Patient — Sandra Okafor (post-cholecystectomy recovery, lumbar radiculopathy)
 
   44-year-old female recovering from laparoscopic cholecystectomy.
   Demonstrates: pre-op → post-op vital normalisation over 4 visits, surgical pathology
   order → report cycle, resolved condition, stopped medication, 2 achieved goals,
-  completed care plan, no pending orders.
+  completed care plan.
+  Back pain chart for DTR prepopulation of the MRI lumbar spine form: active lumbar
+  radiculopathy for 42 days, naproxen, a lumbar spine X-ray and 4 physical therapy
+  visits, so 4 weeks of conservative therapy (the payer's MRI rule asks for 6).
 
   Background: Infrastructure provisioned
     Given practitioner "seed-default-practitioner" is provisioned
@@ -72,3 +75,15 @@ Feature: Seed Patient — Sandra Okafor (post-cholecystectomy recovery)
     And an achieved goal is created with description "Return to pre-op body weight" target LOINC "29463-7" value 72.0 unit "kg"
     And an achieved goal is created with description "Pain-free ambulation" target LOINC "55423-8" value 7000.0 unit "steps/day"
     And a completed care plan is created with title "Post-Surgical Recovery" addressing all conditions with all goals
+
+    # Back pain — lumbar radiculopathy with 4 weeks of conservative therapy
+    When an encounter is recorded 34 days ago with reason "Low back pain radiating to the left leg" and status "finished"
+    And a condition is recorded with code "128196005" display "Lumbar radiculopathy" status "active" onset 42 days ago
+    And a medication is recorded with name "Naproxen 500mg" status "active" dosage "Twice daily with food" started 34 days ago
+    And a service request is placed with code "X-ray lumbar spine, 2 views" category "imaging" authored 34 days ago
+    And a diagnostic report is created from the last service request with title "X-ray lumbar spine, 2 views" issued 33 days ago
+    And the last diagnostic report conclusion is "Mild L4-L5 disc space narrowing. No fracture or spondylolisthesis."
+    When an encounter is recorded 30 days ago with reason "Physical therapy — lumbar spine" and status "finished"
+    When an encounter is recorded 23 days ago with reason "Physical therapy — lumbar spine" and status "finished"
+    When an encounter is recorded 16 days ago with reason "Physical therapy — lumbar spine" and status "finished"
+    When an encounter is recorded 6 days ago with reason "Physical therapy — lumbar spine" and status "finished"

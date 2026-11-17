@@ -423,12 +423,14 @@ Single aggregated response for the 3-panel clinical dashboard. Partial-failure s
   },
   "upcomingAppointment": { "id": "appt-01", "start": "2026-06-01", "description": "3-month hypertension review", "status": "booked", "provider": "Dr. Aisha Patel" },
   "recentEncounters": [{ "id": "enc-01", "date": "2026-04-28", "reason": "BP check", "status": "finished" }],
-  "pendingServiceRequests": [{ "id": "sr-01", "code": "Lipid Panel", "category": "laboratory", "orderedOn": "2026-04-28", "priority": "routine", "status": "active" }],
+  "pendingServiceRequests": [{ "id": "sr-01", "code": "Lipid Panel", "category": "laboratory", "orderedOn": "2026-04-28", "priority": "routine", "status": "active", "coverage": null, "cards": [] }],
   "activeCarePlan": { "id": "cp-01", "title": "Hypertension Management", "status": "active", "goals": [{ "id": "goal-01", "description": "Reduce systolic BP below 130", "progress": { "currentValue": 138, "targetValue": 130, "onTrack": true, "percentToGoal": 94 } }] },
   "recentDiagnosticReport": { "id": "rpt-01", "title": "Basic Metabolic Panel", "issued": "2026-04-16", "conclusion": "Creatinine 1.1 mg/dL.", "status": "final", "serviceRequestId": "sr-789" },
   "_warnings": []
 }
 ```
+
+Each pending order also has the `coverage` and `cards[]` stored with it, the same as `ServiceRequestResponse`, so the order list can show its CRD badge.
 
 ---
 
