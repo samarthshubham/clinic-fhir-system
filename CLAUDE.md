@@ -111,7 +111,7 @@ care-platform/      Angular 21 Nx monorepo
   apps/seed-demo-data/  Cucumber-driven idempotent seed data (8 patient profiles)
     src/features/       patients.feature, marcus-webb.feature, priya-nair.feature, gerald-horton.feature,
                         sandra-okafor.feature, ramon-castillo.feature, aisha-chen.feature,
-                        robert-osei.feature, tony-stark.feature,
+                        robert-osei.feature, tony-stark.feature, staff-practitioners.feature (user-admin, user-clinician, user-frontdesk),
                         payer/payer-plans.feature, payer/payer-members.feature,
                         payer/payer-questionnaires.feature (payer HAPI :8081)
     src/step-definitions/  background.steps.ts, patient.steps.ts, encounter.steps.ts,

@@ -11,6 +11,25 @@ Given(
 );
 
 Given(
+  'staff practitioner {string} {string} {string} with title {string} is provisioned',
+  async function (
+    this: SeedWorld,
+    username: string,
+    firstName: string,
+    lastName: string,
+    title: string,
+  ) {
+    await apiClient.upsertStaffPractitioner({
+      username,
+      firstName,
+      lastName,
+      title,
+    });
+    this.log(`Provisioned staff practitioner: user-${username}`);
+  },
+);
+
+Given(
   'organization {string} is provisioned',
   async function (this: SeedWorld, id: string) {
     await apiClient.upsertOrganization(id);

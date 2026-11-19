@@ -42,6 +42,13 @@ export interface CreateVitalsBody {
   temperatureCelsius?: number;
 }
 
+export interface StaffPractitioner {
+  username: string;
+  firstName: string;
+  lastName: string;
+  title: string;
+}
+
 export interface PatientFields {
   id: string;
   firstName: string;
@@ -728,6 +735,29 @@ class ApiClient {
       name: [{ family: 'Patel', given: ['Aisha'], prefix: ['Dr.'] }],
       gender: 'female',
       qualification: [{ code: { text: 'Internal Medicine' } }],
+    });
+  }
+
+  /**
+   * The Practitioner clinic-api's StaffAccountBootstrap writes for a staff login
+   * (PractitionerMapper.toStaffFhir), so a provider HAPI reset restores the
+   * login's practitioner_id without restarting clinic-api.
+   */
+  async upsertStaffPractitioner(staff: StaffPractitioner): Promise<void> {
+    const id = `user-${staff.username}`;
+    await this.put(`${HAPI_FHIR}/fhir/Practitioner/${id}`, {
+      resourceType: 'Practitioner',
+      id,
+      meta: { profile: [`${US_CORE}/us-core-practitioner`] },
+      identifier: [
+        {
+          use: 'secondary',
+          system: 'http://praxis.clinic/fhir/identifier/username',
+          value: staff.username,
+        },
+      ],
+      name: [{ family: staff.lastName, given: [staff.firstName] }],
+      qualification: [{ code: { text: staff.title } }],
     });
   }
 
