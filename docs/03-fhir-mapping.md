@@ -87,6 +87,28 @@ The draft sent to `order-sign` gets the CRD ServiceRequest profile, `status = dr
 
 ---
 
+## QuestionnaireResponse (DTR documentation)
+
+`PUT` and `POST .../complete` on `/api/service-requests/{id}/documentation` store one `QuestionnaireResponse` per order in the provider HAPI (`DtrService`, `DocumentationMapper`). Golden output: `fixtures/davinci/dtr/qr-mri-completed.json`, validated by `ig-validate`.
+
+| Request / source | FHIR Path |
+|---|---|
+| *(fixed)* | `meta.profile` = `http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/dtr-questionnaireresponse` |
+| the order | `extension[qr-context].valueReference` → `ServiceRequest/{id}`. This is the link to the order: the DTR profile forbids `basedOn` (max 0) |
+| the patient's active Coverage with the payer | `extension[qr-coverage].valueReference` → `Coverage/{id}` |
+| the payer's package response | `extension[intendedUse]` copied from the empty response in the `$questionnaire-package` answer (`withpa` when missing) |
+| the package Questionnaire | `questionnaire` = its canonical (`\|version` when it has one) |
+| `/documentation` (`PUT`) / `/documentation/complete` | `status` = `in-progress` / `completed` |
+| `ServiceRequest.subject` | `subject` |
+| signed-in clinician's `practitioner_id`, else `ServiceRequest.requester` | `author` → `Practitioner/{id}` |
+| *(save time)* | `authored` (UTC) |
+| `answers[].linkId` + `values[]` | `item[linkId].answer[].value[x]`, nested in the Questionnaire's groups; unanswered and disabled (`enableWhen`) items are left out |
+| answer origin | `item.answer.extension[information-origin]`: `source` = `auto-client` (prefilled from the chart and unchanged), `override` (prefilled, then changed) or `manual`; `override` and `manual` carry `author.practitioner` |
+
+A saved response is found again by searching `QuestionnaireResponse?subject=Patient/{id}` and matching `qr-context`, so `GET` and `PUT` reuse it instead of creating another.
+
+---
+
 ## Insurance → FHIR Coverage and payer Organization
 
 | Request Field | FHIR Path |

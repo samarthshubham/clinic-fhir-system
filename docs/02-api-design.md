@@ -65,10 +65,10 @@ Tokens carry **roles**; on each request the server expands them into **permissio
 | `practitioner:read` | `GET /api/practitioners/{id}` | ✓ | ✓ | ✓ | |
 | `practitioner:write` | `POST /api/practitioners` | | | ✓ | |
 | `clinical:read` | snapshot, trends, timeline, dashboard, `GET /api/vitals` | | ✓ | ✓ | own |
-| `clinical:read` | every other clinical `GET`: encounters, conditions, medications, service-requests, diagnostic-reports, care-plans, goals | | ✓ | ✓ | |
+| `clinical:read` | every other clinical `GET`: encounters, conditions, medications, service-requests (and their `documentation`), diagnostic-reports, care-plans, goals | | ✓ | ✓ | |
 | `vitals:write` | `POST /api/vitals` | | ✓ | ✓ | own |
 | `encounter:write`, `condition:write`, `medication:write` | matching `POST` | | ✓ | ✓ | |
-| `order:write` | `POST /api/service-requests`, `POST /api/diagnostic-reports` | | ✓ | ✓ | |
+| `order:write` | `POST /api/service-requests`, `PUT /api/service-requests/{id}/documentation`, `POST /api/service-requests/{id}/documentation/complete`, `POST /api/diagnostic-reports` | | ✓ | ✓ | |
 | `careplan:write` | `POST /api/care-plans`, `POST /api/goals` | | ✓ | ✓ | |
 | `alert:read` / `alert:write` | `GET /api/alerts` / `POST /api/alerts/{id}/acknowledge` | | ✓ | ✓ | |
 | `coverage:read` | `GET /api/coverages/{id}` | ✓ | ✓ | ✓ | |
@@ -300,6 +300,9 @@ Send only the vitals you have — null fields are skipped. Each non-null vital i
 | `POST` | `/api/service-requests` | Place a lab or imaging order |
 | `GET` | `/api/service-requests/{id}` | Get order |
 | `GET` | `/api/service-requests?patientId={id}&status=active` | List orders (optional status filter) |
+| `GET` | `/api/service-requests/{id}/documentation` | The order's DTR form: saved answers, or answers prefilled from the chart |
+| `PUT` | `/api/service-requests/{id}/documentation` | Save answers as an `in-progress` QuestionnaireResponse |
+| `POST` | `/api/service-requests/{id}/documentation/complete` | Check required items and save the response as `completed` |
 
 ### POST /api/service-requests
 ```json
@@ -321,6 +324,54 @@ Send only the vitals you have — null fields are skipped. Each non-null vital i
 - `coverage` is `null` when the patient has no active Coverage with this payer (`clinic.payer.payer-id`, matched on the Coverage's payor identifier; no hook call and no patient data sent, `cards` is `[]`) or when the payer could not be reached.
 - The call fails open (NFR-REL-2): after a 2 s timeout, a 5xx or a connection error the order is still saved, with `coverage: null` and one `"Coverage unknown"` warning card from `clinic-api`.
 - `POST /api/appointments` calls `appointment-book` the same way and stores the returned `coverage-information` on the Appointment; `AppointmentResponse` is unchanged.
+
+### DTR documentation: /api/service-requests/{id}/documentation
+
+The form comes from the payer: clinic-api calls payer-api `POST /fhir/Questionnaire/$questionnaire-package` (system token with `system/Questionnaire.r`) with the order and the patient's active Coverage with this payer, and payer-api picks the Questionnaire for the order code ([§6](11-payer-architecture.md#6-coverage-rules)). The answers are stored in the provider HAPI as one `QuestionnaireResponse` per order (see [03-fhir-mapping.md](03-fhir-mapping.md#questionnaireresponse-dtr-documentation)).
+
+**`GET` → `DocumentationResponse`:** the saved response for the order, or, before the first save, a new one prefilled from the chart with the Questionnaire's FHIRPath expressions (nothing is stored; `questionnaireResponseId` is `null`).
+
+```json
+{ "serviceRequestId": "sr-02", "questionnaireResponseId": null,
+  "questionnaire": "http://praxishealthplan.example/fhir/Questionnaire/mri-lumbar-spine",
+  "title": "MRI lumbar spine documentation", "status": "in-progress",
+  "items": [
+    { "linkId": "neurological-findings", "text": "Neurological findings", "type": "group", "required": false, "repeats": false, "readOnly": false,
+      "options": [], "enableWhen": [], "enableBehavior": null, "answers": [],
+      "items": [
+        { "linkId": "neurological-deficit", "text": "Does the patient have a progressive or severe neurological deficit?", "type": "boolean", "required": true, "repeats": false, "readOnly": false,
+          "options": [], "enableWhen": [], "enableBehavior": null,
+          "answers": [{ "value": { "valueBoolean": false, "valueString": null, "valueInteger": null, "valueDecimal": null, "valueDate": null, "valueDateTime": null, "valueCoding": null }, "prefilled": true }], "items": [] },
+        { "linkId": "neurological-deficit-description", "text": "Describe the deficit …", "type": "text", "required": true, "repeats": false, "readOnly": false,
+          "options": [], "enableWhen": [{ "question": "neurological-deficit", "operator": "=", "answer": { "valueBoolean": true, … } }], "enableBehavior": null, "answers": [], "items": [] } ] } ] }
+```
+
+- `items` follow the Questionnaire, `display` and `group` items included. `type` is the FHIR item type (`group`, `display`, `string`, `text`, `boolean`, `integer`, `decimal`, `date`, `dateTime`, `choice`, `open-choice`).
+- A value has exactly one of `valueString`, `valueInteger`, `valueDecimal`, `valueBoolean`, `valueDate`, `valueDateTime`, `valueCoding` (`{system, code, display}`); the others are `null`.
+- `options` are the item's `answerOption`s, or the codes of its `answerValueSet` from the package.
+- `prefilled` is `true` when the answer came from the chart (`information-origin` `auto-client`) and has not been changed.
+
+**`PUT` with `DocumentationRequest` → `DocumentationResponse`:**
+
+```json
+{ "answers": [ { "linkId": "pain-location", "values": [{ "valueString": "L5, left side" }] },
+               { "linkId": "clinical-notes", "values": [] } ] }
+```
+
+- Each listed `linkId` gets exactly these values; an empty `values` clears it. Items not listed keep their saved (or, before the first save, prefilled) answers.
+- The first save creates the response; later saves update the same one.
+- Answers of items whose `enableWhen` is not met are dropped.
+- An unchanged prefilled answer stays `auto-client`; a changed one is `override` and a new one `manual`, both with the signed-in clinician (their `practitioner_id`, else the order's requester) as author.
+
+**`POST .../complete`** takes the same body (optional) and saves the response as `completed` once every enabled `required` question has an answer.
+
+| Status | When |
+|---|---|
+| `400` | `answers` or a `linkId` is missing |
+| `404` | unknown order, the patient has no active Coverage with this payer (nothing is sent to the payer), or the payer needs no documentation for the order |
+| `409` | the documentation is already `completed` |
+| `422` | an unknown `linkId`, a value that does not fit the item type or its options, several values for a non-repeating item, missing required answers on `complete` (`"Required questions are not answered: …"`), or no practitioner to record as author |
+| `503` | payer-api could not be reached, timed out (2 s) or answered with an error; the form cannot be built without the Questionnaire, so there is no fallback |
 
 **Note:** When a DiagnosticReport is created with `serviceRequestId`, the linked ServiceRequest is automatically marked `completed`. If that ServiceRequest belongs to a different patient, the request fails with `422` and nothing is stored.
 
