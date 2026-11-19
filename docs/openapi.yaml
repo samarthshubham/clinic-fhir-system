@@ -1396,8 +1396,8 @@ components:
     DocumentationInvalid:
       description: >-
         Unknown linkId, a value that does not fit the item type or options, several values for a
-        non-repeating item, missing required answers on complete, or no practitioner to record as
-        author
+        non-repeating item, missing required answers on complete, or a login without a
+        practitioner_id claim
       content:
         application/json:
           schema:

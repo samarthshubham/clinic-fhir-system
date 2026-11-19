@@ -124,12 +124,16 @@ public class DtrService {
       DocumentationRequest request,
       String practitionerId,
       QuestionnaireResponseStatus status) {
+    if (practitionerId == null) {
+      throw new DocumentationValidationException(
+          "Saving documentation needs a login linked to a Practitioner; this login has no"
+              + " practitioner_id");
+    }
     Form form = load(serviceRequestId);
     if (form.saved() != null && form.saved().getStatus() == QuestionnaireResponseStatus.COMPLETED) {
       throw new DocumentationConflictException(
           "The documentation for ServiceRequest '" + serviceRequestId + "' is already completed");
     }
-    String author = practitionerId != null ? practitionerId : requesterId(form.order());
     Questionnaire questionnaire = form.questionnairePackage().questionnaire();
 
     Map<String, List<QuestionnaireResponseItemAnswerComponent>> previous =
@@ -156,11 +160,7 @@ public class DtrService {
         QuestionnaireResponseItemAnswerComponent answer =
             new QuestionnaireResponseItemAnswerComponent().setValue(answerValue);
         answer.addExtension(
-            origin(
-                previous.getOrDefault(change.linkId(), List.of()),
-                answerValue,
-                author,
-                change.linkId()));
+            origin(previous.getOrDefault(change.linkId(), List.of()), answerValue, practitionerId));
         next.add(answer);
       }
       answers.put(change.linkId(), next);
@@ -182,7 +182,7 @@ public class DtrService {
             serviceRequestId,
             form.patientId(),
             form.coverage().getIdPart(),
-            author,
+            practitionerId,
             form.questionnairePackage(),
             status,
             Date.from(clock.instant()));
@@ -256,27 +256,13 @@ public class DtrService {
                     && serviceRequestId.equals(reference.getReferenceElement().getIdPart()));
   }
 
-  private static String requesterId(ServiceRequest order) {
-    Reference requester = order.getRequester();
-    return "Practitioner".equals(requester.getReferenceElement().getResourceType())
-        ? requester.getReferenceElement().getIdPart()
-        : null;
-  }
-
   private static Extension origin(
-      List<QuestionnaireResponseItemAnswerComponent> previous,
-      Type value,
-      String author,
-      String linkId) {
+      List<QuestionnaireResponseItemAnswerComponent> previous, Type value, String author) {
     for (QuestionnaireResponseItemAnswerComponent answer : previous) {
       Extension origin = answer.getExtensionByUrl(DocumentationMapper.INFORMATION_ORIGIN);
       if (origin != null && sameValue(answer.getValue(), value)) {
         return origin.copy();
       }
-    }
-    if (author == null) {
-      throw new DocumentationValidationException(
-          "No practitioner to record as the author of the answer to '" + linkId + "'");
     }
     boolean wasPrefilled =
         previous.stream()
@@ -340,13 +326,17 @@ public class DtrService {
       return expected instanceof PrimitiveType<?> flag
           && Boolean.valueOf(flag.getValueAsString()) == !answers.isEmpty();
     }
+    if (condition.getOperator() == Questionnaire.QuestionnaireItemOperator.NOT_EQUAL) {
+      return answers.stream()
+          .map(QuestionnaireResponseItemAnswerComponent::getValue)
+          .noneMatch(actual -> sameValue(actual, expected));
+    }
     return answers.stream()
         .map(QuestionnaireResponseItemAnswerComponent::getValue)
         .anyMatch(
             actual ->
                 switch (condition.getOperator()) {
                   case EQUAL -> sameValue(actual, expected);
-                  case NOT_EQUAL -> !sameValue(actual, expected);
                   case GREATER_THAN -> compare(actual, expected) > 0;
                   case LESS_THAN -> compare(actual, expected) < 0;
                   case GREATER_OR_EQUAL -> compare(actual, expected) >= 0;

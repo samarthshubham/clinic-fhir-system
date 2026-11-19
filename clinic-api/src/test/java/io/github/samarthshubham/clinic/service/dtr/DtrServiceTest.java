@@ -66,7 +66,6 @@ class DtrServiceTest {
   private static final String PATIENT_ID = "seed-sandra-okafor";
   private static final String COVERAGE_ID = "coverage-sandra-okafor";
   private static final String CLINICIAN = "pr-anika-patel";
-  private static final String REQUESTER = "pr-requester";
   private static final Instant NOW = Instant.parse("2026-11-19T10:00:00Z");
 
   private final FhirClientStub fhir = new FhirClientStub();
@@ -91,7 +90,6 @@ class DtrServiceTest {
     ServiceRequest order = new ServiceRequest();
     order.setId("http://localhost:8080/fhir/ServiceRequest/" + ORDER_ID + "/_history/1");
     order.setSubject(new Reference("Patient/" + PATIENT_ID));
-    order.setRequester(new Reference("Practitioner/" + REQUESTER));
     when(serviceRequestService.findServiceRequest(ORDER_ID)).thenReturn(order);
     Coverage coverage = new Coverage();
     coverage.setId("http://localhost:8080/fhir/Coverage/" + COVERAGE_ID + "/_history/3");
@@ -242,23 +240,53 @@ class DtrServiceTest {
   }
 
   @Test
-  void theOrderRequesterAuthorsAnswersWhenTheUserIsNoPractitioner() {
-    service.saveDocumentation(ORDER_ID, request(answers("pain-location", text("L5"))), null);
-
-    assertThat(author(createdResponse(), "pain-location")).isEqualTo("Practitioner/" + REQUESTER);
-  }
-
-  @Test
-  void aChangedAnswerNeedsAPractitionerAuthor() {
-    ServiceRequest order = serviceRequestService.findServiceRequest(ORDER_ID);
-    order.setRequester(null);
-
+  void savingNeedsALoginLinkedToAPractitioner() {
     assertThatThrownBy(
             () ->
                 service.saveDocumentation(
                     ORDER_ID, request(answers("pain-location", text("L5"))), null))
         .isInstanceOf(DocumentationValidationException.class)
-        .hasMessageContaining("pain-location");
+        .hasMessageContaining("no practitioner_id");
+    assertThatThrownBy(() -> service.completeDocumentation(ORDER_ID, null, null))
+        .isInstanceOf(DocumentationValidationException.class)
+        .hasMessageContaining("no practitioner_id");
+    verify(dtrClient, never()).questionnairePackage(any(), any());
+    assertThat(fhir.created()).isEmpty();
+  }
+
+  @Test
+  void notEqualIsMetOnlyWhenNoAnswerEqualsTheValue() {
+    Questionnaire questionnaire = new Questionnaire();
+    questionnaire.setUrl("http://example.org/Questionnaire/not-equal");
+    QuestionnaireItemComponent colours = question("colours", QuestionnaireItemType.STRING);
+    colours.setRepeats(true);
+    questionnaire.addItem(colours);
+    questionnaire.addItem(
+        condition(
+            question("not-red", QuestionnaireItemType.STRING),
+            "colours",
+            QuestionnaireItemOperator.NOT_EQUAL,
+            new StringType("red")));
+    questionnaire.addItem(
+        condition(
+            question("not-green", QuestionnaireItemType.STRING),
+            "colours",
+            QuestionnaireItemOperator.NOT_EQUAL,
+            new StringType("green")));
+    questionnairePackage = packageOf(questionnaire);
+    when(prepopulation.prepopulate(any(), any()))
+        .thenAnswer(
+            i -> new QuestionnaireResponse().setStatus(QuestionnaireResponseStatus.INPROGRESS));
+
+    service.saveDocumentation(
+        ORDER_ID,
+        request(
+            answers("colours", text("red"), text("blue")),
+            answers("not-red", text("x")),
+            answers("not-green", text("y"))),
+        CLINICIAN);
+
+    assertThat(answered(createdResponse())).containsExactlyInAnyOrder("colours", "not-green");
   }
 
   @ParameterizedTest

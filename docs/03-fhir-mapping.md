@@ -100,7 +100,7 @@ The draft sent to `order-sign` gets the CRD ServiceRequest profile, `status = dr
 | the package Questionnaire | `questionnaire` = its canonical (`\|version` when it has one) |
 | `/documentation` (`PUT`) / `/documentation/complete` | `status` = `in-progress` / `completed` |
 | `ServiceRequest.subject` | `subject` |
-| signed-in clinician's `practitioner_id`, else `ServiceRequest.requester` | `author` → `Practitioner/{id}` |
+| signed-in clinician's `practitioner_id` claim (required to save) | `author` → `Practitioner/{id}` |
 | *(save time)* | `authored` (UTC) |
 | `answers[].linkId` + `values[]` | `item[linkId].answer[].value[x]`, nested in the Questionnaire's groups; unanswered and disabled (`enableWhen`) items are left out |
 | answer origin | `item.answer.extension[information-origin]`: `source` = `auto-client` (prefilled from the chart and unchanged), `override` (prefilled, then changed) or `manual`; `override` and `manual` carry `author.practitioner` |

@@ -361,7 +361,7 @@ The form comes from the payer: clinic-api calls payer-api `POST /fhir/Questionna
 - Each listed `linkId` gets exactly these values; an empty `values` clears it. Items not listed keep their saved (or, before the first save, prefilled) answers.
 - The first save creates the response; later saves update the same one.
 - Answers of items whose `enableWhen` is not met are dropped.
-- An unchanged prefilled answer stays `auto-client`; a changed one is `override` and a new one `manual`, both with the signed-in clinician (their `practitioner_id`, else the order's requester) as author.
+- An unchanged prefilled answer stays `auto-client`; a changed one is `override` and a new one `manual`, both with the signed-in clinician (`practitioner_id` claim) as author. A login without `practitioner_id` cannot save (`422`).
 
 **`POST .../complete`** takes the same body (optional) and saves the response as `completed` once every enabled `required` question has an answer.
 
@@ -370,7 +370,7 @@ The form comes from the payer: clinic-api calls payer-api `POST /fhir/Questionna
 | `400` | `answers` or a `linkId` is missing |
 | `404` | unknown order, the patient has no active Coverage with this payer (nothing is sent to the payer), or the payer needs no documentation for the order |
 | `409` | the documentation is already `completed` |
-| `422` | an unknown `linkId`, a value that does not fit the item type or its options, several values for a non-repeating item, missing required answers on `complete` (`"Required questions are not answered: …"`), or no practitioner to record as author |
+| `422` | an unknown `linkId`, a value that does not fit the item type or its options, several values for a non-repeating item, missing required answers on `complete` (`"Required questions are not answered: …"`), or a login without a `practitioner_id` (`PUT` and `complete`) |
 | `503` | payer-api could not be reached, timed out (2 s) or answered with an error; the form cannot be built without the Questionnaire, so there is no fallback |
 
 **Note:** When a DiagnosticReport is created with `serviceRequestId`, the linked ServiceRequest is automatically marked `completed`. If that ServiceRequest belongs to a different patient, the request fails with `422` and nothing is stored.
