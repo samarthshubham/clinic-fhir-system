@@ -958,3 +958,34 @@ describe('DTR questionnaires', () => {
     );
   });
 });
+
+describe('upsertStaffPractitioner', () => {
+  it('PUTs the Practitioner clinic-api writes for a staff login', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({}));
+
+    await apiClient.upsertStaffPractitioner({
+      username: 'clinician',
+      firstName: 'Anika',
+      lastName: 'Patel',
+      title: 'Internal Medicine',
+    });
+
+    const [call] = calls();
+    expect(call.url).toBe(`${HAPI}/Practitioner/user-clinician`);
+    expect(call.init?.method).toBe('PUT');
+    expect(JSON.parse(String(call.init?.body))).toEqual({
+      resourceType: 'Practitioner',
+      id: 'user-clinician',
+      meta: { profile: [`${US_CORE}/us-core-practitioner`] },
+      identifier: [
+        {
+          use: 'secondary',
+          system: 'http://praxis.clinic/fhir/identifier/username',
+          value: 'clinician',
+        },
+      ],
+      name: [{ family: 'Patel', given: ['Anika'] }],
+      qualification: [{ code: { text: 'Internal Medicine' } }],
+    });
+  });
+});

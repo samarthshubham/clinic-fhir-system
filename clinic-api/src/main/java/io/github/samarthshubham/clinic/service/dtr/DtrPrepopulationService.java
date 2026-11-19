@@ -1,5 +1,6 @@
 package io.github.samarthshubham.clinic.service.dtr;
 
+import io.github.samarthshubham.clinic.mapper.DocumentationMapper;
 import io.github.samarthshubham.clinic.service.PatientService;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,9 +41,8 @@ public class DtrPrepopulationService {
   static final String VARIABLE = "http://hl7.org/fhir/StructureDefinition/variable";
   static final String INITIAL_EXPRESSION =
       "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-initialExpression";
-  static final String INFORMATION_ORIGIN =
-      "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/information-origin";
-  static final String AUTO_CLIENT = "auto-client";
+  static final String INFORMATION_ORIGIN = DocumentationMapper.INFORMATION_ORIGIN;
+  static final String AUTO_CLIENT = DocumentationMapper.AUTO_CLIENT;
   private static final Set<String> CONTEXT_VARIABLES = Set.of("patient", "questionnaire", "qitem");
 
   private final PatientService patientService;

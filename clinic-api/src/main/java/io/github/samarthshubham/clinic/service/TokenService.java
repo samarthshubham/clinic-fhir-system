@@ -43,7 +43,7 @@ public class TokenService {
             .claim(JwtConfig.ROLES_CLAIM, user.roles().stream().map(Enum::name).toList())
             .claim("name", user.name());
     if (user.practitionerId() != null) {
-      access.claim("practitioner_id", user.practitionerId());
+      access.claim(JwtConfig.PRACTITIONER_ID_CLAIM, user.practitionerId());
     }
     if (user.patientId() != null) {
       access.claim(JwtConfig.PATIENT_ID_CLAIM, user.patientId());

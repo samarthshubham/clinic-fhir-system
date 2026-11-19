@@ -39,8 +39,7 @@ public class CrdClient {
   public static final String COVERAGE_INFORMATION =
       "http://hl7.org/fhir/us/davinci-crd/StructureDefinition/ext-coverage-information";
   static final String CLINIC_FHIR_BASE = "http://praxis.clinic/fhir";
-  private static final String CRD_PROFILES =
-      "http://hl7.org/fhir/us/davinci-crd/StructureDefinition/";
+  static final String CRD_PROFILES = "http://hl7.org/fhir/us/davinci-crd/StructureDefinition/";
 
   public enum Hook {
     ORDER_SIGN("order-sign", "order-sign-crd", "draftOrders"),
@@ -192,7 +191,7 @@ public class CrdClient {
     return bundle;
   }
 
-  private static Resource prefetchCopy(Resource resource) {
+  static Resource prefetchCopy(Resource resource) {
     Resource copy = resource.copy();
     copy.setId(resource.getIdPart());
     Meta meta = new Meta();

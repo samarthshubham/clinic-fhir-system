@@ -788,6 +788,113 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/service-requests/{id}/documentation:
+    get:
+      tags: [Service Requests]
+      summary: Get the order's DTR documentation form
+      description: >-
+        Requires the `clinical:read` permission (ADMIN, CLINICIAN). The Questionnaire comes from
+        payer-api `$questionnaire-package`. Returns the saved QuestionnaireResponse for the order,
+        or, before the first save, one prefilled from the chart (not stored,
+        `questionnaireResponseId` null).
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '200':
+          description: The documentation form
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentationResponse'
+        '404':
+          $ref: '#/components/responses/DocumentationNotFound'
+        '503':
+          $ref: '#/components/responses/PayerUnavailable'
+    put:
+      tags: [Service Requests]
+      summary: Save DTR answers as an in-progress QuestionnaireResponse
+      description: >-
+        Requires the `order:write` permission (ADMIN, CLINICIAN). Each listed linkId gets exactly
+        the given values (an empty list clears it); other items keep their saved or prefilled
+        answers. Creates the order's QuestionnaireResponse in the provider HAPI on the first save
+        and updates it afterwards.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentationRequest'
+            example:
+              answers:
+                - linkId: pain-location
+                  values:
+                    - valueString: "L5, left side"
+      responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '200':
+          description: The saved form
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/DocumentationNotFound'
+        '409':
+          $ref: '#/components/responses/DocumentationCompleted'
+        '422':
+          $ref: '#/components/responses/DocumentationInvalid'
+        '503':
+          $ref: '#/components/responses/PayerUnavailable'
+
+  /api/service-requests/{id}/documentation/complete:
+    post:
+      tags: [Service Requests]
+      summary: Complete the DTR documentation
+      description: >-
+        Requires the `order:write` permission (ADMIN, CLINICIAN). Applies the optional answers like
+        `PUT`, checks that every enabled required question is answered and saves the
+        QuestionnaireResponse as `completed`.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentationRequest'
+      responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '200':
+          description: The completed form
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/DocumentationNotFound'
+        '409':
+          $ref: '#/components/responses/DocumentationCompleted'
+        '422':
+          $ref: '#/components/responses/DocumentationInvalid'
+        '503':
+          $ref: '#/components/responses/PayerUnavailable'
+
   # ── Coverages ─────────────────────────────────────────────────────────────
 
   /api/coverages:
@@ -1264,6 +1371,51 @@ components:
             status: 404
             message: "Patient abc123 not found"
 
+    DocumentationNotFound:
+      description: >-
+        Unknown order, no active Coverage with the payer (nothing is sent to the payer), or the
+        payer needs no documentation for the order
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 404
+            message: "The payer needs no documentation for ServiceRequest 'sr1'"
+
+    DocumentationCompleted:
+      description: The order's documentation is already completed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 409
+            message: "The documentation for ServiceRequest 'sr1' is already completed"
+
+    DocumentationInvalid:
+      description: >-
+        Unknown linkId, a value that does not fit the item type or options, several values for a
+        non-repeating item, missing required answers on complete, or a login without a
+        practitioner_id claim
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 422
+            message: "Required questions are not answered: symptom-onset-date"
+
+    PayerUnavailable:
+      description: payer-api could not be reached, timed out (2 s) or answered with an error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 503
+            message: "The payer could not be reached, so the documentation form is unavailable. Try again later."
+
   schemas:
 
     # ── Error ──────────────────────────────────────────────────────────────
@@ -1577,6 +1729,158 @@ components:
           type: string
           nullable: true
           example: "booked"
+
+    DocumentationCoding:
+      type: object
+      properties:
+        system:
+          type: string
+          nullable: true
+          example: "http://snomed.info/sct"
+        code:
+          type: string
+          nullable: true
+          example: "23056005"
+        display:
+          type: string
+          nullable: true
+          example: "Sciatica"
+
+    DocumentationValue:
+      type: object
+      description: Exactly one of the value fields is set; the others are null.
+      properties:
+        valueString:
+          type: string
+          nullable: true
+        valueInteger:
+          type: integer
+          nullable: true
+        valueDecimal:
+          type: number
+          nullable: true
+        valueBoolean:
+          type: boolean
+          nullable: true
+        valueDate:
+          type: string
+          nullable: true
+          example: "2026-10-05"
+        valueDateTime:
+          type: string
+          nullable: true
+        valueCoding:
+          allOf:
+            - $ref: '#/components/schemas/DocumentationCoding'
+          nullable: true
+
+    DocumentationAnswer:
+      type: object
+      properties:
+        value:
+          $ref: '#/components/schemas/DocumentationValue'
+        prefilled:
+          type: boolean
+          description: True when the answer came from the chart (information-origin auto-client) unchanged
+
+    DocumentationEnableWhen:
+      type: object
+      properties:
+        question:
+          type: string
+          example: "neurological-deficit"
+        operator:
+          type: string
+          enum: [exists, "=", "!=", ">", "<", ">=", "<="]
+        answer:
+          $ref: '#/components/schemas/DocumentationValue'
+
+    DocumentationItem:
+      type: object
+      properties:
+        linkId:
+          type: string
+        text:
+          type: string
+          nullable: true
+        type:
+          type: string
+          example: "boolean"
+          description: FHIR Questionnaire item type (group, display, string, text, boolean, integer, decimal, date, dateTime, choice, open-choice)
+        required:
+          type: boolean
+        repeats:
+          type: boolean
+        readOnly:
+          type: boolean
+        options:
+          type: array
+          description: answerOption values, or the codes of the item's answerValueSet
+          items:
+            $ref: '#/components/schemas/DocumentationValue'
+        enableWhen:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentationEnableWhen'
+        enableBehavior:
+          type: string
+          nullable: true
+          enum: [all, any, null]
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentationAnswer'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentationItem'
+
+    DocumentationResponse:
+      type: object
+      properties:
+        serviceRequestId:
+          type: string
+          example: "sr1"
+        questionnaireResponseId:
+          type: string
+          nullable: true
+          description: Null until the first save
+        questionnaire:
+          type: string
+          example: "http://praxishealthplan.example/fhir/Questionnaire/mri-lumbar-spine"
+        title:
+          type: string
+          nullable: true
+          example: "MRI lumbar spine documentation"
+        status:
+          type: string
+          enum: [in-progress, completed]
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentationItem'
+
+    DocumentationItemAnswers:
+      type: object
+      required: [linkId, values]
+      properties:
+        linkId:
+          type: string
+          example: "pain-location"
+        values:
+          type: array
+          description: The item's new answers; empty clears it
+          items:
+            $ref: '#/components/schemas/DocumentationValue'
+
+    DocumentationRequest:
+      type: object
+      required: [answers]
+      properties:
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentationItemAnswers'
 
     ServiceRequestResponse:
       type: object

@@ -69,13 +69,17 @@ The Spring Boot API requires a JWT, so a Cucumber `BeforeAll` hook (`src/support
 
 Expected output on success:
 ```
-18 scenarios (18 passed)
-225 steps (225 passed)
+19 scenarios (19 passed)
+228 steps (228 passed)
 ```
 
 An HTML report is written to `apps/seed-demo-data/reports/seed-data-report.html` after each run.
 
 > **Idempotency**: Each run is safe to repeat. Before creating a patient, the step cascade-deletes that patient's existing observations and encounters, then re-creates everything with the same fixed ID. Practitioner and organization follow the same pattern. Running the seed twice produces identical data — no duplicates.
+
+### Staff practitioners (`staff-practitioners.feature`)
+
+The Practitioners behind the dev staff logins `admin`, `clinician` and `frontdesk` (`user-admin`, `user-clinician`, `user-frontdesk`), PUT by id with the same names, title and `http://praxis.clinic/fhir/identifier/username` identifier that clinic-api's `StaffAccountBootstrap` writes at startup. A rerun, or a clinic-api restart, leaves them unchanged. After a provider HAPI reset the seed restores them, so the logins get their `practitioner_id` back without a clinic-api restart (saving DTR documentation needs it).
 
 ### Payer data (`src/features/payer/`)
 
