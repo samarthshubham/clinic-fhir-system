@@ -3,7 +3,7 @@
 # the payer HAPI loads (read from infra/docker-compose.yml). Fails on any validation error.
 #
 # Usage: ig-validate.sh [file or directory ...]
-#   Defaults to fixtures/davinci plus clinic-api/target/fhir-out and payer-api/target/fhir-out.
+#   Defaults to fixtures/davinci and terminology plus clinic-api/target/fhir-out and payer-api/target/fhir-out.
 # Codes are checked against tx.fhir.org; answers are kept in TX_CACHE_DIR between runs.
 # Env: VALIDATOR_DIR (where validator_cli.jar is cached), TX_CACHE_DIR,
 #      VALIDATOR_TIMEOUT (seconds, default 900).
@@ -82,7 +82,7 @@ expand_cds_hooks_json() {
 }
 
 if [[ $# -eq 0 ]]; then
-  set -- "$repo_root/fixtures/davinci" "$repo_root/clinic-api/target/fhir-out" "$repo_root/payer-api/target/fhir-out"
+  set -- "$repo_root/fixtures/davinci" "$repo_root/terminology" "$repo_root/clinic-api/target/fhir-out" "$repo_root/payer-api/target/fhir-out"
 fi
 
 mapfile -t json_files < <(collect_files "$@")

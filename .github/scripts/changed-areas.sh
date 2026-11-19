@@ -44,7 +44,7 @@ else
   output frontend false
 fi
 
-if touches '^(clinic-api|payer-api|fixtures)/|^\.github/scripts/ig-validate|^infra/docker-compose\.yml$' '^clinic-api/(integration-tests|seed-data)/|\.md$'; then
+if touches '^(clinic-api|payer-api|fixtures|terminology)/|^\.github/scripts/ig-validate|^infra/docker-compose\.yml$' '^clinic-api/(integration-tests|seed-data)/|\.md$'; then
   output igvalidate true
 else
   output igvalidate false

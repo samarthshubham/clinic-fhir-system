@@ -33,7 +33,7 @@ class DtrQuestionnaireFixturesTest {
       Map<String, List<Map<String, Object>>> file = new Yaml().load(input);
       List<Map<String, Object>> rules =
           file.get("rules").stream().filter(rule -> rule.get("questionnaire") != null).toList();
-      assertThat(rules).hasSize(4);
+      assertThat(rules.stream().map(rule -> rule.get("questionnaire")).distinct()).hasSize(4);
       return rules.stream();
     }
   }

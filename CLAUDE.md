@@ -23,7 +23,7 @@ Angular (care-platform/)
     ↓ REST JSON  (proxy → localhost:9090)
 clinic-api  (Spring Boot 3.5 / Java 25, port 9090)
     ↓ FHIR REST HTTP
-HAPI FHIR JPA Server v7.4.0  (port 8080)
+HAPI FHIR JPA Server v7.4.0  (port 8080; the payer HAPI on :8081 runs v8.12.0)
     ↓ JPA
 PostgreSQL 15  (owned entirely by HAPI — Spring Boot never queries it directly)
 ```
@@ -86,6 +86,7 @@ payer-api/          Payer Spring Boot service (Maven, port 9095), client of the 
   src/main/java/io/github/samarthshubham/payer/
     interop/        PayerFhirServer (HAPI RestfulServer at /fhir), ImplementationGuideCapabilityInterceptor,
                     QuestionnairePackageProvider (DTR Questionnaire/$questionnaire-package, system tokens only),
+                    ClaimSubmitProvider (PAS Claim/$submit, system/Claim.c, system tokens only; docs/11 §3 "PAS"),
                     ScopeInterceptor (SMART scopes + member compartment); auth per docs/15-payer-auth.md
     cdshooks/       CRD over CDS Hooks: GET /cds-services (public), POST /cds-services/{order-sign,order-select,appointment-book,encounter-start,order-dispatch}-crd
                     (system/Coverage.r); CrdHookService, CoverageDecisions, PrefetchResolver (docs/11-payer-architecture.md §3)
@@ -93,7 +94,8 @@ payer-api/          Payer Spring Boot service (Maven, port 9095), client of the 
                     CrdProperties (payer.crd: payer identifiers, prefetch fallback allow-list), ClockConfig
     controller/     AuthController, OAuthTokenController, MemberController (/api/members, docs/11-payer-architecture.md §3)
     service/ mapper/ MemberService + MemberMapper (payer HAPI Patient, Coverage, InsurancePlan, preauthorization Claims),
-                    CoverageRuleService (coverage-rules.yaml), MemberCoverageService, AuditEventService
+                    CoverageRuleService (coverage-rules.yaml), MemberCoverageService, AuditEventService,
+                    ClaimSubmitService + PasRequest + PriorAuthAdjudicator + SlaClock (PAS: validate, adjudicate, store, deadline)
     security/ dto/ exception/   same layout as clinic-api
 
 care-platform/      Angular 21 Nx monorepo
@@ -106,7 +108,7 @@ care-platform/      Angular 21 Nx monorepo
                         sandra-okafor.feature, ramon-castillo.feature, aisha-chen.feature,
                         robert-osei.feature, tony-stark.feature,
                         payer/payer-plans.feature, payer/payer-members.feature,
-                        payer/payer-questionnaires.feature (payer HAPI :8081)
+                        payer/payer-terminology.feature, payer/payer-questionnaires.feature (payer HAPI :8081)
     src/step-definitions/  background.steps.ts, patient.steps.ts, encounter.steps.ts,
                            vitals.steps.ts, clinical.steps.ts, coverage.steps.ts, payer.steps.ts
     src/support/        api-client.ts, world.ts, date-helpers.ts
@@ -117,8 +119,12 @@ fixtures/davinci/       Golden Da Vinci fixtures per IG (provider, crd, dtr, pas
                         Maven modules, validated by the ig-validate CI job (.github/scripts/ig-validate.sh); provenance in its README;
                         provider/ = clinic-api US Core mapper output
 
+terminology/            Terminology the payer HAPI needs that no IG package has, one subfolder per resource type:
+  codesystems/          fragment CodeSystems with only the demo codes (CPT, HCPCS, ICD-10-CM, X12 755), fixed ids;
+                        seeded by payer-terminology.feature, checked by ig-validate
+
 infra/
-  docker-compose.yml    HAPI FHIR (rest-hook subscriptions on) + payer HAPI :8081 (Da Vinci IGs) + PostgreSQL 15 + Prometheus + Grafana
+  docker-compose.yml    HAPI FHIR 7.4.0 (rest-hook subscriptions on) + payer HAPI 8.12.0 :8081 (Da Vinci IGs) + PostgreSQL 15 + Prometheus + Grafana
   postgres/             create-payer-db.sh: creates the hapi_payer database (one-shot postgres-init service)
   payer/                smoke.sh (payer IG smoke test) + HealthCheck.java (healthcheck for both distroless HAPI images)
   prometheus/           Scrape config for clinic-api and payer-api /actuator/prometheus

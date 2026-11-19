@@ -82,7 +82,7 @@ How `MemberService` reads the payer HAPI:
 | `planName`, `coverageStatus` (search) | the current Coverage: the newest `active` one, else the newest by `period.start`; `Coverage.class[type=plan].name`, `Coverage.status` |
 | `coverages[]` (detail) | `Coverage?beneficiary=Patient/{id}`, newest first: `status`, `period`, `payor[0].display`, `relationship` |
 | `coverages[].plan` | `InsurancePlan?identifier=…/insurance-plan\|{Coverage.class[type=plan].value}`: `id`, `name`, `plan[0].type.text`; falls back to the Coverage class when the plan is missing |
-| `priorAuths[]` (detail) | `Claim?patient=Patient/{id}&use=preauthorization&_revinclude=ClaimResponse:request&_sort=-created`: `Claim.status`, `created`, `item[0].productOrService`, and `ClaimResponse.outcome` / `preAuthRef`. Empty until PAS (E4) stores Claims. |
+| `priorAuths[]` (detail) | `Claim?patient=Patient/{id}&use=preauthorization&_revinclude=ClaimResponse:request&_sort=-created`: `Claim.status`, `created`, `item[0].productOrService`, and `ClaimResponse.outcome` / `preAuthRef`. `Claim/$submit` stores them. |
 
 payer-app shows the search at `/members` (a sortable, paged `mat-table`) and the detail at `/members/:id`.
 
@@ -130,6 +130,21 @@ Every extension also has `coverage` (the client's Coverage), `date` and a `cover
 - 400 for a malformed request, no or several Coverages, or another payer; 404 for an unknown service; 412 for a missing prefetch that can't be fetched; 401/403 for a missing token or a token without `system/Coverage.r` (member tokens never qualify); 502/503 when the payer HAPI fails.
 - Every hook call, including failed ones, records the `crd.hook` timer (tags `service`, `status`; Prometheus `crd_hook_seconds`) and writes an `AuditEvent` to the payer HAPI in the background: client id, `hookInstance`, HTTP outcome and the payer Coverage, no PHI.
 
+### PAS: `Claim/$submit`
+
+`POST /fhir/Claim/$submit` ([PAS 2.2.1](https://hl7.org/fhir/us/davinci-pas/STU2.2/), `ClaimSubmitProvider` → `ClaimSubmitService`) takes a PAS request bundle, as the `resource` parameter of a `Parameters` or as the raw body, and answers with a PAS response bundle. It needs a system token with `system/Claim.c`; member tokens get 403 (the response nests other resources, so the operation is `systemOnly`).
+
+1. **Shape.** Exactly one Claim with `use=preauthorization`, an identifier with system and value, items, and a focal insurance whose Coverage is in the bundle. Otherwise 400.
+2. **Validation.** The bundle goes to the payer HAPI's `Bundle/$validate` with `profile=…/profile-pas-request-bundle`. Any `error` or `fatal` issue gives a 422 with an `OperationOutcome` of just those issues, and nothing is stored.
+3. **Idempotency (NFR-REL-1).** `Claim?identifier={system}|{value}&_revinclude=ClaimResponse:request`. If the Claim is already there, the first `ClaimResponse` is returned again and nothing new is written.
+4. **Adjudication.** The member id from the Coverage (`…/member-id` identifier, else `subscriberId`) goes through `MemberCoverageService`. Then `PriorAuthAdjudicator` applies the `coverage-rules.yaml` rule for each item's `productOrService` (the first coding with a rule) to the answers of every QuestionnaireResponse in the bundle, as in §6. The order priority for `emergencyExempt` comes from the item's `extension-requestedService` order. A member who is not found or has no active coverage is denied with reason `no-member-found` / `no-active-coverage`.
+5. **Storage.** One transaction on the payer HAPI: each QuestionnaireResponse, the Claim (conditional create on its identifier) and the ClaimResponse. The patient, the focal Coverage and the insurer are re-pointed at the payer's member `Patient`, `Coverage` and payor `Organization`. Other provider resources stay references to the provider's server (their `fullUrl`), or to their identifier when the bundle only gave a `urn:uuid`.
+6. **Deadline (NFR-REG-1).** `SlaClock` (injected `Clock`) sets the Claim extension `http://praxishealthplan.example/fhir/StructureDefinition/decision-deadline`: 72 h when `Claim.priority` is `stat` (expedited), else 7 days. The clock runs from `Claim.created`, or from now when `created` is missing or in the future, so a backdated submission (Tony Stark, §5 of the roadmap) can be breached.
+7. **Response.** `ClaimResponse` (PAS profile): `outcome=complete`, a `disposition`, and `preAuthRef` plus an identifier `…/identifier/prior-auth|PHP-PA-XXXXXXXX`, derived from the Claim identifier. Each item's adjudication has the PAS `reviewAction` with X12 306 `A1` approved (with `number` = preAuthRef), `A3` denied, `A4` pended or `NA` no PA needed. A denial also has `adjudication.reason`, a code from `…/CodeSystem/denial-reason` plus the text (NFR-REG-2). The wire copy uses the submitter's references (patient, insurer, requestor = `Claim.provider`, request = the submitted Claim). The bundle also carries the patient and both Organizations from the request.
+8. **Audit (NFR-AUD-1).** Every call, including failed ones, writes an `AuditEvent` named `Claim/$submit` in the background: client id, the Claim identifier value, the HTTP outcome and the stored Claim and ClaimResponse ids.
+
+Terminology: the payer HAPI has no CPT, HCPCS, ICD-10-CM or X12 code systems, and PAS binds claim lines (`X12278RequestedServiceType`), diagnoses and the attachment report type as required. `terminology/codesystems/` holds a `fragment` CodeSystem for each, with only the demo codes. `payer-terminology.feature` seeds them. A CodeableConcept in a required-bound element must use one code system: HAPI rejects a SNOMED + CPT pair even though the CPT code is in the value set. So PAS claim lines carry the CPT/HCPCS code, and `coverage-rules.yaml` also lists the CPT codes of the SNOMED-coded orders (§6).
+
 ## 4. What we reuse instead of building
 
 | Need | Reused |
@@ -142,7 +157,7 @@ Every extension also has `coverage` (the client's Coverage), `date` and a `cover
 
 ## 5. Implementation guides
 
-The payer HAPI (`hapi-fhir-payer` in `infra/docker-compose.yml`) installs these packages at startup with `installMode: STORE_AND_INSTALL`. Versions were checked on packages.fhir.org on 2026-11-07, and all of them are FHIR R4.
+The payer HAPI (`hapi-fhir-payer` in `infra/docker-compose.yml`, HAPI 8.12.0; the provider HAPI stays on 7.4.0) installs these packages at startup with `installMode: STORE_AND_INSTALL`. Versions were checked on packages.fhir.org on 2026-11-07, and all of them are FHIR R4.
 
 | Package | Version | Note |
 |---|---|---|
@@ -165,7 +180,8 @@ The payer HAPI (`hapi-fhir-payer` in `infra/docker-compose.yml`) installs these 
 How the packages are loaded:
 
 - `install_transitive_ig_dependencies` is off. Some IGs depend on older releases of each other (CDex 2.1.0 on PAS 2.1.0, ATR and Formulary on HRex 1.1.0), so transitive installs would load two versions of the same profiles, along with VSAC and the US Core 3.1.1 and 6.1.0 packages. Only the packages above are installed.
-- HAPI 7.4.0 stores only `active` conformance resources as REST resources. Draft ones (for example the CRD hook contexts, `PASTempCodes`, `hrex-patient-demographics` and `hrex-consent`) are not searchable, but they stay in the package cache and `$validate` still uses them.
+- HAPI stores only `active` conformance resources as REST resources. Draft ones (for example the CRD hook contexts, `PASTempCodes`, `hrex-patient-demographics` and `hrex-consent`) are not searchable, but they stay in the package cache and `$validate` still uses them.
+- The payer HAPI runs 8.12.0 because 7.4.0's validator rejects valid PAS 2.2.1 request bundles, the IG's own `ReferralAuthorizationBundleExample` among them: the `entry:Claim` profile choice fails with bogus extension counts. Moving from 7.4.0 needs a fresh `hapi_payer` database (`docker compose -f infra/docker-compose.yml rm -sf hapi-fhir-payer`, then `docker exec clinic-postgres dropdb -U hapi hapi_payer`; `postgres-init` creates it again) and a re-seed.
 - Each start reinstalls the packages, so the payer HAPI takes about 4 to 5 minutes to become healthy. The compose healthcheck allows 10 minutes.
 - Bulk export (`$export`), rest-hook subscriptions and request validation are on. Requests that fail validation get a 422 with an `OperationOutcome`.
 
@@ -181,9 +197,12 @@ How the packages are loaded:
 | Thyroid panel (free T4 + TSH) | `http://loinc.org` | `24348-5` | no | no | |
 | Continuous glucose monitor | `http://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets` | `E2103` | yes | yes | `continuous-glucose-monitor` |
 | Polysomnography | `http://snomed.info/sct` | `60554003` | yes | yes | `polysomnography` |
+| Polysomnography (PAS claim line) | `http://www.ama-assn.org/go/cpt` | `95810` | yes | yes | `polysomnography` |
 | Echocardiogram | `http://snomed.info/sct` | `40701008` | yes | yes | `echocardiogram` |
+| Echocardiogram (PAS claim line) | `http://www.ama-assn.org/go/cpt` | `93306` | yes | yes | `echocardiogram` |
 | MRI lumbar spine without contrast | `http://www.ama-assn.org/go/cpt` | `72148` | yes | yes | `mri-lumbar-spine` |
 | Cardiac stress test | `http://snomed.info/sct` | `76746007` | yes | no | |
+| Cardiac stress test (PAS claim line) | `http://www.ama-assn.org/go/cpt` | `93015` | yes | no | |
 | Emergency cardiac workup | `http://snomed.info/sct` | `276341003` | yes, waived when `stat` | no | |
 
 - Questionnaire canonicals are `http://praxishealthplan.example/fhir/Questionnaire/<name>`. The forms, their CQL Libraries (`Library/<name>-prepopulation`) and ValueSets are golden fixtures in `fixtures/davinci/dtr/`, seeded into the payer HAPI by `payer-questionnaires.feature`. The `autoApproveCriteria` linkIds are required items in them (`DtrQuestionnaireFixturesTest`).

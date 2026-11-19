@@ -1,0 +1,18 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "icd-10-cm",
+  "url": "http://hl7.org/fhir/sid/icd-10-cm",
+  "name": "PraxisDemoIcd10Cm",
+  "title": "ICD-10-CM codes used by the Praxis demo",
+  "status": "active",
+  "experimental": true,
+  "publisher": "Praxis Health Plan (demo)",
+  "description": "The ICD-10-CM diagnosis codes the demo prior auth requests use, so the payer HAPI can check the PAS diagnosis binding.",
+  "caseSensitive": true,
+  "content": "fragment",
+  "concept": [
+    { "code": "E11.65", "display": "Type 2 diabetes mellitus with hyperglycemia" },
+    { "code": "G47.33", "display": "Obstructive sleep apnea (adult) (pediatric)" },
+    { "code": "M54.16", "display": "Radiculopathy, lumbar region" }
+  ]
+}

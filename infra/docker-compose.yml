@@ -65,7 +65,7 @@ services:
         condition: service_healthy
 
   hapi-fhir-payer:
-    image: hapiproject/hapi:v7.4.0
+    image: hapiproject/hapi:v8.12.0-2
     container_name: clinic-hapi-fhir-payer
     ports:
       - "8081:8080"
@@ -74,7 +74,7 @@ services:
       spring.datasource.username: hapi
       spring.datasource.password: hapi
       spring.datasource.driverClassName: org.postgresql.Driver
-      spring.jpa.properties.hibernate.dialect: ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgres94Dialect
+      spring.jpa.properties.hibernate.dialect: ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgresDialect
       hapi.fhir.default_encoding: JSON
       hapi.fhir.fhir_version: R4
       hapi.fhir.allow_external_references: "true"

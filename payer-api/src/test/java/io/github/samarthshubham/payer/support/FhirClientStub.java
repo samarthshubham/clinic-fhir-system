@@ -15,12 +15,19 @@ import ca.uhn.fhir.rest.gclient.ICreate;
 import ca.uhn.fhir.rest.gclient.ICreateTyped;
 import ca.uhn.fhir.rest.gclient.ICriterion;
 import ca.uhn.fhir.rest.gclient.ICriterionInternal;
+import ca.uhn.fhir.rest.gclient.IOperation;
+import ca.uhn.fhir.rest.gclient.IOperationUnnamed;
+import ca.uhn.fhir.rest.gclient.IOperationUntyped;
+import ca.uhn.fhir.rest.gclient.IOperationUntypedWithInput;
+import ca.uhn.fhir.rest.gclient.IOperationUntypedWithInputAndPartialOutput;
 import ca.uhn.fhir.rest.gclient.IParam;
 import ca.uhn.fhir.rest.gclient.IQuery;
 import ca.uhn.fhir.rest.gclient.IRead;
 import ca.uhn.fhir.rest.gclient.IReadExecutable;
 import ca.uhn.fhir.rest.gclient.IReadTyped;
 import ca.uhn.fhir.rest.gclient.ISort;
+import ca.uhn.fhir.rest.gclient.ITransaction;
+import ca.uhn.fhir.rest.gclient.ITransactionTyped;
 import ca.uhn.fhir.rest.gclient.IUntypedQuery;
 import ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException;
 import java.util.ArrayList;
@@ -28,9 +35,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
+import org.hl7.fhir.instance.model.api.IBaseBundle;
+import org.hl7.fhir.instance.model.api.IBaseParameters;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.IdType;
+import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.Resource;
 import org.mockito.Answers;
 import org.mockito.quality.Strictness;
@@ -47,6 +59,10 @@ public final class FhirClientStub {
   private final Map<Class<?>, List<String>> pendingCriteria = new HashMap<>();
   private final Map<Class<?>, List<List<String>>> executedSearches = new HashMap<>();
   private final List<IBaseResource> created = new CopyOnWriteArrayList<>();
+  private final List<Bundle> transactions = new CopyOnWriteArrayList<>();
+  private final List<IBaseParameters> operationInputs = new CopyOnWriteArrayList<>();
+  private final AtomicInteger nextId = new AtomicInteger(1);
+  private Supplier<IBaseResource> operationResult = OperationOutcome::new;
 
   public FhirClientStub() {
     IUntypedQuery<?> untypedQuery = lenientMock(IUntypedQuery.class, Answers.RETURNS_DEFAULTS);
@@ -59,6 +75,34 @@ public final class FhirClientStub {
     IRead read = lenientMock(IRead.class, Answers.RETURNS_DEFAULTS);
     lenient().doReturn(read).when(client).read();
     lenient().doAnswer(inv -> readTyped(inv.getArgument(0))).when(read).resource(any(Class.class));
+
+    ITransaction transaction = lenientMock(ITransaction.class, Answers.RETURNS_DEFAULTS);
+    lenient().doReturn(transaction).when(client).transaction();
+    lenient()
+        .doAnswer(inv -> transactionTyped(inv.getArgument(0)))
+        .when(transaction)
+        .withBundle(any(IBaseBundle.class));
+
+    IOperation operation = lenientMock(IOperation.class, Answers.RETURNS_DEFAULTS);
+    lenient().doReturn(operation).when(client).operation();
+    IOperationUnnamed unnamed = lenientMock(IOperationUnnamed.class, Answers.RETURNS_DEFAULTS);
+    lenient().doReturn(unnamed).when(operation).onType(any(Class.class));
+    IOperationUntyped untyped = lenientMock(IOperationUntyped.class, Answers.RETURNS_DEFAULTS);
+    lenient().doReturn(untyped).when(unnamed).named(anyString());
+    IOperationUntypedWithInputAndPartialOutput<?> withInput =
+        lenientMock(IOperationUntypedWithInputAndPartialOutput.class, Answers.RETURNS_DEFAULTS);
+    lenient()
+        .doAnswer(
+            inv -> {
+              operationInputs.add(inv.getArgument(0));
+              return withInput;
+            })
+        .when(untyped)
+        .withParameters(any(IBaseParameters.class));
+    IOperationUntypedWithInput<?> typed =
+        lenientMock(IOperationUntypedWithInput.class, Answers.RETURNS_DEFAULTS);
+    lenient().doReturn(typed).when(withInput).returnResourceType(any(Class.class));
+    lenient().doAnswer(inv -> operationResult.get()).when(typed).execute();
 
     ICreate create = lenientMock(ICreate.class, Answers.RETURNS_DEFAULTS);
     lenient().doReturn(create).when(client).create();
@@ -95,6 +139,32 @@ public final class FhirClientStub {
 
   public <T extends IBaseResource> List<T> created(Class<T> type) {
     return created.stream().filter(type::isInstance).map(type::cast).toList();
+  }
+
+  public void reset() {
+    searchResults.clear();
+    stored.clear();
+    pendingCriteria.clear();
+    executedSearches.clear();
+    created.clear();
+    transactions.clear();
+    operationInputs.clear();
+    nextId.set(1);
+    operationResult = OperationOutcome::new;
+  }
+
+  /** What an extended operation (e.g. $validate) returns; the supplier may throw instead. */
+  public void givenOperationResult(Supplier<IBaseResource> result) {
+    operationResult = result;
+  }
+
+  public List<IBaseParameters> operationInputs() {
+    return List.copyOf(operationInputs);
+  }
+
+  /** Transactions sent so far; each entry got a location Type/n in the response. */
+  public List<Bundle> transactions() {
+    return List.copyOf(transactions);
   }
 
   public static Bundle bundleOf(Resource... resources) {
@@ -168,6 +238,31 @@ public final class FhirClientStub {
         .when(createTyped)
         .execute();
     return createTyped;
+  }
+
+  private ITransactionTyped<?> transactionTyped(Bundle bundle) {
+    ITransactionTyped<?> typed = lenientMock(ITransactionTyped.class, Answers.RETURNS_SELF);
+    lenient()
+        .doAnswer(
+            inv -> {
+              transactions.add(bundle.copy());
+              Bundle response = new Bundle().setType(Bundle.BundleType.TRANSACTIONRESPONSE);
+              for (Bundle.BundleEntryComponent entry : bundle.getEntry()) {
+                response
+                    .addEntry()
+                    .getResponse()
+                    .setStatus("201 Created")
+                    .setLocation(
+                        entry.getResource().fhirType()
+                            + "/"
+                            + nextId.getAndIncrement()
+                            + "/_history/1");
+              }
+              return response;
+            })
+        .when(typed)
+        .execute();
+    return typed;
   }
 
   private IReadTyped<?> readTyped(Class<?> type) {

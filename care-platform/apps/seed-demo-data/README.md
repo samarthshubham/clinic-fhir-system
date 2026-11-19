@@ -79,12 +79,13 @@ An HTML report is written to `apps/seed-demo-data/reports/seed-data-report.html`
 
 ### Payer data (`src/features/payer/`)
 
-`cucumber.json` runs the payer features after the patient profiles, plans before members:
+`cucumber.json` runs the payer features after the patient profiles: plans, members, terminology, then questionnaires:
 
 | Feature | Seeds |
 |---|---|
 | `payer-plans.feature` | Praxis Health Plan (`Organization`) and two `InsurancePlan`s, Praxis Gold PPO and Praxis Silver HMO, in the payer HAPI |
 | `payer-members.feature` | for each of the 8 profiles: the provider `Coverage` (through clinic-api), and a member `Patient` + `Coverage` in the payer HAPI. Aisha Chen's payer `Coverage` is `cancelled` while her provider `Coverage` stays `active`, so CRD answers "Coverage could not be verified" for her |
+| `payer-terminology.feature` | every `fragment` CodeSystem in `terminology/codesystems/` (the demo CPT, HCPCS, ICD-10-CM and X12 codes the payer HAPI needs to validate PAS bundles), PUT under its fixed id |
 | `payer-questionnaires.feature` | the DTR `Questionnaire`s, CQL `Library`s and `ValueSet`s from `fixtures/davinci/dtr/` (MRI lumbar spine, polysomnography, CGM, echocardiogram), PUT under their fixed ids; then checks that payer-api's `$questionnaire-package` returns the right form for each order code |
 
 - Both `Coverage`s of a member carry the same identifier, `http://praxishealthplan.example/fhir/identifier/member-id|PHP-#####`. That's how the two sides match a member. The payer `Patient` copies its demographics from the provider `Patient`.
