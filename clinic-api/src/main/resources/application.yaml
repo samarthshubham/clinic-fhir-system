@@ -33,7 +33,7 @@ clinic:
     base-url: ${CLINIC_PAYER_API_URL:http://localhost:9095}
     client-id: clinic-api
     client-secret: ${CLINIC_PAYER_CLIENT_SECRET:}
-    scope: system/Coverage.r
+    scope: system/Coverage.r system/Questionnaire.r
     timeout: 2s
     payer-id: praxis-health-plan
 
