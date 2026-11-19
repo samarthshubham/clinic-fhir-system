@@ -2,6 +2,7 @@ package io.github.samarthshubham.clinic.exception;
 
 import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
 import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException;
+import io.github.samarthshubham.clinic.client.PayerApiException;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,36 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleReferenceValidation(ReferenceValidationException ex) {
     return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
         .body(new ErrorResponse(422, ex.getMessage()));
+  }
+
+  @ExceptionHandler(DocumentationNotFoundException.class)
+  public ResponseEntity<ErrorResponse> handleDocumentationNotFound(
+      DocumentationNotFoundException ex) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        .body(new ErrorResponse(404, ex.getMessage()));
+  }
+
+  @ExceptionHandler(DocumentationValidationException.class)
+  public ResponseEntity<ErrorResponse> handleDocumentationValidation(
+      DocumentationValidationException ex) {
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+        .body(new ErrorResponse(422, ex.getMessage()));
+  }
+
+  @ExceptionHandler(DocumentationConflictException.class)
+  public ResponseEntity<ErrorResponse> handleDocumentationConflict(
+      DocumentationConflictException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(409, ex.getMessage()));
+  }
+
+  @ExceptionHandler(PayerApiException.class)
+  public ResponseEntity<ErrorResponse> handlePayerApi(PayerApiException ex) {
+    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+        .body(
+            new ErrorResponse(
+                503,
+                "The payer could not be reached, so the documentation form is unavailable. Try"
+                    + " again later."));
   }
 
   @ExceptionHandler(UnauthorizedWebhookException.class)
