@@ -59,7 +59,7 @@ public class CrdService {
         appointment, patientService.findPatient(patientId), coverage, practitioner(practitionerId));
   }
 
-  private Coverage activeCoverageWithPayer(String patientId) {
+  public Coverage activeCoverageWithPayer(String patientId) {
     Coverage coverage = coverageService.findActiveCoverageResource(patientId);
     if (coverage == null) {
       return null;

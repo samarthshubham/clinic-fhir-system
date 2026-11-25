@@ -38,13 +38,14 @@ PostgreSQL 15  (owned entirely by HAPI — Spring Boot never queries it directly
 clinic-api/         Spring Boot backend (Maven)
   src/main/java/io/github/samarthshubham/clinic/
     client/         CrdClient (payer-api CRD order-sign / appointment-book, 2 s timeout, fails open),
-                    PayerTokenClient (client_credentials system token, cached until expiry), CrdResult
+                    PayerTokenClient (client_credentials system token, cached until expiry), CrdResult,
+                    DtrClient + DtrPackage (payer-api `$questionnaire-package`; failures are PayerApiException → 503)
     config/         FhirConfig, ClinicalThresholds, SecurityConfig, JwtConfig, AuthProperties,
                     PayerApiConfig + PayerApiProperties (clinic.payer.*)
     security/       Role, Permission, RolePermissions, PatientAccess, JsonSecurityErrorHandler
     controller/     PatientController, EncounterController, VitalsController,
                     PractitionerController, ConditionController, MedicationController,
-                    AppointmentController, ServiceRequestController,
+                    AppointmentController, ServiceRequestController, DocumentationController,
                     DiagnosticReportController, CarePlanController, GoalController,
                     CoverageController, DashboardController, AlertController, AuthController
     service/        PatientService, EncounterService, VitalsService,
@@ -57,11 +58,13 @@ clinic-api/         Spring Boot backend (Maven)
                     AuthService, TokenService, StaffAccountBootstrap
     service/dtr/    DtrPrepopulationService (prefills a DTR Questionnaire from the provider chart into a
                     QuestionnaireResponse, `information-origin` = auto-client), DtrExpressionEvaluator
-                    (FHIRPath `initialExpression` / `variable` and `x-fhir-query` via the HL7 FHIRPathEngine)
+                    (FHIRPath `initialExpression` / `variable` and `x-fhir-query` via the HL7 FHIRPathEngine),
+                    DtrService (order documentation: QuestionnaireResponse in the provider HAPI, linked to the
+                    order with `qr-context`; enableWhen, required items, information-origin per answer)
     mapper/         PatientMapper, EncounterMapper, ObservationMapper,
                     PractitionerMapper, ConditionMapper, MedicationMapper,
                     AppointmentMapper, ServiceRequestMapper, DiagnosticReportMapper,
-                    CarePlanMapper, GoalMapper, CoverageMapper, FlagMapper,
+                    CarePlanMapper, GoalMapper, CoverageMapper, FlagMapper, DocumentationMapper (DTR form),
                     PageMapper (search result → PageResponse), FhirValues,
                     UsCoreProfiles (US Core 7.0.0 meta.profile URLs)
     dto/            PatientRequest, EncounterRequest, VitalsRequest,
@@ -75,10 +78,14 @@ clinic-api/         Spring Boot backend (Maven)
                     SnapshotResponse, TrendsResponse, TimelineEvent, DashboardResponse,
                     AlertItem, VitalReading, LatestVitals, GoalProgress,
                     DataPoint, BpSeries, SimpleSeries, ClinicianAlert, AlertResponse,
-                    GroupedObservation, PatientSummary,
+                    GroupedObservation, PatientSummary, DocumentationRequest, DocumentationItemAnswers,
+                    DocumentationResponse, DocumentationItem, DocumentationAnswer, DocumentationValue,
+                    DocumentationCoding, DocumentationEnableWhen,
                     LoginRequest, RefreshRequest, TokenResponse, AuthUser  (all Java records)
     exception/      ResourceNotFoundException, ReferenceValidationException,
-                    UnauthorizedWebhookException, GlobalExceptionHandler, ErrorResponse
+                    UnauthorizedWebhookException, DocumentationNotFoundException (404),
+                    DocumentationValidationException (422), DocumentationConflictException (409),
+                    GlobalExceptionHandler, ErrorResponse
   seed-data/        13 Synthea FHIR R4 patient bundles + load.sh
   integration-tests/ Postman collections (one per resource)
 
@@ -106,7 +113,7 @@ care-platform/      Angular 21 Nx monorepo
   apps/seed-demo-data/  Cucumber-driven idempotent seed data (8 patient profiles)
     src/features/       patients.feature, marcus-webb.feature, priya-nair.feature, gerald-horton.feature,
                         sandra-okafor.feature, ramon-castillo.feature, aisha-chen.feature,
-                        robert-osei.feature, tony-stark.feature,
+                        robert-osei.feature, tony-stark.feature, staff-practitioners.feature (user-admin, user-clinician, user-frontdesk),
                         payer/payer-plans.feature, payer/payer-members.feature,
                         payer/payer-terminology.feature, payer/payer-questionnaires.feature (payer HAPI :8081)
     src/step-definitions/  background.steps.ts, patient.steps.ts, encounter.steps.ts,
@@ -447,10 +454,10 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 | `clinic.alerts.webhook-secret` | `${CLINIC_ALERTS_WEBHOOK_SECRET:dev-only-alert-secret}` | Shared secret HAPI sends as `X-Alert-Secret`; webhook returns 401 otherwise |
 | `clinic.alerts.first-lookback` | `24h` | How far back the first notification after a restart searches (may re-alert) |
 | `clinic.payer.base-url` | `${CLINIC_PAYER_API_URL:http://localhost:9095}` | payer-api base URL for CRD hooks and `/oauth/token` |
-| `clinic.payer.client-id` / `scope` | `clinic-api` / `system/Coverage.r` | clinic-api's `client_credentials` client at payer-api |
+| `clinic.payer.client-id` / `scope` | `clinic-api` / `system/Coverage.r system/Questionnaire.r` | clinic-api's `client_credentials` client at payer-api (CRD hooks, DTR `$questionnaire-package`) |
 | `clinic.payer.client-secret` | `${CLINIC_PAYER_CLIENT_SECRET}`; dev profile default `dev-only-clinic-api-client-secret` | Startup fails when empty |
 | `clinic.payer.payer-id` | `praxis-health-plan` | Hooks are called only when the active Coverage's payor identifier (`http://praxis.clinic/fhir/identifier/payer`) is this payer; otherwise no patient data is sent |
-| `clinic.payer.timeout` | `2s` | Connect and read timeout per payer-api call; on timeout, 5xx or connection error the order is saved with a "Coverage unknown" card |
+| `clinic.payer.timeout` | `2s` | Connect and read timeout per payer-api call; on timeout, 5xx or connection error the order is saved with a "Coverage unknown" card, and the DTR documentation endpoints answer 503 |
 
 ---
 
@@ -492,6 +499,9 @@ Every other `/api/**` endpoint needs `Authorization: Bearer <accessToken>` (exce
 | `POST` | `/api/service-requests` | Place lab/imaging order; calls CRD `order-sign` and returns `coverage` + `cards[]` (fails open) |
 | `GET` | `/api/service-requests/{id}` | Get order |
 | `GET` | `/api/service-requests?patientId={id}&status=active` | List orders (optional status filter) |
+| `GET` | `/api/service-requests/{id}/documentation` | DTR form from the payer's `$questionnaire-package`: saved answers, or prefilled from the chart (not stored) (`clinical:read`) |
+| `PUT` | `/api/service-requests/{id}/documentation` | Save answers per linkId as the order's `in-progress` QuestionnaireResponse (`order:write`) |
+| `POST` | `/api/service-requests/{id}/documentation/complete` | Check enabled required items, save as `completed` (`order:write`); 422 lists missing linkIds |
 | `POST` | `/api/diagnostic-reports` | Create report (auto-completes linked ServiceRequest) |
 | `GET` | `/api/diagnostic-reports?patientId={id}` | List reports |
 | `POST` | `/api/care-plans` | Create care plan |

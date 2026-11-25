@@ -28,6 +28,7 @@ import io.github.samarthshubham.clinic.service.TimelineService;
 import io.github.samarthshubham.clinic.service.TokenService;
 import io.github.samarthshubham.clinic.service.TrendsService;
 import io.github.samarthshubham.clinic.service.VitalsService;
+import io.github.samarthshubham.clinic.service.dtr.DtrService;
 import io.github.samarthshubham.clinic.support.TestAuth;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -116,6 +117,14 @@ class AuthorizationMatrixTest {
           get("/api/medications?patientId=p1", CLINICAL_STAFF),
           get("/api/service-requests/sr1", CLINICAL_STAFF),
           get("/api/service-requests?patientId=p1", CLINICAL_STAFF),
+          get("/api/service-requests/sr1/documentation", CLINICAL_STAFF),
+          put(
+              "/api/service-requests/sr1/documentation",
+              """
+              {"answers":[{"linkId":"pain-location","values":[{"valueString":"L5"}]}]}
+              """,
+              CLINICAL_STAFF),
+          post("/api/service-requests/sr1/documentation/complete", null, CLINICAL_STAFF),
           get("/api/diagnostic-reports?patientId=p1", CLINICAL_STAFF),
           get("/api/care-plans?patientId=p1", CLINICAL_STAFF),
           get("/api/goals?patientId=p1", CLINICAL_STAFF),
@@ -173,6 +182,7 @@ class AuthorizationMatrixTest {
   @MockitoBean private AlertService alertService;
   @MockitoBean private AuthService authService;
   @MockitoBean private CoverageService coverageService;
+  @MockitoBean private DtrService dtrService;
 
   static Stream<Arguments> endpoints() {
     return ENDPOINTS.stream().map(endpoint -> Arguments.of(endpoint));
