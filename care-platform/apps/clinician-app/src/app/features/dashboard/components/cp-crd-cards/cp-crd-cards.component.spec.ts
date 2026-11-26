@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
+import { CpDocumentationDialogComponent } from '@features/dashboard/components/cp-documentation-dialog/cp-documentation-dialog.component';
 import {
   CoverageInformation,
   CrdCard,
@@ -33,9 +35,12 @@ const unknownCard: CrdCard = {
 };
 
 describe('CpCrdCardsComponent', () => {
+  const open = vi.fn();
   beforeEach(async () => {
+    open.mockClear();
     await TestBed.configureTestingModule({
       imports: [CpCrdCardsComponent],
+      providers: [{ provide: MatDialog, useValue: { open } }],
     }).compileComponents();
   });
 
@@ -43,11 +48,13 @@ describe('CpCrdCardsComponent', () => {
     coverage: CoverageInformation | null | undefined,
     cards: CrdCard[] | null | undefined,
     compact = false,
+    orderId: string | null = 'sr1',
   ): Promise<HTMLElement> {
     const fixture = TestBed.createComponent(CpCrdCardsComponent);
     fixture.componentRef.setInput('coverage', coverage);
     fixture.componentRef.setInput('cards', cards);
     fixture.componentRef.setInput('compact', compact);
+    fixture.componentRef.setInput('orderId', orderId);
     await fixture.whenStable();
     return fixture.nativeElement;
   }
@@ -74,7 +81,17 @@ describe('CpCrdCardsComponent', () => {
       '.app-crd-cards__documentation',
     );
     expect(action?.textContent?.trim()).toBe('Complete documentation');
-    expect(action?.getAttribute('aria-disabled')).toBe('true');
+    expect(action?.disabled).toBe(false);
+    action?.click();
+    expect(open).toHaveBeenCalledWith(
+      CpDocumentationDialogComponent,
+      expect.objectContaining({ data: { orderId: 'sr1' } }),
+    );
+  });
+
+  it('does not show the form action without a usable order', async () => {
+    const el = await render(paNeeded, [paCard], false, null);
+    expect(el.querySelector('.app-crd-cards__documentation')).toBeNull();
   });
 
   it('should show the coverage unknown case when the payer gave no answer', async () => {

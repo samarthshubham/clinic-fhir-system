@@ -1,0 +1,83 @@
+@let current = state();
+<h2 mat-dialog-title>
+  {{
+    current.status === 'ready'
+      ? current.model.response.title || 'Order documentation'
+      : 'Order documentation'
+  }}
+</h2>
+
+<mat-dialog-content>
+  @switch (current.status) {
+    @case ('loading') {
+      <p role="status">Loading documentation…</p>
+    }
+    @case ('error') {
+      <p class="app-documentation__error" role="alert">{{ current.message }}</p>
+    }
+    @case ('ready') {
+      @if (evaluation(); as formState) {
+        <form
+          [id]="formId"
+          [formGroup]="current.model.form"
+          (ngSubmit)="submit('complete')"
+        >
+          <cp-questionnaire-items
+            [model]="current.model"
+            [formId]="formId"
+            [evaluation]="formState"
+            [locked]="!!current.pending"
+          />
+        </form>
+      }
+    }
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  @if (current.status === 'ready') {
+    @if (current.model.completed) {
+      <p class="app-documentation__status" role="status">
+        Documentation complete.
+      </p>
+    }
+    @if (current.message) {
+      <p
+        class="app-documentation__status"
+        [attr.role]="current.error ? 'alert' : 'status'"
+        [class.app-documentation__error]="current.error"
+      >
+        {{ current.message }}
+      </p>
+    }
+  }
+  <button
+    mat-button
+    mat-dialog-close
+    type="button"
+    [disabled]="current.status === 'ready' && !!current.pending"
+  >
+    Close
+  </button>
+  @if (current.status === 'error') {
+    <button mat-flat-button type="button" (click)="retry()">Retry</button>
+  }
+  @if (current.status === 'ready' && !current.model.completed) {
+    <button
+      mat-stroked-button
+      type="button"
+      [disabled]="!!current.pending"
+      (click)="submit('save')"
+    >
+      {{ current.pending === 'save' ? 'Saving…' : 'Save draft' }}
+    </button>
+    <button
+      mat-flat-button
+      type="submit"
+      [attr.form]="formId"
+      [disabled]="!!current.pending"
+    >
+      {{ current.pending === 'complete' ? 'Completing…' : 'Complete' }}
+    </button>
+  }
+</mat-dialog-actions>

@@ -1,0 +1,38 @@
+:host {
+  display: grid;
+  gap: 16px;
+}
+
+.app-questionnaire__group {
+  display: grid;
+  gap: 12px;
+}
+
+.app-questionnaire__group > h3,
+.app-questionnaire__question p,
+.app-questionnaire__read-only {
+  margin: 0;
+}
+
+.app-questionnaire__question {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.app-questionnaire__answer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  width: 100%;
+}
+
+.app-questionnaire__answer mat-form-field {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.app-questionnaire__error {
+  color: var(--mat-sys-error);
+}
