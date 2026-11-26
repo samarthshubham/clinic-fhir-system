@@ -51,6 +51,11 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(409, ex.getMessage()));
   }
 
+  @ExceptionHandler(PasRequestException.class)
+  public ResponseEntity<ErrorResponse> handlePasRequest(PasRequestException ex) {
+    return ResponseEntity.badRequest().body(new ErrorResponse(400, ex.getMessage()));
+  }
+
   @ExceptionHandler(PayerApiException.class)
   public ResponseEntity<ErrorResponse> handlePayerApi(PayerApiException ex) {
     return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)

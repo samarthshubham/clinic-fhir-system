@@ -216,7 +216,11 @@ public class DtrService {
                             + serviceRequestId
                             + "'"));
     return new Form(
-        order, patientId, coverage, questionnairePackage, findSaved(serviceRequestId, patientId));
+        order,
+        patientId,
+        coverage,
+        questionnairePackage,
+        findSavedResponse(serviceRequestId, patientId));
   }
 
   private QuestionnaireResponse current(Form form) {
@@ -226,7 +230,7 @@ public class DtrService {
             form.questionnairePackage().questionnaire(), form.patientId());
   }
 
-  private QuestionnaireResponse findSaved(String serviceRequestId, String patientId) {
+  public QuestionnaireResponse findSavedResponse(String serviceRequestId, String patientId) {
     Bundle bundle =
         fhirClient
             .search()

@@ -117,6 +117,13 @@ class ClaimSubmitInteropTest {
     assertThat(claim.getInsurer().getReference()).isEqualTo("Organization/praxis-health-plan");
     assertThat(claim.getProvider().getReference())
         .isEqualTo("http://praxis.clinic/fhir/Organization/praxis-clinic");
+    var orderer = claim.getCareTeamFirstRep().getProvider();
+    assertThat(orderer.hasReference()).isFalse();
+    assertThat(orderer.getType()).isEqualTo("PractitionerRole");
+    assertThat(orderer.getIdentifier().getSystem())
+        .isEqualTo("http://praxis.clinic/fhir/identifier/practitioner-role");
+    assertThat(orderer.getIdentifier().getValue())
+        .isEqualTo("2aee35b2-a615-337b-a6d2-8dd9ba6b5c21");
     assertThat(
             ((DateTimeType)
                     claim.getExtensionByUrl(ClaimSubmitService.DECISION_DEADLINE).getValue())
@@ -126,7 +133,7 @@ class ClaimSubmitInteropTest {
     assertThat(transaction.getEntry().get(transaction.getEntry().size() - 2).getRequest())
         .extracting(Bundle.BundleEntryRequestComponent::getIfNoneExist)
         .isEqualTo(
-            "identifier=http%3A%2F%2Fpraxis.clinic%2Ffhir%2Fidentifier%2Fclaim%7CPX-PA-0002");
+            "identifier=http%3A%2F%2Fpraxis.clinic%2Ffhir%2Fidentifier%2Fclaim%7CPX-PA-mri-lumbar-spine-sandra-okafor");
 
     QuestionnaireResponse answers = resource(transaction, QuestionnaireResponse.class);
     assertThat(answers.getSubject().getReference()).isEqualTo("Patient/member-sandra");
@@ -191,7 +198,7 @@ class ClaimSubmitInteropTest {
     assertThat(payerHapi.transactions()).hasSize(1);
     assertThat(payerHapi.lastSearchCriteria(Claim.class))
         .contains(
-            "identifier=http://praxis.clinic/fhir/identifier/claim|PX-PA-0002",
+            "identifier=http://praxis.clinic/fhir/identifier/claim|PX-PA-mri-lumbar-spine-sandra-okafor",
             "_revinclude=ClaimResponse:request");
     FhirContext context = FhirContext.forR4Cached();
     assertThat(context.newJsonParser().encodeResourceToString(second))
@@ -213,7 +220,9 @@ class ClaimSubmitInteropTest {
     givenExistingDecision(conditionalMatch);
     givenActiveMember(laterBeneficiary);
     Bundle later = fixture(Bundle.class, "pas/" + laterFixture);
-    resource(later, Claim.class).getIdentifierFirstRep().setValue("PX-PA-0002");
+    resource(later, Claim.class)
+        .getIdentifierFirstRep()
+        .setValue("PX-PA-mri-lumbar-spine-sandra-okafor");
 
     assertThatThrownBy(() -> submit(later))
         .isInstanceOfSatisfying(
@@ -489,7 +498,7 @@ class ClaimSubmitInteropTest {
                           assertThat(event.getEntityFirstRep().getName())
                               .isEqualTo("Claim/$submit");
                           assertThat(event.getEntityFirstRep().getWhat().getIdentifier().getValue())
-                              .isEqualTo("PX-PA-0002");
+                              .isEqualTo("PX-PA-mri-lumbar-spine-sandra-okafor");
                           assertThat(event.getAgentFirstRep().getWho().getIdentifier().getValue())
                               .isEqualTo(TestAuth.CLIENT_ID);
                           assertThat(event.getOutcome()).isEqualTo(AuditEvent.AuditEventOutcome._0);

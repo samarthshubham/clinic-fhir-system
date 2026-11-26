@@ -442,6 +442,8 @@ public class ClaimSubmitService {
         fhirContext.newTerser().getAllPopulatedChildElementsOfType(resource, Reference.class)) {
       Reference target = reference.hasReference() ? references.get(reference.getReference()) : null;
       if (target != null) {
+        // A populated resource can make the encoder restore a cleared bundle-local reference.
+        reference.setResource(null);
         reference.setReference(target.getReference());
         if (target.hasIdentifier()) {
           reference.setIdentifier(target.getIdentifier().copy()).setType(target.getType());

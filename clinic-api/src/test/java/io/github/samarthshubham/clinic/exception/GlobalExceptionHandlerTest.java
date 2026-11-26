@@ -73,6 +73,21 @@ class GlobalExceptionHandlerTest {
   }
 
   @Test
+  void pasInputValidationReturnsBadRequestWithMessage() {
+    when(patientService.getPatient("p1"))
+        .thenThrow(new PasRequestException("The ordering Practitioner must have an NPI"));
+
+    assertThat(getPatient("p1"))
+        .hasStatus(HttpStatus.BAD_REQUEST)
+        .hasContentType(MediaType.APPLICATION_JSON)
+        .bodyJson()
+        .isStrictlyEqualTo(
+            """
+            {"status":400,"message":"The ordering Practitioner must have an NPI"}
+            """);
+  }
+
+  @Test
   void unreachableFhirServerBecomesServiceUnavailable() {
     FhirClientConnectionException failure = new FhirClientConnectionException("Connection refused");
     when(patientService.getPatient("p1")).thenThrow(failure);
