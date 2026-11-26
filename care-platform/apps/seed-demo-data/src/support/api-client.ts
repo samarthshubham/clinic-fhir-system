@@ -646,10 +646,21 @@ class ApiClient {
 
   async cascadeDeletePatient(id: string): Promise<void> {
     // Order matters: delete referencing resources before the resources they reference.
+    // QuestionnaireResponse (DTR) → Coverage, ServiceRequest, Patient;
     // Coverage → Patient;
     // Flag (clinician alert) → Observation; CarePlan → Goal, Condition;
     // DiagnosticReport → ServiceRequest, Observation;
     // ServiceRequest, Observation → Encounter; everything → Patient.
+
+    const responseIds = await this.searchFhirIds(
+      'QuestionnaireResponse',
+      `patient=${id}`,
+    );
+    await Promise.all(
+      responseIds.map((rid) =>
+        this.deleteFhirById('QuestionnaireResponse', rid),
+      ),
+    );
 
     const coverageIds = await this.searchFhirIds('Coverage', `patient=${id}`);
     await Promise.all(

@@ -2,10 +2,15 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   input,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  CpDocumentationDialogComponent,
+  DocumentationDialogData,
+} from '@features/dashboard/components/cp-documentation-dialog/cp-documentation-dialog.component';
 import {
   CoverageInformation,
   CrdCard,
@@ -17,12 +22,14 @@ import {
 
 @Component({
   selector: 'cp-crd-cards',
-  imports: [MatButtonModule, MatTooltipModule],
+  imports: [MatButtonModule],
   templateUrl: './cp-crd-cards.component.html',
   styleUrl: './cp-crd-cards.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CpCrdCardsComponent {
+  private readonly dialog = inject(MatDialog);
+  readonly orderId = input<string | null>(null);
   readonly coverage = input<CoverageInformation | null | undefined>(null);
   readonly cards = input<CrdCard[] | null | undefined>(null);
   readonly compact = input(false);
@@ -33,7 +40,14 @@ export class CpCrdCardsComponent {
     (this.cards() ?? []).filter((card) => card.summary || card.detail),
   );
 
-  protected readonly showDocumentationAction = computed(() =>
-    documentationNeeded(this.coverage()),
+  protected readonly documentationOrderId = computed(() =>
+    documentationNeeded(this.coverage()) ? this.orderId() : null,
   );
+
+  protected openDocumentation(orderId: string): void {
+    this.dialog.open<CpDocumentationDialogComponent, DocumentationDialogData>(
+      CpDocumentationDialogComponent,
+      { data: { orderId }, width: '680px' },
+    );
+  }
 }

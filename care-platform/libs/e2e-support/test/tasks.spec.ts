@@ -10,6 +10,7 @@ const { cascadeDeletePatient, upsertPatient, execFileSync, payer } = vi.hoisted(
       ensureInsurancePlan: vi.fn(),
       ensureMemberPatient: vi.fn(),
       ensureMemberCoverage: vi.fn(),
+      putPayerResource: vi.fn(),
     },
   }),
 );
@@ -314,5 +315,23 @@ describe('waitForUrls', () => {
     ).rejects.toThrow('http://localhost:4200 did not become healthy within 4s');
     await vi.advanceTimersByTimeAsync(4000);
     await waiting;
+  });
+});
+
+describe('ensureMriDtrFixtures', () => {
+  it('upserts the MRI fixture package into the payer HAPI', async () => {
+    const { e2eTasks } = await loadTasks();
+    payer.putPayerResource.mockClear();
+    await expect(e2eTasks.ensureMriDtrFixtures()).resolves.toBeNull();
+    expect(
+      payer.putPayerResource.mock.calls.map(([resource]) => [
+        resource.resourceType,
+        resource.id,
+      ]),
+    ).toEqual([
+      ['ValueSet', 'lumbar-spine-indications'],
+      ['Library', 'mri-lumbar-spine-prepopulation'],
+      ['Questionnaire', 'mri-lumbar-spine'],
+    ]);
   });
 });
