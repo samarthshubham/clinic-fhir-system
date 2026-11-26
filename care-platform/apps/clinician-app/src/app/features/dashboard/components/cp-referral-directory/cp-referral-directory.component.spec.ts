@@ -36,11 +36,14 @@ describe('CpReferralDirectoryComponent', () => {
     for (const [key, value] of Object.entries({ specialty, city })) {
       const input = el.querySelector<HTMLInputElement>(
         `input[formcontrolname="${key}"]`,
-      )!;
+      );
+      if (!input) throw new Error(`Missing ${key} filter`);
       input.value = value;
       input.dispatchEvent(new Event('input'));
     }
-    el.querySelector('form')!.dispatchEvent(new Event('submit'));
+    const form = el.querySelector('form');
+    if (!form) throw new Error('Missing directory search form');
+    form.dispatchEvent(new Event('submit'));
   }
 
   it('searches by specialty and location and displays the published listing', () => {

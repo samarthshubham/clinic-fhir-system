@@ -1,13 +1,17 @@
 import { execFileSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- reuses the seed app's cascade delete instead of duplicating it
-import {
-  apiClient,
-  type FhirResource,
-} from '../../../apps/seed-demo-data/src/support/api-client';
+import { apiClient, type FhirResource } from '@seed-support/api-client';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- same relative dates as the seed
-import { daysAgo } from '../../../apps/seed-demo-data/src/support/date-helpers';
+import { daysAgo } from '@seed-support/date-helpers';
+// eslint-disable-next-line @nx/enforce-module-boundaries -- uses the seed's fixture root
+import { repoPath } from '@seed-support/repo-paths';
+// eslint-disable-next-line @nx/enforce-module-boundaries -- uses the seed's native terminology import
+import {
+  seedTerminology,
+  waitForFragmentLookups,
+  type SeedCodeSystem,
+} from '@seed-support/payer-terminology';
 
 const HAPI = 'http://localhost:8080/fhir';
 const PAYER_HAPI = 'http://localhost:8081/fhir';
@@ -208,14 +212,13 @@ export const e2eTasks = {
     return { id: patient.id };
   },
   async ensureMriDtrFixtures(): Promise<null> {
-    const directory = resolve(__dirname, '../../../../fixtures/davinci/dtr');
     for (const name of [
       'valueset-lumbar-spine-indications',
       'library-mri-lumbar-spine',
       'questionnaire-mri-lumbar-spine',
     ]) {
       const fixture = await readFile(
-        resolve(directory, name + '.json'),
+        repoPath('fixtures/davinci/dtr', name + '.json'),
         'utf8',
       );
       await apiClient.putPayerResource(JSON.parse(fixture) as FhirResource);
@@ -223,6 +226,15 @@ export const e2eTasks = {
     return null;
   },
   async ensurePlanNetFixtures(): Promise<null> {
+    const taxonomy = JSON.parse(
+      await readFile(
+        repoPath('terminology/codesystems/nucc-provider-taxonomy.json'),
+        'utf8',
+      ),
+    ) as SeedCodeSystem;
+    await seedTerminology(PAYER_HAPI, taxonomy);
+    await waitForFragmentLookups(PAYER_HAPI, [taxonomy]);
+
     const organization = await apiClient.ensurePayerOrganization(PRAXIS);
     const plan = await apiClient.ensureInsurancePlan({
       ...GOLD_PPO,
@@ -230,10 +242,6 @@ export const e2eTasks = {
       periodStart: daysAgo(730),
     });
     const { period } = await apiClient.findInsurancePlan(GOLD_PPO.name);
-    const directory = resolve(
-      __dirname,
-      '../../../../fixtures/davinci/plan-net',
-    );
     for (const name of [
       'organization-payer',
       'organization-clinic',
@@ -249,7 +257,7 @@ export const e2eTasks = {
       'insurance-plan',
     ]) {
       const fixture = await readFile(
-        resolve(directory, name + '.json'),
+        repoPath('fixtures/davinci/plan-net', name + '.json'),
         'utf8',
       );
       const resource = JSON.parse(fixture, (key, value: unknown) =>

@@ -16,8 +16,16 @@ const { cascadeDeletePatient, upsertPatient, execFileSync, payer } = vi.hoisted(
   }),
 );
 
-vi.mock('../../../apps/seed-demo-data/src/support/api-client', () => ({
+vi.mock('@seed-support/api-client', () => ({
   apiClient: { cascadeDeletePatient, upsertPatient, ...payer },
+}));
+const { seedTerminology, waitForFragmentLookups } = vi.hoisted(() => ({
+  seedTerminology: vi.fn(),
+  waitForFragmentLookups: vi.fn(),
+}));
+vi.mock('@seed-support/payer-terminology', () => ({
+  seedTerminology,
+  waitForFragmentLookups,
 }));
 vi.mock('node:child_process', () => ({ execFileSync }));
 
@@ -347,6 +355,14 @@ describe('ensurePlanNetFixtures', () => {
     payer.putPayerResource.mockClear();
 
     await expect(e2eTasks.ensurePlanNetFixtures()).resolves.toBeNull();
+    const taxonomy = expect.objectContaining({
+      url: 'http://nucc.org/provider-taxonomy',
+    });
+    expect(seedTerminology).toHaveBeenCalledWith(PAYER_HAPI, taxonomy);
+    expect(waitForFragmentLookups).toHaveBeenCalledWith(PAYER_HAPI, [taxonomy]);
+    expect(waitForFragmentLookups).toHaveBeenCalledBefore(
+      payer.putPayerResource,
+    );
     expect(payer.putPayerResource).toHaveBeenCalledTimes(12);
     expect(payer.putPayerResource).toHaveBeenCalledWith(
       expect.objectContaining({
