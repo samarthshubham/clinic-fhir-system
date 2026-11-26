@@ -5,6 +5,7 @@ import ca.uhn.fhir.rest.api.EncodingEnum;
 import ca.uhn.fhir.rest.server.IResourceProvider;
 import ca.uhn.fhir.rest.server.RestfulServer;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class PayerFhirServer extends RestfulServer {
 
@@ -12,13 +13,16 @@ public class PayerFhirServer extends RestfulServer {
       FhirContext fhirContext,
       List<String> implementationGuides,
       List<IResourceProvider> resourceProviders,
-      List<OperationScope> operationScopes) {
+      List<OperationScope> operationScopes,
+      PlanNetDirectory directory) {
     super(fhirContext);
     setServerName("Praxis Health Plan payer-api");
     setDefaultResponseEncoding(EncodingEnum.JSON);
-    setResourceProviders(resourceProviders);
+    setResourceProviders(
+        Stream.concat(resourceProviders.stream(), directory.providers().stream()).toList());
     registerInterceptor(new ImplementationGuideCapabilityInterceptor(implementationGuides));
     registerInterceptor(new SmartCapabilityInterceptor());
-    registerInterceptor(new ScopeInterceptor(fhirContext, operationScopes));
+    registerInterceptor(directory);
+    registerInterceptor(new ScopeInterceptor(fhirContext, operationScopes, directory));
   }
 }

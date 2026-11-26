@@ -1,0 +1,49 @@
+{
+  "resourceType": "HealthcareService",
+  "id": "praxis-primary-care",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-HealthcareService"
+    ]
+  },
+  "active": true,
+  "providedBy": {
+    "reference": "Organization/praxis-clinic"
+  },
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://hl7.org/fhir/us/davinci-pdex-plan-net/CodeSystem/HealthcareServiceCategoryCS",
+          "code": "outpat"
+        }
+      ]
+    }
+  ],
+  "specialty": [
+    {
+      "coding": [
+        {
+          "system": "http://nucc.org/provider-taxonomy",
+          "code": "207R00000X"
+        }
+      ]
+    }
+  ],
+  "location": [
+    {
+      "reference": "Location/praxis-clinic-location"
+    }
+  ],
+  "name": "Praxis Primary Care",
+  "coverageArea": [
+    {
+      "reference": "Location/state-of-illinois"
+    }
+  ],
+  "endpoint": [
+    {
+      "reference": "Endpoint/praxis-clinic-directory"
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.server.IResourceProvider;
 import io.github.samarthshubham.payer.interop.OperationScope;
 import io.github.samarthshubham.payer.interop.PayerFhirServer;
+import io.github.samarthshubham.payer.interop.PlanNetDirectory;
 import io.github.samarthshubham.payer.interop.QuestionnairePackageProvider;
 import io.github.samarthshubham.payer.security.SmartPermission;
 import org.springframework.beans.factory.ObjectProvider;
@@ -19,14 +20,16 @@ public class RestfulServerConfig {
       FhirContext fhirContext,
       ImplementationGuideProperties implementationGuides,
       ObjectProvider<IResourceProvider> resourceProviders,
-      ObjectProvider<OperationScope> operationScopes) {
+      ObjectProvider<OperationScope> operationScopes,
+      PlanNetDirectory directory) {
     ServletRegistrationBean<PayerFhirServer> registration =
         new ServletRegistrationBean<>(
             new PayerFhirServer(
                 fhirContext,
                 implementationGuides.canonicals(),
                 resourceProviders.orderedStream().toList(),
-                operationScopes.orderedStream().toList()),
+                operationScopes.orderedStream().toList(),
+                directory),
             "/fhir/*");
     registration.setName("fhirServlet");
     registration.setLoadOnStartup(1);

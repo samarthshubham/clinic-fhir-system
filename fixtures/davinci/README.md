@@ -35,9 +35,12 @@ Each file starts from an example in the published IG package (all CC0-1.0) and i
 | `plan-net/organization-payer.json` | `Organization/Acme` | hl7.fhir.us.davinci-pdex-plan-net#1.2.0 |
 | `plan-net/insurance-plan.json` | `InsurancePlan/AcmeQHPGold` | hl7.fhir.us.davinci-pdex-plan-net#1.2.0 |
 | `plan-net/practitioner.json` | `Practitioner/JoeSmith` | hl7.fhir.us.davinci-pdex-plan-net#1.2.0 |
+| Other `plan-net/*.json` | Praxis directory, including the clinic, network, clinicians, affiliations and service locations | hl7.fhir.us.davinci-pdex-plan-net#1.2.0 |
 | `formulary/formulary.json` | `InsurancePlan/FormularyD1002` | hl7.fhir.us.davinci-drug-formulary#2.1.0 |
 | `formulary/formulary-drug.json` | `MedicationKnowledge/FormularyDrug-1000091` | hl7.fhir.us.davinci-drug-formulary#2.1.0 |
 | `formulary/formulary-item.json` | `Basic/FormularyItem-D1002-1000091` | hl7.fhir.us.davinci-drug-formulary#2.1.0 |
+
+The Plan-Net directory seed resolves the fixture payer and plan ids to the existing payer HAPI ids. This preserves the references on already-seeded member coverage.
 
 `provider/` holds what clinic-api builds for its own FHIR server (E0-S5).
 

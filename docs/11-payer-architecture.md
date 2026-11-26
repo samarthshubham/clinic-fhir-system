@@ -131,6 +131,12 @@ Every extension also has `coverage` (the client's Coverage), `date` and a `cover
 - 400 for a malformed request, no or several Coverages, or another payer; 404 for an unknown service; 412 for a missing prefetch that can't be fetched; 401/403 for a missing token or a token without `system/Coverage.r` (member tokens never qualify); 502/503 when the payer HAPI fails.
 - Every hook call, including failed ones, records the `crd.hook` timer (tags `service`, `status`; Prometheus `crd_hook_seconds`) and writes an `AuditEvent` to the payer HAPI in the background: client id, `hookInstance`, HTTP outcome and the payer Coverage, no PHI.
 
+### Public Plan-Net directory
+
+Payer-api serves unauthenticated FHIR read, versioned read and search at `/fhir/{resourceType}` for the [Plan-Net 1.2.0 capability statement](https://hl7.org/fhir/us/davinci-pdex-plan-net/STU1.2/CapabilityStatement-plan-net.html) types. This includes OrganizationAffiliation and the Network profile of Organization. `/fhir/metadata` lists their profiles, search fields and allowed inclusions. Other operations keep their existing SMART scope checks.
+
+The payer HAPI stores the directory. The Plan-Net profile is the publication marker applied to the curated provider directory records. Search is restricted to those profiles, and reads and included resources are checked for the corresponding profile. The directory publishes practice details, links and contact information. Connection headers are omitted from public Endpoint representations.
+
 ## 4. What we reuse instead of building
 
 | Need | Reused |
