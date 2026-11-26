@@ -26,8 +26,10 @@ Each file starts from an example in the published IG package (all CC0-1.0) and i
 | `dtr/questionnaire-package-output-cgm.json` | `Parameters/QuestionnairePackageOutputParamsExample`; payer-api's answer to `questionnaire-package-input.json` | hl7.fhir.us.davinci-dtr#2.2.0 |
 | `dtr/questionnaire-*.json`, `dtr/library-*.json`, `dtr/valueset-*.json` | `Questionnaire/home-o2-std-questionnaire`, written for the four §6 orders; SNOMED codes checked with tx.fhir.org | hl7.fhir.us.davinci-dtr#2.2.0 |
 | `dtr/qr-mri-completed.json` | clinic-api output (`DtrServiceTest`): Sandra Okafor's completed MRI documentation as stored in the provider HAPI, linked to the order with `qr-context`; prefilled answers keep `auto-client`, changed ones are `override` or `manual` with the practitioner as author | hl7.fhir.us.davinci-dtr#2.2.0 |
-| `pas/claim-request-bundle.json` | `Bundle/ReferralAuthorizationBundleExample` | hl7.fhir.us.davinci-pas#2.2.1 |
-| `pas/claim-response-pended-bundle.json` | `Bundle/ReferralPendingAuthorizationResponseBundleExample` | hl7.fhir.us.davinci-pas#2.2.1 |
+| `pas/request-polysomnography.json` | `Bundle/ReferralAuthorizationBundleExample`, a polysomnography request for Gerald Horton (claim line CPT 95810 only, see below) | hl7.fhir.us.davinci-pas#2.2.1 |
+| `pas/request-mri.json` | `pas/request-polysomnography.json` with an MRI lumbar spine request for Sandra Okafor and her DTR QuestionnaireResponse (4 weeks of conservative therapy) in `supportingInfo` | hl7.fhir.us.davinci-pas#2.2.1 |
+| `pas/request-cgm.json` | the same with a continuous glucose monitor request for Ramon Castillo and his DTR QuestionnaireResponse (diabetes, insulin-treated) | hl7.fhir.us.davinci-pas#2.2.1 |
+| `pas/response-pended.json`, `response-denied.json`, `response-approved.json` | `Bundle/ReferralPendingAuthorizationResponseBundleExample`; payer-api's `Claim/$submit` answers to the polysomnography, MRI and CGM requests | hl7.fhir.us.davinci-pas#2.2.1 |
 | `cdex/task-attachment-request.json` | `Task/cdex-task-example19` | hl7.fhir.us.davinci-cdex#2.1.0 |
 | `cdex/submit-attachment-parameters.json` | `Parameters/cdex-parameters-example4` | hl7.fhir.us.davinci-cdex#2.1.0 |
 | `pdex/prior-authorization-eob.json` | `ExplanationOfBenefit/PDexPriorAuth1` | hl7.fhir.us.davinci-pdex#2.2.0 |
@@ -43,6 +45,8 @@ Each file starts from an example in the published IG package (all CC0-1.0) and i
 The Plan-Net directory seed resolves the fixture payer and plan ids to the existing payer HAPI ids. This preserves the references on already-seeded member coverage.
 
 `provider/` holds what clinic-api builds for its own FHIR server (E0-S5).
+
+The `pas/` requests code each required-bound CodeableConcept (claim line, `ServiceRequest.code`, diagnosis) with one code system, CPT/HCPCS and ICD-10-CM, because the payer HAPI's `$validate` rejects mixed codings ([docs/11](../../docs/11-payer-architecture.md#pas-claimsubmit)). `ClaimSubmitInteropTest` submits each request and expects exactly the matching response; the responses are dated 2026-08-20T15:15:05Z, the test's fixed clock, and their ClaimResponse ids come from the test's stubbed payer HAPI. The CodeSystems those codes need are in `terminology/codesystems/`, not here; `ig-validate` checks both folders.
 
 The `crd/order-sign-*`, `crd/order-dispatch-*`, `crd/appointment-book-*` and `crd/encounter-start-*` files are CDS Hooks JSON, not FHIR resources. `GoldenFixturesTest` and `ig-validate` check the FHIR resources inside them (draft orders, prefetch and the updated orders in `systemActions`). `CdsHooksInteropTest` posts each request to payer-api and expects exactly the matching response; it writes what payer-api answered to `payer-api/target/cds-out/` for diffing. The responses are dated 2026-11-11, the test's fixed clock.
 

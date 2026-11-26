@@ -1,0 +1,85 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "dtr-intendedaudience-codes",
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-wg",
+      "valueCode": "cds"
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-fmm",
+      "valueInteger": 2,
+      "_valueInteger": {
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-conformance-derivedFrom",
+            "valueCanonical": "http://hl7.org/fhir/us/davinci-dtr/ImplementationGuide/hl7.fhir.us.davinci-dtr"
+          }
+        ]
+      }
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
+      "valueCode": "trial-use",
+      "_valueCode": {
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-conformance-derivedFrom",
+            "valueCanonical": "http://hl7.org/fhir/us/davinci-dtr/ImplementationGuide/hl7.fhir.us.davinci-dtr"
+          }
+        ]
+      }
+    }
+  ],
+  "url": "http://hl7.org/fhir/us/davinci-dtr/CodeSystem/dtr-intendedaudience-codes",
+  "version": "2.2.0",
+  "name": "DTRIntendedAudience",
+  "title": "DTR Intended Audience Codes",
+  "status": "active",
+  "experimental": false,
+  "date": "2026-03-27T16:04:08+11:00",
+  "publisher": "HL7 International / Clinical Decision Support",
+  "contact": [
+    {
+      "name": "HL7 International / Clinical Decision Support",
+      "telecom": [
+        {
+          "system": "url",
+          "value": "http://www.hl7.org/Special/committees/dss"
+        }
+      ]
+    }
+  ],
+  "description": "Codes defining audience of additional documentation to be captured.",
+  "jurisdiction": [
+    {
+      "coding": [
+        {
+          "system": "urn:iso:std:iso:3166",
+          "code": "US"
+        }
+      ]
+    }
+  ],
+  "caseSensitive": true,
+  "hierarchyMeaning": "grouped-by",
+  "content": "complete",
+  "count": 3,
+  "concept": [
+    {
+      "code": "clinical",
+      "display": "Clinical Documentation",
+      "definition": "Details most likely to originate from a clinician are required to satisfy additional documentation requirements, determine coverage and/or prior auth applicability - e.g. via DTR by clinician.  Indicates that the CRD client should expose the need to launch DTR to clinical users."
+    },
+    {
+      "code": "admin",
+      "display": "Administrative Documentation",
+      "definition": "Administrative details not likely to require clinical expertise are needed to satisfy additional documentation requirements, determine coverage and/or prior auth applicability - e.g. via DTR by back-end staff.  Indicates that while the CRD client might expose the ability to launch DTR as an option for clinical users, it should be clear that clinical input is not necessary and deferring the use of DTR to back-end staff is perfectly appropriate.  Some CRD clients might be configured (based on provider preference) to not even show clinicians the option to launch."
+    },
+    {
+      "code": "patient",
+      "display": "Patient Documentation",
+      "definition": "Details most likely to originate from the patient or their personal representative (e.g. parent, spouse, etc.) are required to satisfy additional documentation requirements, determine coverage and/or prior auth applicability.  For example, information about household composition, accessibility considerations, etc.  This should be used when the data needs to come from the patient themselves, rather than a clinician's assessment of the patient"
+    }
+  ]
+}

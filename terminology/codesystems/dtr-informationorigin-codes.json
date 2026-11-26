@@ -1,0 +1,90 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "dtr-informationorigin-codes",
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-wg",
+      "valueCode": "cds"
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-fmm",
+      "valueInteger": 2,
+      "_valueInteger": {
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-conformance-derivedFrom",
+            "valueCanonical": "http://hl7.org/fhir/us/davinci-dtr/ImplementationGuide/hl7.fhir.us.davinci-dtr"
+          }
+        ]
+      }
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
+      "valueCode": "trial-use",
+      "_valueCode": {
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-conformance-derivedFrom",
+            "valueCanonical": "http://hl7.org/fhir/us/davinci-dtr/ImplementationGuide/hl7.fhir.us.davinci-dtr"
+          }
+        ]
+      }
+    }
+  ],
+  "url": "http://hl7.org/fhir/us/davinci-dtr/CodeSystem/dtr-informationorigin-codes",
+  "version": "2.2.0",
+  "name": "DTRInformationOriginCodes",
+  "title": "DTR Information Origin Codes",
+  "status": "active",
+  "experimental": false,
+  "date": "2026-03-27T16:04:08+11:00",
+  "publisher": "HL7 International / Clinical Decision Support",
+  "contact": [
+    {
+      "name": "HL7 International / Clinical Decision Support",
+      "telecom": [
+        {
+          "system": "url",
+          "value": "http://www.hl7.org/Special/committees/dss"
+        }
+      ]
+    }
+  ],
+  "description": "Codes used within the Information Origin valueset.",
+  "jurisdiction": [
+    {
+      "coding": [
+        {
+          "system": "urn:iso:std:iso:3166",
+          "code": "US"
+        }
+      ]
+    }
+  ],
+  "caseSensitive": true,
+  "hierarchyMeaning": "grouped-by",
+  "content": "complete",
+  "count": 4,
+  "concept": [
+    {
+      "code": "auto-client",
+      "display": "Auto populated by Client",
+      "definition": "Information was auto-populated by the client side (e.g., EHR)"
+    },
+    {
+      "code": "auto-server",
+      "display": "Auto populated by Server",
+      "definition": "Information was auto-populated by the server side (e.g., payer)"
+    },
+    {
+      "code": "override",
+      "display": "Auto with override",
+      "definition": "Information was auto-populated but overridden by a human"
+    },
+    {
+      "code": "manual",
+      "display": "Manual entry",
+      "definition": "Information was manually entered by a human"
+    }
+  ]
+}

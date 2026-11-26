@@ -1,13 +1,22 @@
 import { DataTable, Given, Then } from '@cucumber/cucumber';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { apiClient, FhirResource } from '../support/api-client';
 import { daysAgo } from '../support/date-helpers';
+import {
+  seedTerminology,
+  waitForFragmentLookups,
+  type SeedCodeSystem,
+} from '../support/payer-terminology';
 import { SeedWorld } from '../support/world';
 
 // The payer HAPI loads its validation terminology on the first write after a start, which takes about 30s.
 const PAYER_HAPI_WRITE = { timeout: 60_000 };
 const DTR_FIXTURES = resolve(__dirname, '../../../../../fixtures/davinci/dtr');
+const CODE_SYSTEMS = resolve(
+  __dirname,
+  '../../../../../terminology/codesystems',
+);
 
 Given(
   'the seed has a payer-api system token',
@@ -97,6 +106,37 @@ Given(
       await apiClient.putPayerResource(resource);
       this.log(`${resource.resourceType}/${String(resource['id'])} (${file})`);
     }
+  },
+);
+
+Given(
+  'the payer HAPI has every CodeSystem in the terminology folder',
+  { timeout: 40 * 60_000 },
+  async function (this: SeedWorld) {
+    const files = readdirSync(CODE_SYSTEMS)
+      .filter((file) => file.endsWith('.json'))
+      .sort();
+    if (files.length === 0) {
+      throw new Error(`No CodeSystems in ${CODE_SYSTEMS}`);
+    }
+    const base = process.env['PAYER_FHIR_URL'] ?? 'http://localhost:8081/fhir';
+    const systems: SeedCodeSystem[] = [];
+    for (const file of files) {
+      const resource = JSON.parse(
+        readFileSync(resolve(CODE_SYSTEMS, file), 'utf8'),
+      ) as SeedCodeSystem;
+      if (resource.resourceType !== 'CodeSystem') {
+        throw new Error(
+          `${file} is a ${resource.resourceType}, not a CodeSystem`,
+        );
+      }
+      await seedTerminology(base, resource);
+      systems.push(resource);
+      this.log(
+        `CodeSystem/${String(resource['id'])} (${String(resource['url'])})`,
+      );
+    }
+    await waitForFragmentLookups(base, systems);
   },
 );
 

@@ -1,0 +1,19 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "hcpcs",
+  "url": "http://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+  "name": "PraxisDemoHcpcs",
+  "title": "HCPCS codes used by the Praxis demo",
+  "status": "active",
+  "experimental": true,
+  "publisher": "Praxis Health Plan (demo)",
+  "description": "The HCPCS Level II codes the demo orders and prior auth requests use, so the payer HAPI can check PAS required bindings.",
+  "caseSensitive": true,
+  "content": "fragment",
+  "concept": [
+    {
+      "code": "E2103",
+      "display": "Non-adjunctive, non-implanted continuous glucose monitor or receiver"
+    }
+  ]
+}

@@ -146,11 +146,6 @@
             "productOrService": {
               "coding": [
                 {
-                  "system": "http://snomed.info/sct",
-                  "code": "60554003",
-                  "display": "Polysomnography"
-                },
-                {
                   "system": "http://www.ama-assn.org/go/cpt",
                   "code": "95810"
                 }
@@ -337,11 +332,6 @@
         "intent": "order",
         "code": {
           "coding": [
-            {
-              "system": "http://snomed.info/sct",
-              "code": "60554003",
-              "display": "Polysomnography"
-            },
             {
               "system": "http://www.ama-assn.org/go/cpt",
               "code": "95810"

@@ -87,14 +87,17 @@ The Practitioners behind the dev staff logins `admin`, `clinician` and `frontdes
 
 ### Payer data (`src/features/payer/`)
 
-`cucumber.json` runs the payer features after the patient profiles, plans before members:
+`cucumber.json` runs the payer features after the patient profiles: plans, members, terminology, then questionnaires:
 
 | Feature                        | Seeds                                                                                                                                                                                                                                                                               |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `payer-plans.feature`          | Praxis Health Plan (`Organization`) and two `InsurancePlan`s, Praxis Gold PPO and Praxis Silver HMO, in the payer HAPI                                                                                                                                                              |
 | `payer-members.feature`        | for each of the 8 profiles: the provider `Coverage` (through clinic-api), and a member `Patient` + `Coverage` in the payer HAPI. Aisha Chen's payer `Coverage` is `cancelled` while her provider `Coverage` stays `active`, so CRD answers "Coverage could not be verified" for her |
+| `payer-terminology.feature`    | CPT, HCPCS, ICD-10-CM, X12 and NUCC provider taxonomy demo fragments, plus complete THO and DTR CodeSystems from `terminology/codesystems/`                                                                                                                                         |
 | `payer-questionnaires.feature` | the DTR `Questionnaire`s, CQL `Library`s and `ValueSet`s from `fixtures/davinci/dtr/` (MRI lumbar spine, polysomnography, CGM, echocardiogram), PUT under their fixed ids; then checks that payer-api's `$questionnaire-package` returns the right form for each order code         |
 | `payer-directory.feature`      | Plan-Net directory fixtures from `fixtures/davinci/plan-net/`, including the clinic’s two seeded clinicians. Updates the existing payer and plans in place and verifies public directory searches.                                                                                  |
+
+The complete snapshots preserve the concepts from `hl7.terminology.r4#7.1.0` (claim type and CMS place of service) and `hl7.fhir.us.davinci-dtr#2.2.0` (information origin, completion time and intended audience). For a new or changed complete system, the seed writes its published concepts to the matching CodeSystem resource and verifies each code with versioned `CodeSystem/$lookup` before recording the source digest. For fragment imports it checks every final batch entry, then waits until each demo code resolves without a version, as PAS submits it. [HAPI 8.12 terminology uploader](https://github.com/hapifhir/hapi-fhir/blob/v8.12.0/hapi-fhir-jpaserver-base/src/main/java/ca/uhn/fhir/jpa/provider/TerminologyUploaderProvider.java)
 
 - Both `Coverage`s of a member carry the same identifier, `http://praxishealthplan.example/fhir/identifier/member-id|PHP-#####`. That's how the two sides match a member. The payer `Patient` copies its demographics from the provider `Patient`.
 - payer-api has no write endpoints yet, so payer resources go straight to the payer HAPI. They are identifier-based conditional creates (`If-None-Exist`), so a rerun leaves them as they are: no new resources and no new versions.

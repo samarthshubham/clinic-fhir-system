@@ -70,7 +70,7 @@ A member token has `scope=patient/*.r` and `patient=<payer Patient id>`. ADR 000
 
 - Anything without a rule is denied: 403 with an `OperationOutcome` (NFR-SEC-1).
 - Compartment checks are HAPI's. A member reading `Patient/B` or a `Claim` whose patient is B gets 403, including resources inside search results and the top-level resources of an operation response (NFR-SEC-2).
-- HAPI does not check resources nested deeper in an operation response, such as the Bundles inside the `Parameters` that `$questionnaire-package` returns. An operation whose response nests resources is declared `systemOnly`, so member tokens get 403 for it. `$questionnaire-package` (`system/Questionnaire.r`) is the first one: clinic-api calls it with its system token.
+- HAPI does not check resources nested deeper in an operation response, such as the Bundles inside the `Parameters` that `$questionnaire-package` returns. An operation whose response nests resources is declared `systemOnly`, so member tokens get 403 for it. `$questionnaire-package` (`system/Questionnaire.r`) and `Claim/$submit` (`system/Claim.c`, PAS) are such operations: clinic-api calls them with its system token.
 - `patient/` scopes count only with a `patient` claim, and `system/` scopes only without one.
 - Batch and transaction Bundles get no rules and are denied, because the per-request `r`/`s`/`u` gating can't see the entries inside a Bundle.
 - SMART scopes say nothing about operations, so an operation needs an `OperationScope` naming the resource type and permission it requires. Operations without one are denied, so a new operation is closed until its story opens it.
@@ -107,5 +107,6 @@ Later stories register their providers as Spring beans (`IResourceProvider`) and
 | `CdsHooksInteropTest` | public discovery; hook calls without a token (401), without `system/Coverage.r` or with a member token (403), as `OperationOutcome`s |
 | `AuthorizationMatrixTest` | every JSON endpoint and interop operation × anonymous, both staff roles, clinic-api, a system reader and two members |
 | `QuestionnairePackageInteropTest` | `$questionnaire-package` over real HTTP: the golden package for clinic-api, 400s for bad input, 403 for a member token |
+| `ClaimSubmitInteropTest` | `Claim/$submit` over real HTTP: the golden PAS responses for clinic-api, idempotent resubmits, 422 `OperationOutcome` for an invalid bundle, 403 for a member token |
 
 The interop rows use test-only providers (`support/TestInteropProviders`) until real ones exist. Each story that adds an endpoint or operation adds its row.
