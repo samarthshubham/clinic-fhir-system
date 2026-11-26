@@ -222,6 +222,50 @@ export const e2eTasks = {
     }
     return null;
   },
+  async ensurePlanNetFixtures(): Promise<null> {
+    const organization = await apiClient.ensurePayerOrganization(PRAXIS);
+    const plan = await apiClient.ensureInsurancePlan({
+      ...GOLD_PPO,
+      organizationId: organization.id,
+      periodStart: daysAgo(730),
+    });
+    const { period } = await apiClient.findInsurancePlan(GOLD_PPO.name);
+    const directory = resolve(
+      __dirname,
+      '../../../../fixtures/davinci/plan-net',
+    );
+    for (const name of [
+      'organization-payer',
+      'organization-clinic',
+      'location-illinois',
+      'organization-network',
+      'endpoint',
+      'location-clinic',
+      'healthcare-service',
+      'practitioner',
+      'practitioner-clinician',
+      'practitioner-role-aisha',
+      'practitioner-role-anika',
+      'insurance-plan',
+    ]) {
+      const fixture = await readFile(
+        resolve(directory, name + '.json'),
+        'utf8',
+      );
+      const resource = JSON.parse(fixture, (key, value: unknown) =>
+        key === 'reference' && value === 'Organization/praxis-health-plan'
+          ? `Organization/${organization.id}`
+          : value,
+      ) as FhirResource;
+      if (name === 'organization-payer') resource['id'] = organization.id;
+      if (name === 'insurance-plan') {
+        resource['id'] = plan.id;
+        resource['period'] = period;
+      }
+      await apiClient.putPayerResource(resource);
+    }
+    return null;
+  },
   async stopFhir(): Promise<null> {
     fhirStopped = true;
     execFileSync('docker', ['stop', HAPI_CONTAINER]);

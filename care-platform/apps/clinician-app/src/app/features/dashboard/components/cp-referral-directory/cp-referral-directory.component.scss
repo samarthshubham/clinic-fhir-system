@@ -1,0 +1,14 @@
+.cp-referral-directory__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-block: 8px;
+}
+
+.cp-referral-directory__results {
+  display: grid;
+  gap: 16px;
+  list-style: none;
+  padding: 0;
+}

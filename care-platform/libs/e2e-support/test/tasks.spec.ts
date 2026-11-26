@@ -8,6 +8,7 @@ const { cascadeDeletePatient, upsertPatient, execFileSync, payer } = vi.hoisted(
     payer: {
       ensurePayerOrganization: vi.fn(),
       ensureInsurancePlan: vi.fn(),
+      findInsurancePlan: vi.fn(),
       ensureMemberPatient: vi.fn(),
       ensureMemberCoverage: vi.fn(),
       putPayerResource: vi.fn(),
@@ -333,5 +334,27 @@ describe('ensureMriDtrFixtures', () => {
       ['Library', 'mri-lumbar-spine-prepopulation'],
       ['Questionnaire', 'mri-lumbar-spine'],
     ]);
+  });
+});
+
+describe('ensurePlanNetFixtures', () => {
+  it('publishes the directory while retaining the existing payer and plan identity and period', async () => {
+    const { e2eTasks } = await loadTasks();
+    payer.ensurePayerOrganization.mockResolvedValue({ id: 'existing-payer' });
+    payer.ensureInsurancePlan.mockResolvedValue({ id: 'existing-plan' });
+    const period = { start: '2020-01-01' };
+    payer.findInsurancePlan.mockResolvedValue({ period });
+    payer.putPayerResource.mockClear();
+
+    await expect(e2eTasks.ensurePlanNetFixtures()).resolves.toBeNull();
+    expect(payer.putPayerResource).toHaveBeenCalledTimes(12);
+    expect(payer.putPayerResource).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceType: 'InsurancePlan',
+        id: 'existing-plan',
+        period,
+        ownedBy: { reference: 'Organization/existing-payer' },
+      }),
+    );
   });
 });

@@ -1,0 +1,70 @@
+<h2 mat-dialog-title>Find in-network provider</h2>
+<mat-dialog-content>
+  <form
+    [formGroup]="form"
+    class="cp-referral-directory__filters"
+    role="search"
+    aria-label="Search providers"
+    (ngSubmit)="search()"
+  >
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Specialty</mat-label>
+      <input matInput formControlName="specialty" maxlength="100" />
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>City</mat-label>
+      <input matInput formControlName="city" maxlength="100" />
+    </mat-form-field>
+    <button mat-flat-button type="submit">Search</button>
+  </form>
+
+  @let state = result();
+  @if (state === 'loading') {
+    <mat-progress-bar
+      mode="indeterminate"
+      aria-label="Searching provider directory"
+    />
+  } @else if (state === 'error') {
+    <p role="alert">
+      Could not load the provider directory. Search again to retry.
+    </p>
+  } @else if (state) {
+    @if (state.planName) {
+      <p>
+        Network for <strong>{{ state.planName }}</strong>
+      </p>
+      <p role="status">{{ state.providers.length }} providers found</p>
+      <ul class="cp-referral-directory__results">
+        @for (provider of state.providers; track provider.id) {
+          <li>
+            <strong>{{ provider.name }}</strong>
+            @if (provider.specialties.length) {
+              <div>{{ provider.specialties.join(', ') }}</div>
+            }
+            @if (provider.organization) {
+              <div>{{ provider.organization }}</div>
+            }
+            @if (provider.location || provider.address) {
+              <div>
+                {{ provider.location }}
+                @if (provider.location && provider.address) {
+                  ·
+                }
+                {{ provider.address }}
+              </div>
+            }
+          </li>
+        } @empty {
+          <li>No providers match. Try a different specialty or city.</li>
+        }
+      </ul>
+    } @else {
+      <p role="status">
+        An active plan network could not be found for this patient.
+      </p>
+    }
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close type="button">Close</button>
+</mat-dialog-actions>

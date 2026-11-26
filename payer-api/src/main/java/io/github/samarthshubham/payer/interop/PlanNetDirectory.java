@@ -25,11 +25,13 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.hl7.fhir.instance.model.api.IBaseConformance;
+import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.CanonicalType;
 import org.hl7.fhir.r4.model.CapabilityStatement;
 import org.hl7.fhir.r4.model.CapabilityStatement.CapabilityStatementRestResourceComponent;
 import org.hl7.fhir.r4.model.CapabilityStatement.CapabilityStatementRestResourceSearchParamComponent;
 import org.hl7.fhir.r4.model.DomainResource;
+import org.hl7.fhir.r4.model.PractitionerRole;
 import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.StringType;
 import org.springframework.core.io.ClassPathResource;
@@ -47,6 +49,7 @@ public class PlanNetDirectory {
 
   private final Map<String, CapabilityStatementRestResourceComponent> catalog;
   private final List<IResourceProvider> providers;
+  private final PlanNetResourceProvider practitionerRoles;
 
   public PlanNetDirectory(FhirContext context, IGenericClient fhirClient) {
     // The profile and search parameter lists come from the Plan-Net 1.2.0 CapabilityStatement.
@@ -61,25 +64,42 @@ public class PlanNetDirectory {
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
+    practitionerRoles =
+        new PlanNetResourceProvider(this, fhirClient, PractitionerRole.class, "PractitionerRole");
     providers =
         catalog.keySet().stream()
             .sorted()
             .map(
                 type ->
-                    new PlanNetResourceProvider(
-                        this,
-                        fhirClient,
-                        context
-                            .getResourceDefinition(type)
-                            .getImplementingClass()
-                            .asSubclass(Resource.class),
-                        type))
+                    "PractitionerRole".equals(type)
+                        ? practitionerRoles
+                        : new PlanNetResourceProvider(
+                            this,
+                            fhirClient,
+                            context
+                                .getResourceDefinition(type)
+                                .getImplementingClass()
+                                .asSubclass(Resource.class),
+                            type))
             .map(IResourceProvider.class::cast)
             .toList();
   }
 
   public List<IResourceProvider> providers() {
     return providers;
+  }
+
+  public Bundle practitionerRoles(int offset) {
+    return practitionerRoles.search(
+        "/fhir",
+        Map.of(
+            "_offset", new String[] {Integer.toString(offset)},
+            "_include",
+                new String[] {
+                  "PractitionerRole:practitioner",
+                  "PractitionerRole:location",
+                  "PractitionerRole:organization"
+                }));
   }
 
   boolean isPublicRequest(RequestDetails request) {

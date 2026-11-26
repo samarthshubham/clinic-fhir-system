@@ -19,6 +19,8 @@ import {
   switchMap,
 } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
+import { CpReferralDirectoryComponent } from '@features/dashboard/components/cp-referral-directory/cp-referral-directory.component';
 import { MatIconModule } from '@angular/material/icon';
 import { DashboardService } from '@features/dashboard/dashboard.service';
 import {
@@ -68,6 +70,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 })
 export class CpCarePanelComponent {
   private readonly svc = inject(DashboardService);
+  private readonly dialog = inject(MatDialog);
   private readonly orderDialog = inject(OrderDialogLauncher);
 
   readonly patientId = input.required<string>();
@@ -137,6 +140,13 @@ export class CpCarePanelComponent {
 
   getCategoryIcon(cat: string | null): string {
     return CATEGORY_ICONS[cat?.toLowerCase() ?? ''] ?? 'checklist';
+  }
+
+  openDirectory(): void {
+    this.dialog.open(CpReferralDirectoryComponent, {
+      data: this.patientId(),
+      width: '640px',
+    });
   }
 
   openOrderDialog(): void {
