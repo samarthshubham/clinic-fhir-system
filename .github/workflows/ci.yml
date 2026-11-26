@@ -147,7 +147,7 @@ jobs:
           path: fhir-out
 
       - name: Validate golden fixtures and mapper output
-        run: bash .github/scripts/ig-validate.sh fixtures/davinci fhir-out
+        run: bash .github/scripts/ig-validate.sh fixtures/davinci terminology fhir-out
 
   frontend:
     needs: changes

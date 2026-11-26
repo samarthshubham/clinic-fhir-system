@@ -1,0 +1,19 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "cpt",
+  "url": "http://www.ama-assn.org/go/cpt",
+  "name": "PraxisDemoCpt",
+  "title": "CPT codes used by the Praxis demo",
+  "status": "active",
+  "experimental": true,
+  "publisher": "Praxis Health Plan (demo)",
+  "description": "The few CPT codes the demo orders and prior auth requests use, so the payer HAPI can check PAS required bindings without the licensed code system. Codes only: CPT descriptions are AMA-licensed.",
+  "caseSensitive": true,
+  "content": "fragment",
+  "concept": [
+    { "code": "72148" },
+    { "code": "93015" },
+    { "code": "93306" },
+    { "code": "95810" }
+  ]
+}

@@ -908,6 +908,18 @@ describe('DTR questionnaires', () => {
     expect(JSON.parse(init?.body as string)).toEqual(questionnaire);
   });
 
+  it('retries the cold SDC snapshot failure once and reports a persistent failure', async () => {
+    const message =
+      'Slicing cannot be evaluated in sdc-questionnaire-launchContext';
+    fetchMock
+      .mockResolvedValueOnce(textResponse(message, 422))
+      .mockResolvedValueOnce(textResponse(message, 422));
+    await expect(
+      apiClient.putPayerResource({ resourceType: 'Questionnaire', id: 'mri' }),
+    ).rejects.toThrow(message);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('refuses to PUT a payer resource without an id', async () => {
     await expect(
       apiClient.putPayerResource({ resourceType: 'Library' }),

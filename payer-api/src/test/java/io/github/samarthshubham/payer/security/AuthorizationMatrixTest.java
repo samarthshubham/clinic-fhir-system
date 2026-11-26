@@ -6,10 +6,13 @@ import static io.github.samarthshubham.payer.security.AuthorizationMatrixTest.Ca
 import static io.github.samarthshubham.payer.security.AuthorizationMatrixTest.Caller.MEMBER_B;
 import static io.github.samarthshubham.payer.security.AuthorizationMatrixTest.Caller.SYSTEM_READER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import io.github.samarthshubham.payer.cdshooks.CrdHookService;
 import io.github.samarthshubham.payer.service.AuthService;
+import io.github.samarthshubham.payer.service.ClaimSubmitService;
 import io.github.samarthshubham.payer.service.ClientCredentialsService;
 import io.github.samarthshubham.payer.service.DirectoryService;
 import io.github.samarthshubham.payer.service.MemberService;
@@ -26,6 +29,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.hl7.fhir.r4.model.Bundle;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -92,6 +97,11 @@ class AuthorizationMatrixTest {
               EnumSet.of(CLINIC_API)),
           fhir("POST", "/fhir/Claim/$test-submit", EMPTY_PARAMETERS, EnumSet.of(CLINIC_API)),
           fhir(
+              "POST",
+              "/fhir/Claim/$submit",
+              "{\"resourceType\":\"Bundle\",\"type\":\"collection\"}",
+              EnumSet.of(CLINIC_API)),
+          fhir(
               "POST", "/fhir/Claim/$test-unmapped", EMPTY_PARAMETERS, EnumSet.noneOf(Caller.class)),
           fhir("GET", "/fhir/Questionnaire/q1", null, EnumSet.of(CLINIC_API, SYSTEM_READER)),
           fhir(
@@ -115,6 +125,13 @@ class AuthorizationMatrixTest {
   @MockitoBean private MemberService memberService;
   @MockitoBean private DirectoryService directoryService;
   @MockitoBean private CrdHookService crdHookService;
+  @MockitoBean private ClaimSubmitService claimSubmitService;
+
+  @BeforeEach
+  void submitAnswersWithAResponseBundle() {
+    when(claimSubmitService.submit(any(), any()))
+        .thenReturn(new Bundle().setType(Bundle.BundleType.COLLECTION));
+  }
 
   static Stream<Arguments> endpointsByCaller() {
     List<Arguments> cases = new ArrayList<>();

@@ -1,0 +1,90 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "dtr-completionTime-codes",
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-wg",
+      "valueCode": "cds"
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-fmm",
+      "valueInteger": 2,
+      "_valueInteger": {
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-conformance-derivedFrom",
+            "valueCanonical": "http://hl7.org/fhir/us/davinci-dtr/ImplementationGuide/hl7.fhir.us.davinci-dtr"
+          }
+        ]
+      }
+    },
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
+      "valueCode": "trial-use",
+      "_valueCode": {
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-conformance-derivedFrom",
+            "valueCanonical": "http://hl7.org/fhir/us/davinci-dtr/ImplementationGuide/hl7.fhir.us.davinci-dtr"
+          }
+        ]
+      }
+    }
+  ],
+  "url": "http://hl7.org/fhir/us/davinci-dtr/CodeSystem/dtr-completionTime-codes",
+  "version": "2.2.0",
+  "name": "DTRCompletionTimeCodes",
+  "title": "DTR Completion Time Codes",
+  "status": "active",
+  "experimental": false,
+  "date": "2026-03-27T16:04:08+11:00",
+  "publisher": "HL7 International / Clinical Decision Support",
+  "contact": [
+    {
+      "name": "HL7 International / Clinical Decision Support",
+      "telecom": [
+        {
+          "system": "url",
+          "value": "http://www.hl7.org/Special/committees/dss"
+        }
+      ]
+    }
+  ],
+  "description": "Codes used within the Competion Time valueset.",
+  "jurisdiction": [
+    {
+      "coding": [
+        {
+          "system": "urn:iso:std:iso:3166",
+          "code": "US"
+        }
+      ]
+    }
+  ],
+  "caseSensitive": true,
+  "hierarchyMeaning": "grouped-by",
+  "content": "complete",
+  "count": 4,
+  "concept": [
+    {
+      "code": "under-1min",
+      "display": "Under 1 Minute",
+      "definition": "Completion time was under 1 minute."
+    },
+    {
+      "code": "under-3min",
+      "display": "Under 3 Minutes",
+      "definition": "Completion time was under 3 minutes."
+    },
+    {
+      "code": "under-5min",
+      "display": "Under 5 Minutes",
+      "definition": "Completion time was under 5 minutes."
+    },
+    {
+      "code": "over-5min",
+      "display": "Over 5 Minutes",
+      "definition": "Completion time was over 5 minutes."
+    }
+  ]
+}

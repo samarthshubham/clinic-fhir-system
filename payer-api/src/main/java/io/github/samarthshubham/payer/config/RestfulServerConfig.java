@@ -2,6 +2,7 @@ package io.github.samarthshubham.payer.config;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.server.IResourceProvider;
+import io.github.samarthshubham.payer.interop.ClaimSubmitProvider;
 import io.github.samarthshubham.payer.interop.OperationScope;
 import io.github.samarthshubham.payer.interop.PayerFhirServer;
 import io.github.samarthshubham.payer.interop.PlanNetDirectory;
@@ -34,6 +35,11 @@ public class RestfulServerConfig {
     registration.setName("fhirServlet");
     registration.setLoadOnStartup(1);
     return registration;
+  }
+
+  @Bean
+  public OperationScope claimSubmitScope() {
+    return new OperationScope(ClaimSubmitProvider.OPERATION, "Claim", SmartPermission.CREATE, true);
   }
 
   @Bean

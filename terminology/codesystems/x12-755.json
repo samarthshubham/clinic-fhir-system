@@ -1,0 +1,16 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "x12-755",
+  "url": "https://codesystem.x12.org/005010/755",
+  "name": "PraxisDemoX12ReportTypeCode",
+  "title": "X12 Report Type Codes used by the Praxis demo",
+  "status": "active",
+  "experimental": true,
+  "publisher": "Praxis Health Plan (demo)",
+  "description": "The X12 PWK01 report type code the demo PAS requests use for the DTR QuestionnaireResponse, so the payer HAPI can check the PAS documentInformation binding. Codes only: X12 descriptions are licensed.",
+  "caseSensitive": true,
+  "content": "fragment",
+  "concept": [
+    { "code": "OZ" }
+  ]
+}

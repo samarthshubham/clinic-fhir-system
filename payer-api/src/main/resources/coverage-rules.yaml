@@ -36,8 +36,26 @@ rules:
     questionnaire: http://praxishealthplan.example/fhir/Questionnaire/polysomnography
     emergencyExempt: false
 
+  # PAS claim lines need a code from X12 278 Requested Service Type (CPT/HCPCS), so the
+  # SNOMED-coded orders also have their CPT code here, with the same rule.
+  - system: http://www.ama-assn.org/go/cpt
+    code: "95810"
+    display: Polysomnography
+    paNeeded: true
+    docNeeded: true
+    questionnaire: http://praxishealthplan.example/fhir/Questionnaire/polysomnography
+    emergencyExempt: false
+
   - system: http://snomed.info/sct
     code: "40701008"
+    display: Echocardiography
+    paNeeded: true
+    docNeeded: true
+    questionnaire: http://praxishealthplan.example/fhir/Questionnaire/echocardiogram
+    emergencyExempt: false
+
+  - system: http://www.ama-assn.org/go/cpt
+    code: "93306"
     display: Echocardiography
     paNeeded: true
     docNeeded: true
@@ -69,9 +87,23 @@ rules:
     docNeeded: false
     emergencyExempt: false
 
+  - system: http://www.ama-assn.org/go/cpt
+    code: "93015"
+    display: Cardiovascular stress testing
+    paNeeded: true
+    docNeeded: false
+    emergencyExempt: false
+
   - system: http://snomed.info/sct
     code: "276341003"
     display: Cardiovascular investigation (emergency cardiac workup)
+    paNeeded: true
+    docNeeded: false
+    emergencyExempt: true
+
+  - system: https://codesystem.x12.org/005010/1365
+    code: "86"
+    display: Emergency services
     paNeeded: true
     docNeeded: false
     emergencyExempt: true

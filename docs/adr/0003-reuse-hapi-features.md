@@ -18,6 +18,7 @@ These features are mature, spec-conformant and already running in our stack. Wri
 
 ## Trade-offs
 
-- We depend on HAPI's behavior and version (7.4.0).
+- We depend on HAPI's behavior and version: 7.4.0 for the provider HAPI, 8.12.0 for the payer HAPI. 7.4.0's validator rejects valid PAS 2.2.1 bundles, so the payer HAPI moved to 8.12.0 with E4-S2.
+- HAPI validates codes only against code systems it holds. CPT, HCPCS, ICD-10-CM and X12 are not in any IG package, so `terminology/codesystems/` seeds `fragment` CodeSystems with the demo codes, and required-bound CodeableConcepts use one code system.
 - Proxying bulk export means rewriting the status and file URLs so clients never reach the payer HAPI directly.
 - Criteria-based rest-hook subscriptions are not the topic-based subscriptions some newer IG versions prefer. We document that gap.
