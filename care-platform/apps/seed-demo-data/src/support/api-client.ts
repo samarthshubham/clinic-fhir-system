@@ -159,6 +159,7 @@ export interface InsurancePlan {
   id: string;
   planId: string;
   name: string;
+  period?: CoveragePeriod;
 }
 
 export interface ProviderPatient {
@@ -217,7 +218,11 @@ interface CoverageBundle {
 
 interface InsurancePlanBundle {
   entry?: Array<{
-    resource: { id: string; identifier?: FhirIdentifier[] };
+    resource: {
+      id: string;
+      identifier?: FhirIdentifier[];
+      period?: CoveragePeriod;
+    };
   }>;
 }
 
@@ -417,6 +422,23 @@ class ApiClient {
     );
   }
 
+  async publicDirectoryIds(
+    resourceType: string,
+    query: string,
+  ): Promise<string[]> {
+    const url = `${PAYER_API}/fhir/${resourceType}?${query}`;
+    const response = await this.fetchWithRetry(url, {
+      headers: { Accept: 'application/fhir+json' },
+    });
+    if (!response.ok) {
+      throw new Error(
+        `Public directory GET ${resourceType} failed [${response.status}]`,
+      );
+    }
+    const bundle = (await response.json()) as FhirSearchBundle;
+    return (bundle.entry ?? []).map(({ resource }) => resource.id);
+  }
+
   async questionnairePackage(
     token: string,
     order: OrderCode,
@@ -552,7 +574,10 @@ class ApiClient {
       const planId = resource.identifier?.find(
         (identifier) => identifier.system === INSURANCE_PLAN_SYSTEM,
       )?.value;
-      if (planId) return { id: resource.id, planId, name };
+      if (planId) {
+        const { id, period } = resource;
+        return { id, planId, name, ...(period && { period }) };
+      }
     }
     throw new Error(
       `Insurance plan "${name}" is not in the payer HAPI; run payer-plans.feature first`,

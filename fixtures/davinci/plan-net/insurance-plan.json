@@ -44,8 +44,15 @@
             "code": "gold",
             "display": "Gold-QHP"
           }
-        ]
+        ],
+        "text": "PPO"
       }
+    }
+  ],
+  "identifier": [
+    {
+      "system": "http://praxishealthplan.example/fhir/identifier/insurance-plan",
+      "value": "praxis-gold-ppo"
     }
   ]
 }

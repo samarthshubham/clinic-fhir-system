@@ -1,0 +1,15 @@
+{
+  "resourceType": "Location",
+  "id": "state-of-illinois",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Location"
+    ]
+  },
+  "status": "active",
+  "name": "State of Illinois",
+  "address": {
+    "state": "IL",
+    "country": "US"
+  }
+}

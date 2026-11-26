@@ -148,6 +148,12 @@ Terminology: the payer HAPI has no CPT, HCPCS, ICD-10-CM or X12 code systems, an
 
 The emergency cardiac workup has a clinical SNOMED code in the chart and no procedure billing code. PAS binds both the claim line and the linked order to the requested service type value set. Both use the X12 service classification `1365#86` for emergency services. The shared rules use the order priority to apply the emergency exemption. [PAS requested service value set](https://hl7.org/fhir/us/davinci-pas/STU2.2/ValueSet-X12278RequestedServiceType.html), [X12 service type codes](https://x12.org/codes/service-type-codes).
 
+### Public Plan-Net directory
+
+Payer-api serves unauthenticated FHIR read, versioned read and search at `/fhir/{resourceType}` for the [Plan-Net 1.2.0 capability statement](https://hl7.org/fhir/us/davinci-pdex-plan-net/STU1.2/CapabilityStatement-plan-net.html) types. This includes OrganizationAffiliation and the Network profile of Organization. `/fhir/metadata` lists their profiles, search fields and allowed inclusions. Other operations keep their existing SMART scope checks.
+
+The payer HAPI stores the directory. The Plan-Net profile is the publication marker applied to the curated provider directory records. Search is restricted to those profiles, and reads and included resources are checked for the corresponding profile. The directory publishes practice details, links and contact information. Connection headers are omitted from public Endpoint representations.
+
 ## 4. What we reuse instead of building
 
 | Need | Reused |

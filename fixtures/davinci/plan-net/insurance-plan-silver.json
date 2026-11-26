@@ -1,0 +1,56 @@
+{
+  "resourceType": "InsurancePlan",
+  "id": "praxis-silver-hmo",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-InsurancePlan"
+    ]
+  },
+  "status": "active",
+  "type": [
+    {
+      "coding": [
+        {
+          "system": "http://hl7.org/fhir/us/davinci-pdex-plan-net/CodeSystem/InsuranceProductTypeCS",
+          "code": "commhmo"
+        }
+      ]
+    }
+  ],
+  "name": "Praxis Silver HMO",
+  "ownedBy": {
+    "reference": "Organization/praxis-health-plan"
+  },
+  "administeredBy": {
+    "reference": "Organization/praxis-health-plan"
+  },
+  "coverageArea": [
+    {
+      "reference": "Location/state-of-illinois"
+    }
+  ],
+  "network": [
+    {
+      "reference": "Organization/praxis-standard-network"
+    }
+  ],
+  "plan": [
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/us/davinci-pdex-plan-net/CodeSystem/InsurancePlanTypeCS",
+            "code": "silver"
+          }
+        ],
+        "text": "HMO"
+      }
+    }
+  ],
+  "identifier": [
+    {
+      "system": "http://praxishealthplan.example/fhir/identifier/insurance-plan",
+      "value": "praxis-silver-hmo"
+    }
+  ]
+}

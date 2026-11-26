@@ -1,0 +1,141 @@
+{
+  "resourceType": "CapabilityStatement",
+  "status": "active",
+  "kind": "capability",
+  "fhirVersion": "4.0.1",
+  "format": ["json", "xml"],
+  "rest": [{ "mode": "server", "resource": [
+    {
+      "type": "Endpoint",
+      "supportedProfile": ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Endpoint"],
+      "referencePolicy": ["resolves"],
+      "searchInclude": ["Endpoint:organization"],
+      "searchParam": [
+        {"name": "organization", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/endpoint-organization", "type": "reference", "extension": [{"url": "target", "valueCode": "Organization"}, {"url": "chain", "valueCode": "name"}, {"url": "chain", "valueCode": "address"}, {"url": "chain", "valueCode": "partof"}, {"url": "chain", "valueCode": "type"}]},
+        {"name": "_id", "definition": "http://hl7.org/fhir/SearchParameter/Resource-id", "type": "token"},
+        {"name": "_lastUpdated", "definition": "http://hl7.org/fhir/SearchParameter/Resource-lastUpdated", "type": "date"}
+      ]
+    },
+    {
+      "type": "HealthcareService",
+      "supportedProfile": ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-HealthcareService"],
+      "referencePolicy": ["resolves"],
+      "searchInclude": ["HealthcareService:location", "HealthcareService:coverage-area", "HealthcareService:organization", "HealthcareService:endpoint"],
+      "searchRevInclude": ["PractitionerRole:service", "OrganizationAffiliation:service"],
+      "searchParam": [
+        {"name": "location", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/healthcareservice-location", "type": "reference", "extension": [{"url": "target", "valueCode": "Location"}, {"url": "chain", "valueCode": "address"}, {"url": "chain", "valueCode": "address-postalcode"}, {"url": "chain", "valueCode": "address-city"}, {"url": "chain", "valueCode": "address-state"}, {"url": "chain", "valueCode": "organization"}, {"url": "chain", "valueCode": "type"}]},
+        {"name": "coverage-area", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/healthcareservice-coverage-area", "type": "reference", "extension": [{"url": "target", "valueCode": "Location"}]},
+        {"name": "organization", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/healthcareservice-organization", "type": "reference", "extension": [{"url": "target", "valueCode": "Organization"}, {"url": "chain", "valueCode": "name"}, {"url": "chain", "valueCode": "address"}, {"url": "chain", "valueCode": "partof"}, {"url": "chain", "valueCode": "type"}]},
+        {"name": "endpoint", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/healthcareservice-endpoint", "type": "reference", "extension": [{"url": "target", "valueCode": "Endpoint"}, {"url": "chain", "valueCode": "organization"}]},
+        {"name": "name", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/healthcareservice-name", "type": "string"},
+        {"name": "service-category", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/healthcareservice-service-category", "type": "token"},
+        {"name": "service-type", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/healthcareservice-service-type", "type": "token"},
+        {"name": "specialty", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/healthcareservice-specialty", "type": "token"},
+        {"name": "_id", "definition": "http://hl7.org/fhir/SearchParameter/Resource-id", "type": "token"},
+        {"name": "_lastUpdated", "definition": "http://hl7.org/fhir/SearchParameter/Resource-lastUpdated", "type": "date"}
+      ]
+    },
+    {
+      "type": "InsurancePlan",
+      "supportedProfile": ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-InsurancePlan"],
+      "referencePolicy": ["resolves"],
+      "searchInclude": ["InsurancePlan:administered-by", "InsurancePlan:owned-by", "InsurancePlan:coverage-area"],
+      "searchParam": [
+        {"name": "administered-by", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/insuranceplan-administered-by", "type": "reference", "extension": [{"url": "target", "valueCode": "Organization"}, {"url": "chain", "valueCode": "name"}, {"url": "chain", "valueCode": "partof"}]},
+        {"name": "owned-by", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/insuranceplan-owned-by", "type": "reference", "extension": [{"url": "target", "valueCode": "Organization"}, {"url": "chain", "valueCode": "name"}, {"url": "chain", "valueCode": "partof"}]},
+        {"name": "coverage-area", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/insuranceplan-coverage-area", "type": "reference", "extension": [{"url": "target", "valueCode": "Location"}]},
+        {"name": "name", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/insuranceplan-name", "type": "string"},
+        {"name": "plan-type", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/insuranceplan-plan-type", "type": "token"},
+        {"name": "identifier", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/insuranceplan-identifier", "type": "token"},
+        {"name": "_id", "definition": "http://hl7.org/fhir/SearchParameter/Resource-id", "type": "token"},
+        {"name": "_lastUpdated", "definition": "http://hl7.org/fhir/SearchParameter/Resource-lastUpdated", "type": "date"},
+        {"name": "type", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/insuranceplan-type", "type": "token"}
+      ]
+    },
+    {
+      "type": "Location",
+      "supportedProfile": ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Location"],
+      "referencePolicy": ["resolves"],
+      "searchInclude": ["Location:endpoint", "Location:organization", "Location:partof"],
+      "searchRevInclude": ["HealthcareService:location", "InsurancePlan:coverage-area", "OrganizationAffiliation:location", "PractitionerRole:location"],
+      "searchParam": [
+        {"name": "partof", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/location-partof", "type": "reference", "extension": [{"url": "target", "valueCode": "Location"}, {"url": "chain", "valueCode": "type"}, {"url": "chain", "valueCode": "address"}, {"url": "chain", "valueCode": "organization"}]},
+        {"name": "organization", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/location-organization", "type": "reference", "extension": [{"url": "target", "valueCode": "Organization"}, {"url": "chain", "valueCode": "name"}, {"url": "chain", "valueCode": "address"}, {"url": "chain", "valueCode": "partof"}, {"url": "chain", "valueCode": "type"}]},
+        {"name": "endpoint", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/location-endpoint", "type": "reference", "extension": [{"url": "target", "valueCode": "Endpoint"}, {"url": "chain", "valueCode": "organization"}]},
+        {"name": "address-city", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/location-address-city", "type": "string"},
+        {"name": "address-state", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/location-address-state", "type": "string"},
+        {"name": "address-postalcode", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/location-address-postalcode", "type": "string"},
+        {"name": "address", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/location-address", "type": "string"},
+        {"name": "type", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/location-type", "type": "token"},
+        {"name": "_id", "definition": "http://hl7.org/fhir/SearchParameter/Resource-id", "type": "token"},
+        {"name": "_lastUpdated", "definition": "http://hl7.org/fhir/SearchParameter/Resource-lastUpdated", "type": "date"}
+      ]
+    },
+    {
+      "type": "Organization",
+      "supportedProfile": ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Network", "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Organization"],
+      "referencePolicy": ["resolves"],
+      "searchInclude": ["Organization:partof", "Organization:endpoint", "Organization:coverage-area"],
+      "searchRevInclude": ["Endpoint:organization", "HealthcareService:organization", "InsurancePlan:administered-by", "InsurancePlan:owned-by", "OrganizationAffiliation:primary-organization", "PractitionerRole:organization", "PractitionerRole:network", "OrganizationAffiliation:participating-organization"],
+      "searchParam": [
+        {"name": "partof", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/organization-partof", "type": "reference", "extension": [{"url": "target", "valueCode": "Organization"}, {"url": "chain", "valueCode": "name"}, {"url": "chain", "valueCode": "address"}, {"url": "chain", "valueCode": "type"}]},
+        {"name": "endpoint", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/organization-endpoint", "type": "reference", "extension": [{"url": "target", "valueCode": "Endpoint"}, {"url": "chain", "valueCode": "organization"}]},
+        {"name": "address", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/organization-address", "type": "string"},
+        {"name": "name", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/organization-name", "type": "string"},
+        {"name": "_id", "definition": "http://hl7.org/fhir/SearchParameter/Resource-id", "type": "token"},
+        {"name": "_lastUpdated", "definition": "http://hl7.org/fhir/SearchParameter/Resource-lastUpdated", "type": "date"},
+        {"name": "type", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/organization-type", "type": "token"},
+        {"name": "coverage-area", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/organization-coverage-area", "type": "reference", "extension": [{"url": "target", "valueCode": "Location"}]}
+      ]
+    },
+    {
+      "type": "OrganizationAffiliation",
+      "supportedProfile": ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-OrganizationAffiliation"],
+      "referencePolicy": ["resolves"],
+      "searchInclude": ["OrganizationAffiliation:primary-organization", "OrganizationAffiliation:participating-organization", "OrganizationAffiliation:location", "OrganizationAffiliation:service", "OrganizationAffiliation:endpoint", "OrganizationAffiliation:network"],
+      "searchParam": [
+        {"name": "primary-organization", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/organizationaffiliation-primary-organization", "type": "reference", "extension": [{"url": "target", "valueCode": "Organization"}, {"url": "chain", "valueCode": "type"}, {"url": "chain", "valueCode": "address"}, {"url": "chain", "valueCode": "name"}, {"url": "chain", "valueCode": "partof"}]},
+        {"name": "participating-organization", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/organizationaffiliation-participating-organization", "type": "reference", "extension": [{"url": "target", "valueCode": "Organization"}, {"url": "chain", "valueCode": "type"}, {"url": "chain", "valueCode": "address"}, {"url": "chain", "valueCode": "name"}, {"url": "chain", "valueCode": "partof"}]},
+        {"name": "location", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/organizationaffiliation-location", "type": "reference", "extension": [{"url": "target", "valueCode": "Location"}, {"url": "chain", "valueCode": "address"}, {"url": "chain", "valueCode": "address-postalcode"}, {"url": "chain", "valueCode": "address-city"}, {"url": "chain", "valueCode": "address-state"}, {"url": "chain", "valueCode": "organization"}, {"url": "chain", "valueCode": "type"}]},
+        {"name": "service", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/organizationaffiliation-service", "type": "reference", "extension": [{"url": "target", "valueCode": "HealthcareService"}, {"url": "chain", "valueCode": "service-category"}, {"url": "chain", "valueCode": "organization"}, {"url": "chain", "valueCode": "location"}]},
+        {"name": "network", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/organizationaffiliation-network", "type": "reference", "extension": [{"url": "target", "valueCode": "Organization"}, {"url": "chain", "valueCode": "name"}, {"url": "chain", "valueCode": "partof"}]},
+        {"name": "endpoint", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/organizationaffiliation-endpoint", "type": "reference", "extension": [{"url": "target", "valueCode": "Endpoint"}, {"url": "chain", "valueCode": "organization"}]},
+        {"name": "role", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/organizationaffiliation-role", "type": "token"},
+        {"name": "specialty", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/organizationaffiliation-specialty", "type": "token"},
+        {"name": "_id", "definition": "http://hl7.org/fhir/SearchParameter/Resource-id", "type": "token"},
+        {"name": "_lastUpdated", "definition": "http://hl7.org/fhir/SearchParameter/Resource-lastUpdated", "type": "date"}
+      ]
+    },
+    {
+      "type": "Practitioner",
+      "supportedProfile": ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Practitioner"],
+      "referencePolicy": ["resolves"],
+      "searchRevInclude": ["PractitionerRole:practitioner"],
+      "searchParam": [
+        {"name": "name", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/practitioner-name", "type": "string"},
+        {"name": "_id", "definition": "http://hl7.org/fhir/SearchParameter/Resource-id", "type": "token"},
+        {"name": "_lastUpdated", "definition": "http://hl7.org/fhir/SearchParameter/Resource-lastUpdated", "type": "date"},
+        {"name": "family", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/practitioner-family-name", "type": "string"},
+        {"name": "given", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/practitioner-given-name", "type": "string"}
+      ]
+    },
+    {
+      "type": "PractitionerRole",
+      "supportedProfile": ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-PractitionerRole"],
+      "referencePolicy": ["resolves"],
+      "searchInclude": ["PractitionerRole:practitioner", "PractitionerRole:organization", "PractitionerRole:location", "PractitionerRole:service", "PractitionerRole:network", "PractitionerRole:endpoint"],
+      "searchParam": [
+        {"name": "practitioner", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/practitionerrole-practitioner", "type": "reference", "extension": [{"url": "target", "valueCode": "Practitioner"}, {"url": "chain", "valueCode": "name"}]},
+        {"name": "organization", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/practitionerrole-organization", "type": "reference", "extension": [{"url": "target", "valueCode": "Organization"}, {"url": "chain", "valueCode": "name"}, {"url": "chain", "valueCode": "address"}, {"url": "chain", "valueCode": "partof"}, {"url": "chain", "valueCode": "type"}]},
+        {"name": "location", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/practitionerrole-location", "type": "reference", "extension": [{"url": "target", "valueCode": "Location"}, {"url": "chain", "valueCode": "address"}, {"url": "chain", "valueCode": "address-postalcode"}, {"url": "chain", "valueCode": "address-city"}, {"url": "chain", "valueCode": "address-state"}, {"url": "chain", "valueCode": "organization"}, {"url": "chain", "valueCode": "type"}]},
+        {"name": "service", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/practitionerrole-service", "type": "reference", "extension": [{"url": "target", "valueCode": "HealthcareService"}, {"url": "chain", "valueCode": "service-category"}, {"url": "chain", "valueCode": "organization"}, {"url": "chain", "valueCode": "location"}]},
+        {"name": "network", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/practitionerrole-network", "type": "reference", "extension": [{"url": "target", "valueCode": "Organization"}, {"url": "chain", "valueCode": "name"}, {"url": "chain", "valueCode": "address"}, {"url": "chain", "valueCode": "partof"}, {"url": "chain", "valueCode": "type"}]},
+        {"name": "endpoint", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/practitionerrole-endpoint", "type": "reference", "extension": [{"url": "target", "valueCode": "Endpoint"}, {"url": "chain", "valueCode": "organization"}]},
+        {"name": "role", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/practitionerrole-role", "type": "token"},
+        {"name": "specialty", "definition": "http://hl7.org/fhir/us/davinci-pdex-plan-net/SearchParameter/practitionerrole-specialty", "type": "token"},
+        {"name": "_id", "definition": "http://hl7.org/fhir/SearchParameter/Resource-id", "type": "token"},
+        {"name": "_lastUpdated", "definition": "http://hl7.org/fhir/SearchParameter/Resource-lastUpdated", "type": "date"}
+      ]
+    }
+  ] }]
+}

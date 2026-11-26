@@ -1,0 +1,56 @@
+{
+  "resourceType": "OrganizationAffiliation",
+  "id": "praxis-clinic-affiliation",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-OrganizationAffiliation"
+    ]
+  },
+  "active": true,
+  "organization": {
+    "reference": "Organization/praxis-health-plan"
+  },
+  "participatingOrganization": {
+    "reference": "Organization/praxis-clinic"
+  },
+  "network": [
+    {
+      "reference": "Organization/praxis-standard-network"
+    }
+  ],
+  "code": [
+    {
+      "coding": [
+        {
+          "system": "http://hl7.org/fhir/us/davinci-pdex-plan-net/CodeSystem/OrganizationAffiliationRoleCS",
+          "code": "group"
+        }
+      ]
+    }
+  ],
+  "specialty": [
+    {
+      "coding": [
+        {
+          "system": "http://nucc.org/provider-taxonomy",
+          "code": "207R00000X"
+        }
+      ]
+    }
+  ],
+  "location": [
+    {
+      "reference": "Location/praxis-clinic-location"
+    }
+  ],
+  "healthcareService": [
+    {
+      "reference": "HealthcareService/praxis-primary-care"
+    }
+  ],
+  "endpoint": [
+    {
+      "reference": "Endpoint/praxis-clinic-directory"
+    }
+  ]
+}

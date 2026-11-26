@@ -1,0 +1,24 @@
+{
+  "resourceType": "Practitioner",
+  "id": "anika-patel",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Practitioner"
+    ]
+  },
+  "active": true,
+  "name": [
+    {
+      "family": "Patel",
+      "given": [
+        "Anika"
+      ]
+    }
+  ],
+  "identifier": [
+    {
+      "system": "http://praxis.clinic/fhir/identifier/directory-practitioner",
+      "value": "anika-patel"
+    }
+  ]
+}

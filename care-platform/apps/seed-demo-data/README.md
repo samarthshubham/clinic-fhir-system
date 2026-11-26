@@ -38,6 +38,7 @@ Each Cucumber `Scenario` is one patient. Before creating a patient, the step cas
 All of these must be running before executing the seed:
 
 **1. Provider HAPI FHIR (8080), payer HAPI FHIR (8081) + PostgreSQL** (Docker):
+
 ```bash
 # from project root
 docker compose -f infra/docker-compose.yml up -d
@@ -45,12 +46,14 @@ bash infra/payer/smoke.sh   # waits until the payer HAPI has loaded its IGs (4-5
 ```
 
 **2. Spring Boot API** (port 9090):
+
 ```bash
 # from clinic-api/
 ./mvnw spring-boot:run
 ```
 
 **3. payer-api** (port 9095), for the `payer-*` features:
+
 ```bash
 # from payer-api/
 ./mvnw spring-boot:run
@@ -68,6 +71,7 @@ npx nx run seed-demo-data:seed
 The Spring Boot API requires a JWT, so a Cucumber `BeforeAll` hook (`src/support/hooks.ts`) logs in once before any scenario runs. It uses the dev `clinician` account by default; override it with `SEED_USERNAME` / `SEED_PASSWORD`. The account needs clinical write permissions (`CLINICIAN` or `ADMIN`). Calls that go straight to HAPI FHIR (patients, practitioners, organizations, cascade deletes) are not affected.
 
 Expected output on success:
+
 ```
 19 scenarios (19 passed)
 228 steps (228 passed)
@@ -85,12 +89,13 @@ The Practitioners behind the dev staff logins `admin`, `clinician` and `frontdes
 
 `cucumber.json` runs the payer features after the patient profiles: plans, members, terminology, then questionnaires:
 
-| Feature | Seeds |
-|---|---|
-| `payer-plans.feature` | Praxis Health Plan (`Organization`) and two `InsurancePlan`s, Praxis Gold PPO and Praxis Silver HMO, in the payer HAPI |
-| `payer-members.feature` | for each of the 8 profiles: the provider `Coverage` (through clinic-api), and a member `Patient` + `Coverage` in the payer HAPI. Aisha Chen's payer `Coverage` is `cancelled` while her provider `Coverage` stays `active`, so CRD answers "Coverage could not be verified" for her |
-| `payer-terminology.feature` | CPT, HCPCS, ICD-10-CM and X12 demo fragments, plus complete THO and DTR CodeSystems from `terminology/codesystems/` |
-| `payer-questionnaires.feature` | the DTR `Questionnaire`s, CQL `Library`s and `ValueSet`s from `fixtures/davinci/dtr/` (MRI lumbar spine, polysomnography, CGM, echocardiogram), PUT under their fixed ids; then checks that payer-api's `$questionnaire-package` returns the right form for each order code |
+| Feature                        | Seeds                                                                                                                                                                                                                                                                               |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `payer-plans.feature`          | Praxis Health Plan (`Organization`) and two `InsurancePlan`s, Praxis Gold PPO and Praxis Silver HMO, in the payer HAPI                                                                                                                                                              |
+| `payer-members.feature`        | for each of the 8 profiles: the provider `Coverage` (through clinic-api), and a member `Patient` + `Coverage` in the payer HAPI. Aisha Chen's payer `Coverage` is `cancelled` while her provider `Coverage` stays `active`, so CRD answers "Coverage could not be verified" for her |
+| `payer-terminology.feature`    | CPT, HCPCS, ICD-10-CM and X12 demo fragments, plus complete THO and DTR CodeSystems from `terminology/codesystems/`                                                                                                                                                                 |
+| `payer-questionnaires.feature` | the DTR `Questionnaire`s, CQL `Library`s and `ValueSet`s from `fixtures/davinci/dtr/` (MRI lumbar spine, polysomnography, CGM, echocardiogram), PUT under their fixed ids; then checks that payer-api's `$questionnaire-package` returns the right form for each order code         |
+| `payer-directory.feature`      | Plan-Net directory fixtures from `fixtures/davinci/plan-net/`, including the clinic’s two seeded clinicians. Updates the existing payer and plans in place and verifies public directory searches.                                                                                  |
 
 The complete snapshots preserve the concepts from `hl7.terminology.r4#7.1.0` (claim type and CMS place of service) and `hl7.fhir.us.davinci-dtr#2.2.0` (information origin, completion time and intended audience). For a new or changed complete system, the seed writes its published concepts to the matching CodeSystem resource and verifies each code with versioned `CodeSystem/$lookup` before recording the source digest. For fragment imports it checks every final batch entry, then waits until each demo code resolves without a version, as PAS submits it. [HAPI 8.12 terminology uploader](https://github.com/hapifhir/hapi-fhir/blob/v8.12.0/hapi-fhir-jpaserver-base/src/main/java/ca/uhn/fhir/jpa/provider/TerminologyUploaderProvider.java)
 
@@ -104,13 +109,13 @@ The complete snapshots preserve the concepts from `hl7.terminology.r4#7.1.0` (cl
 
 ## Patient profiles
 
-| Patient | DOB | Profile | Encounters | Key vitals trend |
-|---|---|---|---|---|
-| Marcus Webb | 1965-03-12 M | Hypertensive, ongoing BP management | 4 (42, 28, 14, 3 days ago) | Systolic 158 → 138 mmHg; no SpO₂ recorded |
-| Priya Nair | 1992-07-28 F | Healthy, preventive care | 2 (38, 10 days ago) | All normal; SpO₂ 99% |
-| Gerald Horton | 1974-11-04 M | Overweight, sleep apnea workup + CPAP | 4 (45, 30, 15, 2 days ago) | SpO₂ 93% → 97%; weight 118 → 115 kg |
-| Sandra Okafor | 1980-02-19 F | Post-cholecystectomy recovery; lumbar radiculopathy (MRI prior auth case) | 9 (44, 35, 21, 7 days ago; back pain 34 days ago, physical therapy 30, 23, 16, 6 days ago) | All vitals normalizing; weight 72 → 69 kg |
-| Ramon Castillo | 1958-09-30 M | Type 2 diabetes management | 4 (40, 25, 12, 1 days ago) | BP 136/86 → 128/80; SpO₂ stable 96-97% |
+| Patient        | DOB          | Profile                                                                   | Encounters                                                                                 | Key vitals trend                          |
+| -------------- | ------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| Marcus Webb    | 1965-03-12 M | Hypertensive, ongoing BP management                                       | 4 (42, 28, 14, 3 days ago)                                                                 | Systolic 158 → 138 mmHg; no SpO₂ recorded |
+| Priya Nair     | 1992-07-28 F | Healthy, preventive care                                                  | 2 (38, 10 days ago)                                                                        | All normal; SpO₂ 99%                      |
+| Gerald Horton  | 1974-11-04 M | Overweight, sleep apnea workup + CPAP                                     | 4 (45, 30, 15, 2 days ago)                                                                 | SpO₂ 93% → 97%; weight 118 → 115 kg       |
+| Sandra Okafor  | 1980-02-19 F | Post-cholecystectomy recovery; lumbar radiculopathy (MRI prior auth case) | 9 (44, 35, 21, 7 days ago; back pain 34 days ago, physical therapy 30, 23, 16, 6 days ago) | All vitals normalizing; weight 72 → 69 kg |
+| Ramon Castillo | 1958-09-30 M | Type 2 diabetes management                                                | 4 (40, 25, 12, 1 days ago)                                                                 | BP 136/86 → 128/80; SpO₂ stable 96-97%    |
 
 The profiles are chosen to exercise a range of UI states:
 
@@ -178,19 +183,19 @@ All four vital fields are optional — omit any that weren't recorded for a give
 
 Add the key to the data table for that encounter step. The keys map directly to the `VitalsRequest` fields accepted by the Spring Boot API:
 
-| Data table key | API field | Unit |
-|---|---|---|
-| `systolicBp` | `systolicBp` | mmHg |
-| `diastolicBp` | `diastolicBp` | mmHg |
-| `weightKg` | `weightKg` | kg |
-| `spo2Percent` | `spo2Percent` | % |
+| Data table key | API field     | Unit |
+| -------------- | ------------- | ---- |
+| `systolicBp`   | `systolicBp`  | mmHg |
+| `diastolicBp`  | `diastolicBp` | mmHg |
+| `weightKg`     | `weightKg`    | kg   |
+| `spo2Percent`  | `spo2Percent` | %    |
 
 ### Add new step patterns
 
 If you need a step that doesn't exist yet, add it to the appropriate file in `src/step-definitions/`. Use the `function` keyword (never arrow functions) so Cucumber can bind `this` to `SeedWorld`:
 
 ```typescript
-When('some new step {string}', async function(this: SeedWorld, value: string) {
+When('some new step {string}', async function (this: SeedWorld, value: string) {
   // this.currentPatientId is available here
 });
 ```
