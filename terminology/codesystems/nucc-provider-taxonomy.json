@@ -1,0 +1,16 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "nucc-provider-taxonomy",
+  "url": "http://nucc.org/provider-taxonomy",
+  "name": "PraxisDemoNuccProviderTaxonomy",
+  "title": "NUCC Health Care Provider Taxonomy codes used by the Praxis demo",
+  "status": "active",
+  "experimental": true,
+  "publisher": "Praxis Health Plan (demo)",
+  "description": "The provider taxonomy specialty the Plan-Net directory fixtures use, so the payer HAPI can check the Plan-Net specialty bindings.",
+  "caseSensitive": true,
+  "content": "fragment",
+  "concept": [
+    { "code": "207R00000X", "display": "Internal Medicine Physician" }
+  ]
+}
