@@ -100,3 +100,10 @@ rules:
     paNeeded: true
     docNeeded: false
     emergencyExempt: true
+
+  - system: https://codesystem.x12.org/005010/1365
+    code: "86"
+    display: Emergency services
+    paNeeded: true
+    docNeeded: false
+    emergencyExempt: true

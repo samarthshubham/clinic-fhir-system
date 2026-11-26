@@ -273,7 +273,11 @@ class ApiClient {
     return response.json() as Promise<T>;
   }
 
-  private async put(url: string, body: object): Promise<void> {
+  private async put(
+    url: string,
+    body: object,
+    retryColdProfile = false,
+  ): Promise<void> {
     const response = await this.fetchWithRetry(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/fhir+json' },
@@ -281,6 +285,16 @@ class ApiClient {
     });
     if (!response.ok) {
       const text = await response.text();
+      // The first DTR write on a fresh payer HAPI can race its SDC snapshot generation.
+      if (
+        retryColdProfile &&
+        response.status === 422 &&
+        text.includes('Slicing cannot be evaluated') &&
+        text.includes('sdc-questionnaire-launchContext')
+      ) {
+        await this.put(url, body);
+        return;
+      }
       throw new Error(
         `PUT ${url} failed [${response.status}]: ${text.slice(0, 300)}`,
       );
@@ -399,6 +413,7 @@ class ApiClient {
     await this.put(
       `${PAYER_FHIR}/${resource.resourceType}/${resource['id']}`,
       resource,
+      resource.resourceType === 'Questionnaire',
     );
   }
 

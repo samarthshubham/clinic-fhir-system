@@ -39,6 +39,7 @@ import org.hl7.fhir.r4.model.Parameters;
 import org.hl7.fhir.r4.model.Period;
 import org.hl7.fhir.r4.model.QuestionnaireResponse;
 import org.hl7.fhir.r4.model.Reference;
+import org.hl7.fhir.r4.model.ServiceRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -122,7 +123,8 @@ class ClaimSubmitInteropTest {
         .isEqualTo("2026-08-27T15:15:00+00:00");
     assertThat(transaction.getEntry().get(transaction.getEntry().size() - 2).getRequest())
         .extracting(Bundle.BundleEntryRequestComponent::getIfNoneExist)
-        .isEqualTo("identifier=http://praxis.clinic/fhir/identifier/claim|PX-PA-0002");
+        .isEqualTo(
+            "identifier=http%3A%2F%2Fpraxis.clinic%2Ffhir%2Fidentifier%2Fclaim%7CPX-PA-0002");
 
     QuestionnaireResponse answers = resource(transaction, QuestionnaireResponse.class);
     assertThat(answers.getSubject().getReference()).isEqualTo("Patient/member-sandra");
@@ -138,6 +140,23 @@ class ClaimSubmitInteropTest {
     assertThat(decision.getPatient().getReference()).isEqualTo("Patient/member-sandra");
     assertThat(decision.getRequest().getReference())
         .isEqualTo(transaction.getEntry().get(transaction.getEntry().size() - 2).getFullUrl());
+  }
+
+  @Test
+  void emergencyServiceTypeUsesTheRequestedOrderPriority() {
+    givenActiveMember("member-gerald");
+    Bundle request = fixture(Bundle.class, "pas/request-polysomnography.json");
+    CodeableConcept emergency =
+        new CodeableConcept(new Coding("https://codesystem.x12.org/005010/1365", "86", null));
+    resource(request, Claim.class).getItemFirstRep().setProductOrService(emergency.copy());
+    ServiceRequest order = resource(request, ServiceRequest.class);
+    order.setCode(emergency);
+    order.setPriority(ServiceRequest.ServiceRequestPriority.STAT);
+    assertThat(resource(submit(request), ClaimResponse.class).getDisposition())
+        .isEqualTo("No prior authorization needed");
+    order.setPriority(ServiceRequest.ServiceRequestPriority.URGENT);
+    assertThat(resource(submit(request), ClaimResponse.class).getDisposition())
+        .isEqualTo("Pended for clinical review");
   }
 
   @Test
@@ -216,12 +235,14 @@ class ClaimSubmitInteropTest {
   void validatesAgainstThePasRequestBundleProfile() {
     givenActiveMember("member-sandra");
 
-    submit("request-mri.json");
+    Bundle request = fixture(Bundle.class, "pas/request-mri.json");
+    request.getMeta().getProfile().clear();
+    submit(request);
 
     Parameters input = (Parameters) payerHapi.operationInputs().get(0);
-    assertThat(input.getParameter("profile").getValue().primitiveValue())
-        .isEqualTo(ClaimSubmitService.PAS_REQUEST_BUNDLE);
-    assertThat(input.getParameter("resource").getResource()).isInstanceOf(Bundle.class);
+    assertThat(input.getParameter()).hasSize(1);
+    Bundle validated = (Bundle) input.getParameter("resource").getResource();
+    assertThat(validated.getMeta().hasProfile(ClaimSubmitService.PAS_REQUEST_BUNDLE)).isTrue();
   }
 
   @Test

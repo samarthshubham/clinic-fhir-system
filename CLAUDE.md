@@ -126,9 +126,9 @@ fixtures/davinci/       Golden Da Vinci fixtures per IG (provider, crd, dtr, pas
                         Maven modules, validated by the ig-validate CI job (.github/scripts/ig-validate.sh); provenance in its README;
                         provider/ = clinic-api US Core mapper output
 
-terminology/            Terminology the payer HAPI needs that no IG package has, one subfolder per resource type:
-  codesystems/          fragment CodeSystems with only the demo codes (CPT, HCPCS, ICD-10-CM, X12 755), fixed ids;
-                        seeded by payer-terminology.feature, checked by ig-validate
+terminology/            Terminology for payer HAPI validation
+  codesystems/          CPT, HCPCS, ICD-10-CM and X12 demo fragments, plus complete THO and DTR snapshots;
+                        payer-terminology.feature populates the native index and ig-validate checks the source files
 
 infra/
   docker-compose.yml    HAPI FHIR 7.4.0 (rest-hook subscriptions on) + payer HAPI 8.12.0 :8081 (Da Vinci IGs) + PostgreSQL 15 + Prometheus + Grafana

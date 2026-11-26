@@ -3,6 +3,11 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { apiClient, FhirResource } from '../support/api-client';
 import { daysAgo } from '../support/date-helpers';
+import {
+  seedTerminology,
+  waitForFragmentLookups,
+  type SeedCodeSystem,
+} from '../support/payer-terminology';
 import { SeedWorld } from '../support/world';
 
 // The payer HAPI loads its validation terminology on the first write after a start, which takes about 30s.
@@ -106,7 +111,7 @@ Given(
 
 Given(
   'the payer HAPI has every CodeSystem in the terminology folder',
-  PAYER_HAPI_WRITE,
+  { timeout: 40 * 60_000 },
   async function (this: SeedWorld) {
     const files = readdirSync(CODE_SYSTEMS)
       .filter((file) => file.endsWith('.json'))
@@ -114,20 +119,24 @@ Given(
     if (files.length === 0) {
       throw new Error(`No CodeSystems in ${CODE_SYSTEMS}`);
     }
+    const base = process.env['PAYER_FHIR_URL'] ?? 'http://localhost:8081/fhir';
+    const systems: SeedCodeSystem[] = [];
     for (const file of files) {
       const resource = JSON.parse(
         readFileSync(resolve(CODE_SYSTEMS, file), 'utf8'),
-      ) as FhirResource;
+      ) as SeedCodeSystem;
       if (resource.resourceType !== 'CodeSystem') {
         throw new Error(
           `${file} is a ${resource.resourceType}, not a CodeSystem`,
         );
       }
-      await apiClient.putPayerResource(resource);
+      await seedTerminology(base, resource);
+      systems.push(resource);
       this.log(
         `CodeSystem/${String(resource['id'])} (${String(resource['url'])})`,
       );
     }
+    await waitForFragmentLookups(base, systems);
   },
 );
 

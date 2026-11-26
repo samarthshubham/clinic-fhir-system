@@ -1,0 +1,16 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "x12-1365",
+  "url": "https://codesystem.x12.org/005010/1365",
+  "name": "PraxisDemoX12ServiceTypeCode",
+  "title": "X12 Service Type Codes used by the Praxis demo",
+  "status": "active",
+  "experimental": true,
+  "publisher": "Praxis Health Plan (demo)",
+  "description": "Service classification used by the emergency PAS request.",
+  "caseSensitive": true,
+  "content": "fragment",
+  "concept": [
+    { "code": "86" }
+  ]
+}

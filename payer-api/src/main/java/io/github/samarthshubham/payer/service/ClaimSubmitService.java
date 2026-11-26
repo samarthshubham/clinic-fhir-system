@@ -3,6 +3,7 @@ package io.github.samarthshubham.payer.service;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
+import ca.uhn.fhir.rest.param.TokenParam;
 import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException;
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import ca.uhn.fhir.rest.server.exceptions.PreconditionFailedException;
@@ -41,8 +42,8 @@ import org.hl7.fhir.r4.model.QuestionnaireResponse;
 import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.StringType;
-import org.hl7.fhir.r4.model.UriType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriUtils;
 
 @Service
 public class ClaimSubmitService {
@@ -101,9 +102,7 @@ public class ClaimSubmitService {
       Identifier identifier = request.identifier().orElseThrow();
       requestId = identifier.getValue();
       requireValid(bundle);
-      ClaimResponse decided =
-          storedResponse(identifier, payerReferences)
-              .orElseGet(() -> adjudicateAndStore(request, identifier, payerReferences));
+      ClaimResponse decided = firstDecision(request, identifier, payerReferences);
       return responseBundle(request, decided);
     } catch (BaseServerResponseException e) {
       status = e.getStatusCode();
@@ -118,10 +117,20 @@ public class ClaimSubmitService {
     }
   }
 
+  private synchronized ClaimResponse firstDecision(
+      PasRequest request, Identifier identifier, List<String> payerReferences) {
+    return storedResponse(identifier, payerReferences)
+        .orElseGet(() -> adjudicateAndStore(request, identifier, payerReferences));
+  }
+
   private void requireValid(Bundle bundle) {
+    Bundle profiled = bundle.copy();
+    // The 8.12 validator resolves the profile from meta on a resource passed to $validate.
+    if (!profiled.getMeta().hasProfile(PAS_REQUEST_BUNDLE)) {
+      profiled.getMeta().addProfile(PAS_REQUEST_BUNDLE);
+    }
     Parameters input = new Parameters();
-    input.addParameter().setName("resource").setResource(bundle.copy());
-    input.addParameter().setName("profile").setValue(new UriType(PAS_REQUEST_BUNDLE));
+    input.addParameter().setName("resource").setResource(profiled);
     OperationOutcome outcome;
     try {
       outcome =
@@ -230,7 +239,12 @@ public class ClaimSubmitService {
         .getRequest()
         .setMethod(Bundle.HTTPVerb.POST)
         .setUrl("Claim")
-        .setIfNoneExist("identifier=" + identifier.getSystem() + "|" + identifier.getValue());
+        .setIfNoneExist(
+            "identifier="
+                + UriUtils.encode(
+                    new TokenParam(identifier.getSystem(), identifier.getValue())
+                        .getValueAsQueryToken(fhirContext),
+                    StandardCharsets.UTF_8));
     ClaimResponse response = claimResponse(storedClaim, claimUrl, preAuthRef, decisions, now);
     transaction
         .addEntry()
