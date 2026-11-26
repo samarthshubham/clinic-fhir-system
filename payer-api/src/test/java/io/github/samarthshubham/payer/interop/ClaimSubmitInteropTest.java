@@ -12,6 +12,7 @@ import ca.uhn.fhir.rest.client.api.ServerValidationModeEnum;
 import ca.uhn.fhir.rest.client.interceptor.BearerTokenAuthInterceptor;
 import ca.uhn.fhir.rest.server.exceptions.ForbiddenOperationException;
 import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
+import ca.uhn.fhir.rest.server.exceptions.ResourceVersionConflictException;
 import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException;
 import io.github.samarthshubham.payer.service.ClaimSubmitService;
 import io.github.samarthshubham.payer.service.TokenService;
@@ -182,13 +183,7 @@ class ClaimSubmitInteropTest {
   void resubmittingTheSameIdentifierReturnsTheFirstDecision() {
     givenActiveMember("member-sandra");
     Bundle first = submit("request-mri.json");
-    Bundle stored = payerHapi.transactions().get(0);
-    Claim storedClaim = resource(stored, Claim.class);
-    storedClaim.setId("Claim/2");
-    ClaimResponse storedResponse = resource(stored, ClaimResponse.class);
-    storedResponse.setId("ClaimResponse/3");
-    storedResponse.setRequest(new Reference("Claim/2"));
-    payerHapi.givenSearchResult(Claim.class, FhirClientStub.bundleOf(storedClaim, storedResponse));
+    givenExistingDecision(false);
 
     Bundle second = submit("request-mri.json");
 
@@ -200,6 +195,87 @@ class ClaimSubmitInteropTest {
     FhirContext context = FhirContext.forR4Cached();
     assertThat(context.newJsonParser().encodeResourceToString(second))
         .isEqualTo(context.newJsonParser().encodeResourceToString(first));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "false, request-cgm.json, member-ramon",
+    "false, request-mri.json, member-ramon",
+    "false, request-polysomnography.json, member-sandra",
+    "true, request-mri.json, member-ramon",
+    "true, request-polysomnography.json, member-sandra"
+  })
+  void identifierCollisionDoesNotReturnTheStoredDecision(
+      boolean conditionalMatch, String laterFixture, String laterBeneficiary) {
+    givenActiveMember("member-sandra");
+    submit("request-mri.json");
+    givenExistingDecision(conditionalMatch);
+    givenActiveMember(laterBeneficiary);
+    Bundle later = fixture(Bundle.class, "pas/" + laterFixture);
+    resource(later, Claim.class).getIdentifierFirstRep().setValue("PX-PA-0002");
+
+    assertThatThrownBy(() -> submit(later))
+        .isInstanceOfSatisfying(
+            ResourceVersionConflictException.class,
+            error -> {
+              assertThat(error.getStatusCode()).isEqualTo(409);
+              String outcome =
+                  FhirContext.forR4Cached()
+                      .newJsonParser()
+                      .encodeResourceToString(error.getOperationOutcome());
+              assertThat(outcome)
+                  .contains("Claim identifier is already in use")
+                  .doesNotContain("PHP-PA-", "Not Certified", "member-sandra");
+            });
+    assertThat(payerHapi.transactions()).hasSize(conditionalMatch ? 2 : 1);
+  }
+
+  @Test
+  void conditionalCreateMatchReturnsTheExistingDecisionForAValidReplay() {
+    givenActiveMember("member-sandra");
+    Bundle initial = submit("request-mri.json");
+    givenExistingDecision(true);
+
+    Bundle replay = submit("request-mri.json");
+
+    FhirContext context = FhirContext.forR4Cached();
+    assertThat(context.newJsonParser().encodeResourceToString(replay))
+        .isEqualTo(context.newJsonParser().encodeResourceToString(initial));
+    Bundle transaction = payerHapi.transactions().get(1);
+    assertThat(transaction.getEntry().getLast().getRequest().getIfNoneExist())
+        .isEqualTo(
+            "request="
+                + transaction.getEntry().get(transaction.getEntry().size() - 2).getFullUrl());
+  }
+
+  private static void givenExistingDecision(boolean conditionalMatch) {
+    Bundle stored = payerHapi.transactions().getFirst();
+    Claim existing = resource(stored, Claim.class);
+    existing.setId("Claim/2");
+    ClaimResponse decision = resource(stored, ClaimResponse.class);
+    decision.setId("ClaimResponse/3");
+    decision.setRequest(new Reference("Claim/2"));
+    if (conditionalMatch) {
+      payerHapi.givenStored(existing, "2");
+      payerHapi.givenStored(decision, "3");
+      payerHapi.givenTransactionResult(
+          () -> {
+            Bundle transaction = payerHapi.transactions().getLast();
+            Bundle result = new Bundle().setType(Bundle.BundleType.TRANSACTIONRESPONSE);
+            transaction.getEntry().stream()
+                .filter(entry -> entry.getResource() instanceof QuestionnaireResponse)
+                .forEach(entry -> result.addEntry().getResponse().setStatus("201 Created"));
+            result.addEntry().getResponse().setStatus("200 OK").setLocation("Claim/2/_history/1");
+            result
+                .addEntry()
+                .getResponse()
+                .setStatus("200 OK")
+                .setLocation("ClaimResponse/3/_history/1");
+            return result;
+          });
+    } else {
+      payerHapi.givenSearchResult(Claim.class, FhirClientStub.bundleOf(existing, decision));
+    }
   }
 
   @Test

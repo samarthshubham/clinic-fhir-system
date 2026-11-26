@@ -63,6 +63,7 @@ public final class FhirClientStub {
   private final List<IBaseParameters> operationInputs = new CopyOnWriteArrayList<>();
   private final AtomicInteger nextId = new AtomicInteger(1);
   private Supplier<IBaseResource> operationResult = OperationOutcome::new;
+  private Supplier<Bundle> transactionResult;
 
   public FhirClientStub() {
     IUntypedQuery<?> untypedQuery = lenientMock(IUntypedQuery.class, Answers.RETURNS_DEFAULTS);
@@ -151,11 +152,16 @@ public final class FhirClientStub {
     operationInputs.clear();
     nextId.set(1);
     operationResult = OperationOutcome::new;
+    transactionResult = null;
   }
 
   /** What an extended operation (e.g. $validate) returns; the supplier may throw instead. */
   public void givenOperationResult(Supplier<IBaseResource> result) {
     operationResult = result;
+  }
+
+  public void givenTransactionResult(Supplier<Bundle> result) {
+    transactionResult = result;
   }
 
   public List<IBaseParameters> operationInputs() {
@@ -246,6 +252,9 @@ public final class FhirClientStub {
         .doAnswer(
             inv -> {
               transactions.add(bundle.copy());
+              if (transactionResult != null) {
+                return transactionResult.get();
+              }
               Bundle response = new Bundle().setType(Bundle.BundleType.TRANSACTIONRESPONSE);
               for (Bundle.BundleEntryComponent entry : bundle.getEntry()) {
                 response

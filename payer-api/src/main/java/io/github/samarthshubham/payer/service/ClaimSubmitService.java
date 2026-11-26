@@ -7,6 +7,7 @@ import ca.uhn.fhir.rest.param.TokenParam;
 import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException;
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import ca.uhn.fhir.rest.server.exceptions.PreconditionFailedException;
+import ca.uhn.fhir.rest.server.exceptions.ResourceVersionConflictException;
 import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException;
 import io.github.samarthshubham.payer.mapper.PageMapper;
 import java.nio.charset.StandardCharsets;
@@ -21,9 +22,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Claim;
 import org.hl7.fhir.r4.model.ClaimResponse;
@@ -119,8 +123,18 @@ public class ClaimSubmitService {
 
   private synchronized ClaimResponse firstDecision(
       PasRequest request, Identifier identifier, List<String> payerReferences) {
-    return storedResponse(identifier, payerReferences)
-        .orElseGet(() -> adjudicateAndStore(request, identifier, payerReferences));
+    Instant now = slaClock.now();
+    MemberCoverageCheck check =
+        memberCoverageService.check(request.memberId(), LocalDate.ofInstant(now, clock.getZone()));
+    Map<String, Reference> references = payerReferences(request, check);
+    Claim storedClaim = request.claim().copy();
+    storedClaim.setIdElement(null);
+    rewriteReferences(storedClaim, references);
+    return storedResponse(identifier, storedClaim, payerReferences)
+        .orElseGet(
+            () ->
+                adjudicateAndStore(
+                    request, identifier, storedClaim, references, check, now, payerReferences));
   }
 
   private void requireValid(Bundle bundle) {
@@ -160,7 +174,7 @@ public class ClaimSubmitService {
   }
 
   private Optional<ClaimResponse> storedResponse(
-      Identifier identifier, List<String> payerReferences) {
+      Identifier identifier, Claim submitted, List<String> payerReferences) {
     Bundle found =
         fhirClient
             .search()
@@ -176,24 +190,90 @@ public class ClaimSubmitService {
     if (claims.isEmpty()) {
       return Optional.empty();
     }
+    if (claims.size() != 1 || found.getLink(Bundle.LINK_NEXT) != null) {
+      throw replayConflict();
+    }
+    Claim existing = claims.getFirst();
+    requireSameRequest(existing, submitted);
     ClaimResponse first =
         PageMapper.resources(found, ClaimResponse.class).stream()
+            .filter(response -> refersTo(response, existing))
             .min(Comparator.comparing(ClaimResponse::getCreated))
-            .orElseThrow(
-                () ->
-                    new InternalErrorException(
-                        "Prior auth request " + identifier.getValue() + " has no decision"));
-    payerReferences.add(versionless(claims.get(0)));
-    payerReferences.add(versionless(first));
-    return Optional.of(first);
+            .orElseThrow(() -> new InternalErrorException("Prior authorization has no decision"));
+    return Optional.of(recordDecision(existing, first, payerReferences));
+  }
+
+  private static void requireSameRequest(Claim existing, Claim submitted) {
+    if (!sameReference(existing.getPatient(), submitted.getPatient())
+        || !sameReference(existing.getProvider(), submitted.getProvider())
+        || !services(existing).equals(services(submitted))) {
+      throw replayConflict();
+    }
+  }
+
+  private static boolean sameReference(Reference existing, Reference submitted) {
+    if (existing.hasReference() || submitted.hasReference()) {
+      return existing.hasReference()
+          && submitted.hasReference()
+          && Objects.equals(
+              existing.getReferenceElement().toVersionless().getValue(),
+              submitted.getReferenceElement().toVersionless().getValue());
+    }
+    Identifier first = existing.getIdentifier();
+    Identifier second = submitted.getIdentifier();
+    return first.hasValue()
+        && second.hasValue()
+        && Objects.equals(existing.getType(), submitted.getType())
+        && Objects.equals(first.getSystem(), second.getSystem())
+        && Objects.equals(first.getValue(), second.getValue());
+  }
+
+  private static List<RequestedService> services(Claim claim) {
+    return claim.getItem().stream()
+        .map(
+            item ->
+                new RequestedService(
+                    item.getSequence(),
+                    item.getProductOrService().getCoding().stream()
+                        .filter(Coding::hasCode)
+                        .map(coding -> new ServiceCode(coding.getSystem(), coding.getCode()))
+                        .collect(Collectors.toSet())))
+        .sorted(Comparator.comparingInt(RequestedService::sequence))
+        .toList();
+  }
+
+  private record RequestedService(int sequence, Set<ServiceCode> codes) {}
+
+  private record ServiceCode(String system, String code) {}
+
+  private static ResourceVersionConflictException replayConflict() {
+    return new ResourceVersionConflictException(
+        "Claim identifier is already in use for a different request");
+  }
+
+  private static boolean refersTo(ClaimResponse response, Claim claim) {
+    return response.hasRequest()
+        && referenceOf(claim)
+            .equals(
+                response.getRequest().getReferenceElement().toUnqualifiedVersionless().getValue());
+  }
+
+  private static ClaimResponse recordDecision(
+      Claim claim, ClaimResponse decision, List<String> payerReferences) {
+    payerReferences.add(referenceOf(claim));
+    payerReferences.add(referenceOf(decision));
+    return decision;
   }
 
   private ClaimResponse adjudicateAndStore(
-      PasRequest request, Identifier identifier, List<String> payerReferences) {
+      PasRequest request,
+      Identifier identifier,
+      Claim storedClaim,
+      Map<String, Reference> references,
+      MemberCoverageCheck check,
+      Instant now,
+      List<String> payerReferences) {
     Claim claim = request.claim();
-    Instant now = slaClock.now();
-    MemberCoverageCheck check =
-        memberCoverageService.check(request.memberId(), LocalDate.ofInstant(now, clock.getZone()));
     Map<String, String> answers = request.answers();
     Map<Integer, PriorAuthDecision> decisions = new LinkedHashMap<>();
     for (Claim.ItemComponent item : claim.getItem()) {
@@ -206,7 +286,6 @@ public class ClaimSubmitService {
               answers));
     }
     String preAuthRef = preAuthRef(identifier);
-    Map<String, Reference> references = payerReferences(request, check);
     String claimUrl = "urn:uuid:" + stableUuid(identifier, "claim");
 
     Bundle transaction = new Bundle().setType(Bundle.BundleType.TRANSACTION);
@@ -225,9 +304,6 @@ public class ClaimSubmitService {
           .setMethod(Bundle.HTTPVerb.POST)
           .setUrl("QuestionnaireResponse");
     }
-    Claim storedClaim = claim.copy();
-    storedClaim.setIdElement(null);
-    rewriteReferences(storedClaim, references);
     Instant received =
         slaClock.received(claim.hasCreated() ? claim.getCreated().toInstant() : null);
     storedClaim.addExtension(
@@ -252,17 +328,37 @@ public class ClaimSubmitService {
         .setResource(response)
         .getRequest()
         .setMethod(Bundle.HTTPVerb.POST)
-        .setUrl("ClaimResponse");
+        .setUrl("ClaimResponse")
+        .setIfNoneExist("request=" + claimUrl);
 
     Bundle stored = fhirClient.transaction().withBundle(transaction).execute();
     List<Bundle.BundleEntryComponent> results = stored.getEntry();
-    String claimId = location(results.get(results.size() - 2));
-    String responseId = location(results.get(results.size() - 1));
-    payerReferences.add(claimId);
-    payerReferences.add(responseId);
-    response.setId(new IdType(responseId).getIdPart());
+    Bundle.BundleEntryComponent claimResult = results.get(results.size() - 2);
+    Bundle.BundleEntryComponent responseResult = results.get(results.size() - 1);
+    String claimId = location(claimResult);
+    String responseId = location(responseResult);
+    if (hasStatus(claimResult, 200)) {
+      Claim existing =
+          fhirClient.read().resource(Claim.class).withId(new IdType(claimId).getIdPart()).execute();
+      requireSameRequest(existing, storedClaim);
+      if (!hasStatus(responseResult, 200)) {
+        throw new InternalErrorException("Prior authorization has no existing decision");
+      }
+      ClaimResponse decided =
+          fhirClient
+              .read()
+              .resource(ClaimResponse.class)
+              .withId(new IdType(responseId).getIdPart())
+              .execute();
+      if (!refersTo(decided, existing)) {
+        throw new InternalErrorException("Prior authorization decision does not match the request");
+      }
+      return recordDecision(existing, decided, payerReferences);
+    }
+    storedClaim.setId(claimId);
+    response.setId(responseId);
     response.setRequest(new Reference(claimId));
-    return response;
+    return recordDecision(storedClaim, response, payerReferences);
   }
 
   private Map<String, Reference> payerReferences(PasRequest request, MemberCoverageCheck check) {
@@ -479,12 +575,14 @@ public class ClaimSubmitService {
     return resource.fhirType() + "/" + resource.getIdElement().getIdPart();
   }
 
-  private static String location(Bundle.BundleEntryComponent result) {
-    return new IdType(result.getResponse().getLocation()).toUnqualifiedVersionless().getValue();
+  private static boolean hasStatus(Bundle.BundleEntryComponent result, int status) {
+    String code = Integer.toString(status);
+    String actual = result.getResponse().getStatus();
+    return code.equals(actual) || (actual != null && actual.startsWith(code + " "));
   }
 
-  private static String versionless(Resource resource) {
-    return resource.getIdElement().toUnqualifiedVersionless().getValue();
+  private static String location(Bundle.BundleEntryComponent result) {
+    return new IdType(result.getResponse().getLocation()).toUnqualifiedVersionless().getValue();
   }
 
   private static DateTimeType utc(Instant instant) {
