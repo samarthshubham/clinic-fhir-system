@@ -992,3 +992,32 @@ describe('upsertStaffPractitioner', () => {
     });
   });
 });
+
+describe('Plan-Net directory', () => {
+  it('searches payer-api without a token and returns the matching ids', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(bundle('aisha-patel')));
+    await expect(
+      apiClient.publicDirectoryIds('Practitioner', 'given=Aisha&family=Patel'),
+    ).resolves.toEqual(['aisha-patel']);
+    expect(calls()).toEqual([
+      {
+        url: `${PAYER_API}/fhir/Practitioner?given=Aisha&family=Patel`,
+        init: { headers: { Accept: 'application/fhir+json' } },
+      },
+    ]);
+  });
+
+  it('returns an empty list for an empty search bundle', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ resourceType: 'Bundle' }));
+    await expect(
+      apiClient.publicDirectoryIds('Endpoint', '_id=unknown'),
+    ).resolves.toEqual([]);
+  });
+
+  it('reports a rejected search', async () => {
+    fetchMock.mockResolvedValueOnce(textResponse('invalid', 400));
+    await expect(
+      apiClient.publicDirectoryIds('Practitioner', 'unknown=field'),
+    ).rejects.toThrow('Public directory GET Practitioner failed [400]');
+  });
+});

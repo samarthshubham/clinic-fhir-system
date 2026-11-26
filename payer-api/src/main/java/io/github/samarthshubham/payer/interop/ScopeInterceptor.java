@@ -31,16 +31,23 @@ public class ScopeInterceptor extends AuthorizationInterceptor {
 
   private final FhirContext fhirContext;
   private final List<OperationScope> operationScopes;
+  private final PlanNetDirectory directory;
 
-  public ScopeInterceptor(FhirContext fhirContext, List<OperationScope> operationScopes) {
+  public ScopeInterceptor(
+      FhirContext fhirContext, List<OperationScope> operationScopes, PlanNetDirectory directory) {
     this.fhirContext = fhirContext;
     this.operationScopes = List.copyOf(operationScopes);
+    this.directory = directory;
   }
 
   @Override
   public List<IAuthRule> buildRuleList(RequestDetails request) {
     RuleBuilder rules = new RuleBuilder();
     rules.allow().metadata();
+    if (directory.isPublicRequest(request)) {
+      directory.types().forEach(type -> rules.allow().read().resourcesOfType(type).withAnyId());
+      return rules.build();
+    }
     Jwt token = currentToken();
     if (token == null) {
       if (request.getRestOperationType() != RestOperationTypeEnum.METADATA) {
