@@ -30,14 +30,12 @@
     </p>
   }
 
-  @if (showDocumentationAction()) {
+  @if (documentationOrderId(); as id) {
     <button
       mat-stroked-button
       type="button"
       class="app-crd-cards__documentation"
-      disabled
-      disabledInteractive
-      matTooltip="Documentation forms are not available yet"
+      (click)="openDocumentation(id)"
     >
       Complete documentation
     </button>

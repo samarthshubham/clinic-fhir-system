@@ -4,7 +4,11 @@
     <mat-dialog-content class="app-order-dialog__result">
       <p class="app-order-dialog__order">{{ s.order.display }}</p>
       <section aria-label="Payer coverage">
-        <cp-crd-cards [coverage]="s.order.coverage" [cards]="s.order.cards" />
+        <cp-crd-cards
+          [orderId]="s.order.id"
+          [coverage]="s.order.coverage"
+          [cards]="s.order.cards"
+        />
       </section>
     </mat-dialog-content>
     <mat-dialog-actions align="end">

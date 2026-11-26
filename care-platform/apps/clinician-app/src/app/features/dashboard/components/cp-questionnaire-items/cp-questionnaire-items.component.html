@@ -1,0 +1,220 @@
+<ng-container
+  *ngTemplateOutlet="questions; context: { $implicit: model().response.items }"
+/>
+
+<ng-template #questions let-items>
+  @for (item of items; track item.linkId) {
+    @if (evaluation().enabled.has(item.linkId)) {
+      @let label = item.text || item.linkId;
+      @switch (item.type) {
+        @case ('group') {
+          <section class="app-questionnaire__group">
+            <h3>{{ label }}</h3>
+            <ng-container
+              *ngTemplateOutlet="questions; context: { $implicit: item.items }"
+            />
+          </section>
+        }
+        @case ('display') {
+          <p>{{ label }}</p>
+        }
+        @default {
+          @let controls = model().controls(item);
+          @if (controls.length) {
+            @let id = fieldId(item.linkId);
+            @let error = evaluation().errors.get(item.linkId);
+            @let errorId = id + '-error';
+            <div
+              class="app-questionnaire__question"
+              [attr.data-link-id]="item.linkId"
+            >
+              @for (control of controls; track control; let index = $index) {
+                @if (model().completed || item.readOnly) {
+                  <dl class="app-questionnaire__read-only">
+                    <dt>{{ label }}</dt>
+                    <dd>{{ displayAnswer(control.value) || 'Unanswered' }}</dd>
+                    @if (model().prefilled(item, control.value)) {
+                      <dd>Prefilled from the chart</dd>
+                    }
+                  </dl>
+                } @else {
+                  @let controlId = id + '-answer-' + index;
+                  @let labelId = controlId + '-label';
+                  <label [id]="labelId" [attr.for]="controlId">
+                    {{ label
+                    }}{{
+                      controls.length > 1 ? ' (answer ' + (index + 1) + ')' : ''
+                    }}
+                    @if (item.required && index === 0) {
+                      (required)
+                    }
+                  </label>
+                  <div class="app-questionnaire__answer">
+                    <mat-form-field
+                      appearance="outline"
+                      subscriptSizing="dynamic"
+                    >
+                      @switch (item.type) {
+                        @case ('boolean') {
+                          <mat-select
+                            [id]="controlId"
+                            [aria-labelledby]="labelId"
+                            [aria-describedby]="error ? errorId : ''"
+                            [formControl]="control"
+                            [required]="item.required && !item.repeats"
+                          >
+                            <mat-option>Unanswered</mat-option>
+                            <mat-option [value]="true">Yes</mat-option>
+                            <mat-option [value]="false">No</mat-option>
+                          </mat-select>
+                        }
+                        @case ('choice') {
+                          <mat-select
+                            [id]="controlId"
+                            [aria-labelledby]="labelId"
+                            [aria-describedby]="error ? errorId : ''"
+                            [formControl]="control"
+                            [compareWith]="model().compareOptions"
+                            [required]="item.required && !item.repeats"
+                          >
+                            <mat-option>Unanswered</mat-option>
+                            @for (option of item.options; track $index) {
+                              <mat-option [value]="fieldValue(option)">
+                                {{ displayAnswer(fieldValue(option)) }}
+                              </mat-option>
+                            }
+                          </mat-select>
+                        }
+                        @case ('open-choice') {
+                          <input
+                            matInput
+                            [id]="controlId"
+                            [attr.aria-labelledby]="labelId"
+                            [aria-describedby]="error ? errorId : ''"
+                            [formControl]="control"
+                            [matAutocomplete]="suggestions"
+                            [required]="item.required && !item.repeats"
+                          />
+                          <mat-autocomplete
+                            #suggestions="matAutocomplete"
+                            [displayWith]="displayAnswer"
+                          >
+                            @for (option of item.options; track $index) {
+                              <mat-option [value]="fieldValue(option)">
+                                {{ displayAnswer(fieldValue(option)) }}
+                              </mat-option>
+                            }
+                          </mat-autocomplete>
+                        }
+                        @case ('text') {
+                          <textarea
+                            matInput
+                            rows="3"
+                            [id]="controlId"
+                            [attr.aria-labelledby]="labelId"
+                            [aria-describedby]="error ? errorId : ''"
+                            [formControl]="control"
+                            [required]="item.required && !item.repeats"
+                          ></textarea>
+                        }
+                        @case ('integer') {
+                          <input
+                            matInput
+                            type="number"
+                            step="1"
+                            [id]="controlId"
+                            [attr.aria-labelledby]="labelId"
+                            [aria-describedby]="error ? errorId : ''"
+                            [formControl]="control"
+                            [required]="item.required && !item.repeats"
+                          />
+                        }
+                        @case ('decimal') {
+                          <input
+                            matInput
+                            type="number"
+                            step="any"
+                            [id]="controlId"
+                            [attr.aria-labelledby]="labelId"
+                            [aria-describedby]="error ? errorId : ''"
+                            [formControl]="control"
+                            [required]="item.required && !item.repeats"
+                          />
+                        }
+                        @default {
+                          <input
+                            matInput
+                            [id]="controlId"
+                            [attr.aria-labelledby]="labelId"
+                            [aria-describedby]="error ? errorId : ''"
+                            [formControl]="control"
+                            [required]="item.required && !item.repeats"
+                          />
+                        }
+                      }
+                      @if (item.type === 'open-choice') {
+                        <mat-hint
+                          >Choose an option or enter your own answer.</mat-hint
+                        >
+                      } @else if (item.type === 'date') {
+                        <mat-hint>YYYY-MM-DD, YYYY-MM, or YYYY</mat-hint>
+                      }
+                      @if (model().prefilled(item, control.value)) {
+                        <mat-hint align="end"
+                          >Prefilled from the chart</mat-hint
+                        >
+                      }
+                    </mat-form-field>
+                    @if (item.repeats && controls.length > 1) {
+                      <button
+                        mat-button
+                        type="button"
+                        [disabled]="locked()"
+                        [attr.aria-label]="
+                          'Remove answer ' + (index + 1) + ' for ' + label
+                        "
+                        (click)="model().removeAnswer(item, index)"
+                      >
+                        Remove
+                      </button>
+                    }
+                  </div>
+                }
+              }
+
+              @if (item.repeats && !item.readOnly && !model().completed) {
+                <button
+                  mat-button
+                  type="button"
+                  [disabled]="locked()"
+                  [attr.aria-label]="'Add answer for ' + label"
+                  (click)="model().addAnswer(item)"
+                >
+                  Add answer
+                </button>
+              }
+              @if (error) {
+                <p
+                  class="app-questionnaire__error"
+                  [id]="errorId"
+                  role="alert"
+                  tabindex="-1"
+                >
+                  {{ label }} —
+                  {{
+                    error === 'required'
+                      ? 'An answer is required.'
+                      : 'Enter a valid answer.'
+                  }}
+                </p>
+              }
+            </div>
+          }
+          <ng-container
+            *ngTemplateOutlet="questions; context: { $implicit: item.items }"
+          />
+        }
+      }
+    }
+  }
+</ng-template>

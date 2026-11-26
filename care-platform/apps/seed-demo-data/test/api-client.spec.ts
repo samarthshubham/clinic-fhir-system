@@ -751,6 +751,7 @@ describe('PUT to HAPI FHIR', () => {
 
 describe('cascadeDeletePatient', () => {
   const searchOrder = [
+    'QuestionnaireResponse',
     'Coverage',
     'Flag',
     'CarePlan',
@@ -795,6 +796,7 @@ describe('cascadeDeletePatient', () => {
 
   it('deletes referencing resources before the resources they reference', async () => {
     routeFetch({
+      QuestionnaireResponse: bundle('qr1'),
       Coverage: bundle('cov1'),
       Flag: bundle('f1'),
       CarePlan: bundle('cp1'),
@@ -814,6 +816,7 @@ describe('cascadeDeletePatient', () => {
       .filter(({ init }) => init?.method === 'DELETE')
       .map(({ url }) => url.slice(`${HAPI}/`.length));
     expect(deletes).toEqual([
+      'QuestionnaireResponse/qr1',
       'Coverage/cov1',
       'Flag/f1',
       'CarePlan/cp1',

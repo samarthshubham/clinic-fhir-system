@@ -79,6 +79,7 @@
               </div>
               <cp-crd-cards
                 class="order-coverage"
+                [orderId]="canOrder() ? order.id : null"
                 [coverage]="order.coverage"
                 [cards]="order.cards"
                 [compact]="true"

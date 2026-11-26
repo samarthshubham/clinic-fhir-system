@@ -1,6 +1,11 @@
 import { execFileSync } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- reuses the seed app's cascade delete instead of duplicating it
-import { apiClient } from '../../../apps/seed-demo-data/src/support/api-client';
+import {
+  apiClient,
+  type FhirResource,
+} from '../../../apps/seed-demo-data/src/support/api-client';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- same relative dates as the seed
 import { daysAgo } from '../../../apps/seed-demo-data/src/support/date-helpers';
 
@@ -201,6 +206,21 @@ export const e2eTasks = {
       periodStart: daysAgo(30),
     });
     return { id: patient.id };
+  },
+  async ensureMriDtrFixtures(): Promise<null> {
+    const directory = resolve(__dirname, '../../../../fixtures/davinci/dtr');
+    for (const name of [
+      'valueset-lumbar-spine-indications',
+      'library-mri-lumbar-spine',
+      'questionnaire-mri-lumbar-spine',
+    ]) {
+      const fixture = await readFile(
+        resolve(directory, name + '.json'),
+        'utf8',
+      );
+      await apiClient.putPayerResource(JSON.parse(fixture) as FhirResource);
+    }
+    return null;
   },
   async stopFhir(): Promise<null> {
     fhirStopped = true;
