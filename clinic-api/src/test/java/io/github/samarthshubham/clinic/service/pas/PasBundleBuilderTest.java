@@ -141,6 +141,25 @@ class PasBundleBuilderTest {
   }
 
   @Test
+  void omitsClaimDiagnosesAndSequencesWhenBillingDiagnosesAreMissing() {
+    var input = mri();
+    var billing = billing();
+    var omitted =
+        new PasBundleBuilder.Billing(
+            billing.service(), null, billing.category(), billing.placeOfService());
+    var empty =
+        new PasBundleBuilder.Billing(
+            billing.service(), List.of(), billing.category(), billing.placeOfService());
+
+    Bundle result = builder.build(input, omitted, BASE, SUBMITTED);
+    Claim claim = claim(result);
+
+    assertThat(claim.getDiagnosis()).isEmpty();
+    assertThat(claim.getItemFirstRep().getDiagnosisSequence()).isEmpty();
+    assertThat(result.equalsDeep(builder.build(input, empty, BASE, SUBMITTED))).isTrue();
+  }
+
+  @Test
   void usesExplicitPasBillingCodeForAClinicallyCodedOrder() {
     var input = mri();
     input

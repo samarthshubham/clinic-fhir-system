@@ -63,7 +63,11 @@ public class PasBundleBuilder {
   }
 
   public record Billing(
-      Coding service, List<Coding> diagnoses, Coding category, String placeOfService) {}
+      Coding service, List<Coding> diagnoses, Coding category, String placeOfService) {
+    public Billing {
+      diagnoses = diagnoses == null ? List.of() : diagnoses;
+    }
+  }
 
   record Request(
       ServiceRequest order,
