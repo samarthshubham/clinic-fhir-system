@@ -11,6 +11,7 @@ import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.client.api.ServerValidationModeEnum;
 import ca.uhn.fhir.rest.client.interceptor.BearerTokenAuthInterceptor;
 import ca.uhn.fhir.rest.server.exceptions.ForbiddenOperationException;
+import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
 import ca.uhn.fhir.rest.server.exceptions.ResourceVersionConflictException;
 import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException;
@@ -248,13 +249,113 @@ class ClaimSubmitInteropTest {
                 + transaction.getEntry().get(transaction.getEntry().size() - 2).getFullUrl());
   }
 
+  @Test
+  void conditionalCreateMatchAcceptsABareStatusCode() {
+    givenActiveMember("member-sandra");
+    Bundle initial = submit("request-mri.json");
+    givenExistingDecision(true, "200", "200", "Claim/2");
+
+    Bundle replay = submit("request-mri.json");
+
+    FhirContext context = FhirContext.forR4Cached();
+    assertThat(context.newJsonParser().encodeResourceToString(replay))
+        .isEqualTo(context.newJsonParser().encodeResourceToString(initial));
+  }
+
+  @Test
+  void conditionalCreateMatchWithoutAnExistingDecisionIsAServerError() {
+    givenActiveMember("member-sandra");
+    submit("request-mri.json");
+    givenExistingDecision(true, "200 OK", "201 Created", "Claim/2");
+
+    assertThatThrownBy(() -> submit("request-mri.json"))
+        .isInstanceOfSatisfying(
+            InternalErrorException.class,
+            error ->
+                assertThat(error.getMessage()).contains("Prior authorization has no existing"));
+  }
+
+  @Test
+  void conditionalCreateMatchWithADecisionForAnotherClaimIsAServerError() {
+    givenActiveMember("member-sandra");
+    submit("request-mri.json");
+    givenExistingDecision(true, "200 OK", "200 OK", "Claim/99");
+
+    assertThatThrownBy(() -> submit("request-mri.json"))
+        .isInstanceOfSatisfying(
+            InternalErrorException.class,
+            error -> assertThat(error.getMessage()).contains("decision does not match"));
+  }
+
+  @Test
+  void replayAfterTheCoveragePeriodEndsReturnsTheStoredDecision() {
+    givenActiveMember("member-sandra");
+    Bundle first = submit("request-mri.json");
+    givenExistingDecision(false);
+    givenLapsedMember("member-sandra");
+
+    Bundle replay = submit("request-mri.json");
+
+    FhirContext context = FhirContext.forR4Cached();
+    assertThat(context.newJsonParser().encodeResourceToString(replay))
+        .isEqualTo(context.newJsonParser().encodeResourceToString(first));
+    assertThat(payerHapi.transactions()).hasSize(1);
+  }
+
+  @Test
+  void anotherPatientOnTheSameIdentifierAfterTheCoveragePeriodEndsStillConflicts() {
+    givenActiveMember("member-sandra");
+    submit("request-mri.json");
+    givenExistingDecision(false);
+    givenLapsedMember("member-ramon");
+    Bundle later = fixture(Bundle.class, "pas/request-mri.json");
+
+    assertThatThrownBy(() -> submit(later))
+        .isInstanceOfSatisfying(
+            ResourceVersionConflictException.class,
+            error -> {
+              assertThat(error.getStatusCode()).isEqualTo(409);
+              assertThat(
+                      FhirContext.forR4Cached()
+                          .newJsonParser()
+                          .encodeResourceToString(error.getOperationOutcome()))
+                  .doesNotContain("PHP-PA-", "Not Certified", "member-sandra");
+            });
+  }
+
+  @Test
+  void answersAreStoredWithAStableIdentifierSoARacingSubmitCannotDuplicateThem() {
+    givenActiveMember("member-sandra");
+
+    submit("request-mri.json");
+
+    Bundle.BundleEntryComponent entry =
+        payerHapi.transactions().getFirst().getEntry().stream()
+            .filter(candidate -> candidate.getResource() instanceof QuestionnaireResponse)
+            .findFirst()
+            .orElseThrow();
+    Identifier identifier = ((QuestionnaireResponse) entry.getResource()).getIdentifier();
+    assertThat(identifier.getSystem()).isEqualTo(ClaimSubmitService.QUESTIONNAIRE_RESPONSE_SYSTEM);
+    assertThat(entry.getRequest().getIfNoneExist())
+        .contains("identifier=")
+        .contains(
+            java.net.URLEncoder.encode(
+                identifier.getSystem() + "|" + identifier.getValue(),
+                java.nio.charset.StandardCharsets.UTF_8));
+  }
+
   private static void givenExistingDecision(boolean conditionalMatch) {
+    givenExistingDecision(conditionalMatch, "200 OK", "200 OK", "Claim/2");
+  }
+
+  private static void givenExistingDecision(
+      boolean conditionalMatch, String claimStatus, String responseStatus, String decisionRequest) {
     Bundle stored = payerHapi.transactions().getFirst();
     Claim existing = resource(stored, Claim.class);
     existing.setId("Claim/2");
     ClaimResponse decision = resource(stored, ClaimResponse.class);
     decision.setId("ClaimResponse/3");
-    decision.setRequest(new Reference("Claim/2"));
+    decision.setRequest(new Reference(decisionRequest));
     if (conditionalMatch) {
       payerHapi.givenStored(existing, "2");
       payerHapi.givenStored(decision, "3");
@@ -265,11 +366,15 @@ class ClaimSubmitInteropTest {
             transaction.getEntry().stream()
                 .filter(entry -> entry.getResource() instanceof QuestionnaireResponse)
                 .forEach(entry -> result.addEntry().getResponse().setStatus("201 Created"));
-            result.addEntry().getResponse().setStatus("200 OK").setLocation("Claim/2/_history/1");
             result
                 .addEntry()
                 .getResponse()
-                .setStatus("200 OK")
+                .setStatus(claimStatus)
+                .setLocation("Claim/2/_history/1");
+            result
+                .addEntry()
+                .getResponse()
+                .setStatus(responseStatus)
                 .setLocation("ClaimResponse/3/_history/1");
             return result;
           });
@@ -394,11 +499,20 @@ class ClaimSubmitInteropTest {
                         }));
   }
 
+  private static void givenLapsedMember(String memberPatient) {
+    givenMember(memberPatient, new DateTimeType("2026-08-01"));
+  }
+
   private static void givenActiveMember(String memberPatient) {
+    givenMember(memberPatient, null);
+  }
+
+  private static void givenMember(String memberPatient, DateTimeType periodEnd) {
     Coverage coverage = new Coverage();
     coverage.setId("payer-coverage");
     coverage.setStatus(Coverage.CoverageStatus.ACTIVE);
-    coverage.setPeriod(new Period().setStartElement(new DateTimeType("2025-08-20")));
+    coverage.setPeriod(
+        new Period().setStartElement(new DateTimeType("2025-08-20")).setEndElement(periodEnd));
     coverage.addIdentifier(
         new Identifier()
             .setSystem("http://praxishealthplan.example/fhir/identifier/member-id")

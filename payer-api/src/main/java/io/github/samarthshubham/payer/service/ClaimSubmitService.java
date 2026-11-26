@@ -69,6 +69,8 @@ public class ClaimSubmitService {
       QuestionnairePackageService.PAYER_BASE + "/StructureDefinition/decision-deadline";
   public static final String PRIOR_AUTH_SYSTEM =
       QuestionnairePackageService.PAYER_BASE + "/identifier/prior-auth";
+  public static final String QUESTIONNAIRE_RESPONSE_SYSTEM =
+      QuestionnairePackageService.PAYER_BASE + "/identifier/pas-questionnaire-response";
   public static final String DENIAL_REASON_SYSTEM =
       QuestionnairePackageService.PAYER_BASE + "/CodeSystem/denial-reason";
 
@@ -289,10 +291,17 @@ public class ClaimSubmitService {
     String claimUrl = "urn:uuid:" + stableUuid(identifier, "claim");
 
     Bundle transaction = new Bundle().setType(Bundle.BundleType.TRANSACTION);
-    for (Bundle.BundleEntryComponent entry : request.questionnaireResponseEntries()) {
+    List<Bundle.BundleEntryComponent> answerEntries = request.questionnaireResponseEntries();
+    for (int index = 0; index < answerEntries.size(); index++) {
+      Bundle.BundleEntryComponent entry = answerEntries.get(index);
       QuestionnaireResponse stored = (QuestionnaireResponse) entry.getResource().copy();
       stored.setIdElement(null);
       rewriteReferences(stored, references);
+      Identifier answerIdentifier =
+          new Identifier()
+              .setSystem(QUESTIONNAIRE_RESPONSE_SYSTEM)
+              .setValue(stableUuid(identifier, "questionnaire-response-" + index).toString());
+      stored.setIdentifier(answerIdentifier);
       transaction
           .addEntry()
           .setFullUrl(
@@ -302,7 +311,8 @@ public class ClaimSubmitService {
           .setResource(stored)
           .getRequest()
           .setMethod(Bundle.HTTPVerb.POST)
-          .setUrl("QuestionnaireResponse");
+          .setUrl("QuestionnaireResponse")
+          .setIfNoneExist(identifierQuery(answerIdentifier));
     }
     Instant received =
         slaClock.received(claim.hasCreated() ? claim.getCreated().toInstant() : null);
@@ -315,12 +325,7 @@ public class ClaimSubmitService {
         .getRequest()
         .setMethod(Bundle.HTTPVerb.POST)
         .setUrl("Claim")
-        .setIfNoneExist(
-            "identifier="
-                + UriUtils.encode(
-                    new TokenParam(identifier.getSystem(), identifier.getValue())
-                        .getValueAsQueryToken(fhirContext),
-                    StandardCharsets.UTF_8));
+        .setIfNoneExist(identifierQuery(identifier));
     ClaimResponse response = claimResponse(storedClaim, claimUrl, preAuthRef, decisions, now);
     transaction
         .addEntry()
@@ -359,6 +364,14 @@ public class ClaimSubmitService {
     response.setId(responseId);
     response.setRequest(new Reference(claimId));
     return recordDecision(storedClaim, response, payerReferences);
+  }
+
+  private String identifierQuery(Identifier identifier) {
+    return "identifier="
+        + UriUtils.encode(
+            new TokenParam(identifier.getSystem(), identifier.getValue())
+                .getValueAsQueryToken(fhirContext),
+            StandardCharsets.UTF_8);
   }
 
   private Map<String, Reference> payerReferences(PasRequest request, MemberCoverageCheck check) {
