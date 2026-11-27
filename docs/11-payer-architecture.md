@@ -164,6 +164,12 @@ Decision: `Claim.identifier` carries the inquiry trace. Use `Claim.related.refer
 
 Each `return` parameter is a PAS Inquiry Response Bundle. Its first entry is the current ClaimResponse, chosen by decision creation time with last-update time as the tiebreaker. The wire response uses the patient, insurer and provider references from the inquiry. The inquiry records an AuditEvent and leaves the prior authorization state untouched.
 
+### Utilization management queue
+
+`GET /api/prior-auths?status=pended` requires `priorauth:read` and returns `{items, total}`. Each row includes the payer Claim id, authorization reference, member and service labels, expedited status, deadline, signed seconds remaining and breach flag. The queue uses the latest matching PAS ClaimResponse and its X12 review actions. A final decision removes the request from the queue. The UI shows expedited requests first and sorts each priority by deadline.
+
+Decision for NFR-REG-1. The queue uses the deadline saved at submission, or applies the same `SlaClock` to older claims without a saved deadline. It flags a breach after the deadline passes and keeps overdue requests visible for review. [CMS-0057-F decision timeframes](https://www.cms.gov/newsroom/fact-sheets/cms-interoperability-prior-authorization-final-rule-cms-0057-f)
+
 ### Clinic decision notifications
 
 The payer API registers one named R4 rest-hook in the payer HAPI for `ClaimResponse?use=preauthorization`. The hook sends an empty POST with `X-PAS-Decision-Secret` to `/api/alerts/prior-auth-subscription`. Configure `PAS_DECISION_WEBHOOK_SECRET` on both applications and `PAS_DECISION_WEBHOOK_URL` on payer-api. Use HTTPS outside local development. The clinic compares the shared secret in constant time and derives all patient and decision data from authenticated inquiry responses.

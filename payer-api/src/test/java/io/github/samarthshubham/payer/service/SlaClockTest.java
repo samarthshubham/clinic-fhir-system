@@ -3,6 +3,7 @@ package io.github.samarthshubham.payer.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,15 @@ class SlaClockTest {
 
     assertThat(slaClock.received(backdated)).isEqualTo(backdated);
     assertThat(slaClock.decisionDeadline(slaClock.received(backdated), false)).isBefore(NOW);
+  }
+
+  @Test
+  void timeRemainingIsSignedAndZeroAtTheDeadline() {
+    assertThat(slaClock.remaining(NOW.plusSeconds(60), slaClock.now()))
+        .isEqualTo(Duration.ofMinutes(1));
+    assertThat(slaClock.remaining(NOW, slaClock.now())).isZero();
+    assertThat(slaClock.remaining(NOW.minusSeconds(60), slaClock.now()))
+        .isEqualTo(Duration.ofMinutes(-1));
   }
 
   @Test

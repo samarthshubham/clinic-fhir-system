@@ -23,8 +23,15 @@ public class SlaClock {
 
   /** The submission time the clock runs from: the claim's created time, never in the future. */
   public Instant received(Instant created) {
-    Instant now = now();
+    return received(created, now());
+  }
+
+  Instant received(Instant created, Instant now) {
     return created == null || created.isAfter(now) ? now : created;
+  }
+
+  Duration remaining(Instant deadline, Instant now) {
+    return Duration.between(now, deadline);
   }
 
   public Instant decisionDeadline(Instant received, boolean expedited) {

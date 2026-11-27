@@ -16,6 +16,8 @@ import {
   waitForUrls,
 } from '@care-platform/e2e-support';
 
+import { createPendedRequest } from './src/support/queue';
+
 export default defineConfig({
   e2e: {
     ...nxE2EPreset(__filename, { cypressDir: 'src' }),
@@ -39,7 +41,7 @@ export default defineConfig({
         'file:preprocessor',
         createBundler({ plugins: [createEsbuildPlugin(config)] }),
       );
-      on('task', e2eTasks);
+      on('task', { ...e2eTasks, createPendedRequest });
       on('before:run', async () => {
         await beforeRunHandler(config);
         await waitForUrls(['http://localhost:4400']);
