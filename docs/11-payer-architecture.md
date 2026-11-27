@@ -190,7 +190,7 @@ The payer app reads the same published practitioner roles through its staff-only
 
 Payer-api publishes the drug catalog as unauthenticated FHIR read and search for PayerInsurancePlan and Formulary (`InsurancePlan`), FormularyItem (`Basic`), FormularyDrug (`MedicationKnowledge`) and coverage location (`Location`). The [US Drug Formulary 2.1.0 capability statement](https://hl7.org/fhir/us/davinci-drug-formulary/STU2.1/CapabilityStatement-usdf-server.html) defines the search fields and inclusions. Both public catalogs use exact profile canonicals to constrain what the payer HAPI can return.
 
-The seed adds a drug coverage benefit and a reference to the published formulary to the existing Praxis Gold PPO InsurancePlan. FormularyItems link each drug to the formulary and provide tier, authorization and quantity-limit information independently of any patient or member. The payer HAPI validates semantic drugs against the IG’s RxNorm term-type filters using the seeded RxNorm fragment.
+The seed adds a drug coverage benefit and a reference to the published formulary to the existing Praxis Gold PPO InsurancePlan. FormularyItems link each drug to the formulary and provide tier, authorization and quantity-limit information independently of any patient or member. The payer HAPI expands the three Formulary 2.1.0 ValueSets against the seeded RxNorm term types. Their definitions stay as published. HAPI stores the expansions in its database and persists the Lucene property index in the `payer-search` Compose volume. The seed rebuilds the terminology index when preparing a new fragment release so existing databases gain search documents for previously imported concepts.
 
 ## 4. What we reuse instead of building
 

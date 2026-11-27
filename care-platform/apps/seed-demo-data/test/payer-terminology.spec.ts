@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  prepareFormularyValueSets,
   seedTerminology,
   waitForFragmentLookups,
   type SeedCodeSystem,
@@ -78,6 +79,121 @@ describe('payer terminology import', () => {
       expect(f).toHaveBeenCalledTimes(8);
     },
   );
+  it('expands the published definitions in dependency order and skips the same release on reseed', async () => {
+    const rxnorm = {
+      ...fragment,
+      concept: ['SCD', 'SCDG', 'DF'].map((code) => ({
+        code,
+        property: [{ code: 'TTY', valueCode: code }],
+      })),
+    };
+    const definitions: string[] = [];
+    let tag: object | undefined;
+    let pendingImport = true;
+    const f = vi.fn(async (url: string, init?: RequestInit) => {
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+      if (url.endsWith('/CodeSystem/demo'))
+        return ok({ id: 'demo', meta: { tag: tag ? [tag] : [] } });
+      if (url.endsWith('/$reindex-terminology')) {
+        if (pendingImport) {
+          pendingImport = false;
+          return ok({
+            parameter: [
+              { name: 'success', valueBoolean: false },
+              {
+                name: 'message',
+                valueString:
+                  'Other terminology background tasks are currently running.',
+              },
+            ],
+          });
+        }
+        return ok({ parameter: [{ name: 'success', valueBoolean: true }] });
+      }
+      if (url.includes('/ValueSet?'))
+        return ok({
+          entry: [
+            {
+              resource: {
+                id: 'installed',
+                compose: { include: [] },
+                meta: { tag: [{ system: 'source', code: 'ig' }] },
+              },
+            },
+          ],
+        });
+      if (url.endsWith('/ValueSet/installed')) {
+        expect(body.compose).toEqual({ include: [] });
+        expect(body.meta.tag[0]).toEqual({ system: 'source', code: 'ig' });
+        return ok();
+      }
+      if (url.endsWith('/$invalidate-expansion')) {
+        definitions.push(body.parameter[0].valueUri.split('/').pop());
+        return new Response(null, {
+          status: 202,
+          headers: {
+            'Content-Location': base + '/ValueSet/poll?jobInstanceId=job',
+          },
+        });
+      }
+      if (url.includes('poll-for-status')) return ok(batch([completed]));
+      if (url.includes('/$expand?'))
+        return ok({
+          expansion: {
+            contains: [
+              {
+                system: fragment.url,
+                code: url.includes('FormGroup') ? 'SCDG' : 'SCD',
+              },
+            ],
+          },
+        });
+      if (url.endsWith('/$meta-add')) {
+        tag = body.parameter[0].valueMeta.tag[0];
+        return ok();
+      }
+      throw new Error('Unexpected ' + url);
+    });
+    vi.stubGlobal('fetch', f);
+    await prepareFormularyValueSets(base, rxnorm);
+    expect(definitions).toEqual([
+      'NonPackSemanticDrugVS',
+      'SemanticDrugVS',
+      'SemanticDrugFormGroupVS',
+    ]);
+    f.mockClear();
+    await prepareFormularyValueSets(base, rxnorm);
+    expect(f).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects an empty expansion for a known semantic drug', async () => {
+    const f = vi
+      .fn()
+      .mockResolvedValueOnce(ok({ id: 'demo' }))
+      .mockResolvedValueOnce(
+        ok({ parameter: [{ name: 'success', valueBoolean: true }] }),
+      )
+      .mockResolvedValueOnce(ok({ entry: [{ resource: { id: 'published' } }] }))
+      .mockResolvedValueOnce(ok())
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 202,
+          headers: { 'Content-Location': '?jobInstanceId=test' },
+        }),
+      )
+      .mockResolvedValueOnce(ok(batch([completed])))
+      .mockResolvedValueOnce(ok({ expansion: { total: 0 } }));
+    vi.stubGlobal('fetch', f);
+    await expect(
+      prepareFormularyValueSets(base, {
+        ...fragment,
+        concept: [
+          { code: '197361', property: [{ code: 'TTY', valueCode: 'SCD' }] },
+        ],
+      }),
+    ).rejects.toThrow('Incorrect expansion for NonPackSemanticDrugVS: 197361');
+  });
+
   it('preserves concept properties used by ValueSet filters', async () => {
     const source: SeedCodeSystem = {
       ...fragment,

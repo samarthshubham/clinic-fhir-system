@@ -66,6 +66,8 @@ services:
 
   hapi-fhir-payer:
     build: ./payer
+    volumes:
+      - payer-search:/home/nonroot
     container_name: clinic-hapi-fhir-payer
     ports:
       - "8081:8080"
@@ -90,7 +92,7 @@ services:
       spring.jpa.properties.hibernate.search.backend.type: lucene
       spring.jpa.properties.hibernate.search.backend.analysis.configurer: 'ca.uhn.fhir.jpa.search.HapiHSearchAnalysisConfigurers$$HapiLuceneAnalysisConfigurer'
       spring.jpa.properties.hibernate.search.backend.directory.type: local-filesystem
-      spring.jpa.properties.hibernate.search.backend.directory.root: /tmp/lane-b-rx-index
+      spring.jpa.properties.hibernate.search.backend.directory.root: /home/nonroot/terminology-index
       spring.jpa.properties.hibernate.search.backend.lucene_version: lucene_current
       hapi.fhir.enable_task_pre_expand_value_sets: "false"
       hapi.fhir.install_transitive_ig_dependencies: "false"
@@ -203,4 +205,5 @@ services:
         condition: service_healthy
 
 volumes:
+  payer-search:
   postgres-data:

@@ -236,9 +236,9 @@ startup() {
   echo "$SWAGGER_PID" >> "$PID_FILE"
   ok "Swagger UI starting → http://localhost:8082 (PID $SWAGGER_PID, logs → logs/swagger.log)"
 
-  # The payer HAPI loads its IG packages on start, so it comes up last. The seed needs it.
+  # A fresh payer database installs the IG packages and builds its terminology index.
   info "Payer HAPI FHIR (:8081)"
-  wait_for_http "Payer HAPI" "http://localhost:8081/fhir/metadata" "http://localhost:8081/fhir" 72 \
+  wait_for_http "Payer HAPI" "http://localhost:8081/fhir/metadata" "http://localhost:8081/fhir" 120 \
     "docker compose -f infra/docker-compose.yml logs hapi-fhir-payer"
 
   echo ""

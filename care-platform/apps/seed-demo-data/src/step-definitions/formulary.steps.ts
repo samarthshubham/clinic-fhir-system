@@ -1,6 +1,10 @@
 import { DataTable, Given, Then } from '@cucumber/cucumber';
 import { readFileSync } from 'node:fs';
 import { apiClient, FhirResource } from '../support/api-client';
+import {
+  prepareFormularyValueSets,
+  type SeedCodeSystem,
+} from '../support/payer-terminology';
 import { repoPath } from '../support/repo-paths';
 
 const RXNORM = 'http://www.nlm.nih.gov/research/umls/rxnorm';
@@ -20,12 +24,23 @@ function fixture<T extends FhirResource>(name: string): T {
   ) as T;
 }
 
-Given('the payer HAPI has the Praxis formulary', async function () {
-  const formulary = fixture('formulary');
-  formulary['name'] = 'Praxis Health Plan Formulary';
-  formulary['period'] = { start: '2026-01-01' };
-  await apiClient.putPayerResource(formulary);
-});
+Given(
+  'the payer HAPI has the Praxis formulary',
+  { timeout: 20 * 60_000 },
+  async function () {
+    const rxnorm = JSON.parse(
+      readFileSync(repoPath('terminology/codesystems/rxnorm.json'), 'utf8'),
+    ) as SeedCodeSystem;
+    await prepareFormularyValueSets(
+      process.env['PAYER_FHIR_URL'] ?? 'http://localhost:8081/fhir',
+      rxnorm,
+    );
+    const formulary = fixture('formulary');
+    formulary['name'] = 'Praxis Health Plan Formulary';
+    formulary['period'] = { start: '2026-01-01' };
+    await apiClient.putPayerResource(formulary);
+  },
+);
 
 Given(
   'the Praxis formulary covers these RxNorm drugs:',
@@ -53,6 +68,7 @@ Given(
         code: {
           coding: [
             { system: RXNORM, code: row['rxcui'], display: row['drug'] },
+            { system: RXNORM, code: row['group'] },
           ],
         },
         doseForm: { coding: [{ system: RXNORM, code: row['doseForm'] }] },

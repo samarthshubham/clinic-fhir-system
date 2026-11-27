@@ -200,8 +200,128 @@
       ]
     },
     {
+      "code": "1152292",
+      "display": "amlodipine Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1152447",
+      "display": "cetirizine Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1154070",
+      "display": "aspirin Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1156278",
+      "display": "ibuprofen Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1157518",
+      "display": "naproxen Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1158285",
+      "display": "atorvastatin Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1160590",
+      "display": "carvedilol Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1161585",
+      "display": "labetalol Injectable Product",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
       "code": "1161611",
       "display": "metformin Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1162117",
+      "display": "hydralazine Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1162653",
+      "display": "enalapril Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1164690",
+      "display": "lisinopril Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1488567",
+      "display": "dapagliflozin Pill",
       "property": [
         {
           "code": "TTY",
