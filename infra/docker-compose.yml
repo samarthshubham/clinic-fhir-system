@@ -83,6 +83,7 @@ services:
       hapi.fhir.bulk_export_enabled: "true"
       hapi.fhir.subscription.resthook_enabled: "true"
       hapi.fhir.validation.requests_enabled: "true"
+      hapi.fhir.mark_resources_for_reindexing_upon_search_parameter_change: "${HAPI_PAYER_REINDEX_EXISTING:-true}"
       # Import demo terminology before expanding any ValueSet that depends on it.
       hapi.fhir.pre_expand_value_sets: "false"
       hapi.fhir.enable_task_pre_expand_value_sets: "false"

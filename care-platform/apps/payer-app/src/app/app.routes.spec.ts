@@ -16,6 +16,7 @@ import {
 import { appRoutes } from './app.routes';
 import { ShellComponent } from '@core/shell/shell.component';
 import { LoginComponent } from '@features/login/login.component';
+import { CpDirectoryComponent } from '@features/directory/directory.component';
 import { QueueComponent } from '@features/queue/queue.component';
 import { PlaceholderPageComponent } from '@features/placeholder/placeholder-page.component';
 import { MemberSearchComponent } from '@features/members/member-search/member-search.component';
@@ -58,17 +59,22 @@ describe('appRoutes', () => {
     );
   });
 
-  it.each(['directory', 'metrics'])(
-    'should show a placeholder for %s until its story lands',
-    async (path) => {
-      expect(await page(path).loadComponent?.()).toBe(PlaceholderPageComponent);
-      expect(page(path).data).toMatchObject({
-        heading: expect.any(String),
-        icon: expect.any(String),
-        description: expect.any(String),
-      });
-    },
-  );
+  it('should lazy load the read-only directory', async () => {
+    expect(await page('directory').loadComponent?.()).toBe(
+      CpDirectoryComponent,
+    );
+  });
+
+  it('should show a placeholder for metrics until its story lands', async () => {
+    expect(await page('metrics').loadComponent?.()).toBe(
+      PlaceholderPageComponent,
+    );
+    expect(page('metrics').data).toMatchObject({
+      heading: expect.any(String),
+      icon: expect.any(String),
+      description: expect.any(String),
+    });
+  });
 
   it('should send unknown paths home', () => {
     expect(find(appRoutes, '**').redirectTo).toBe('');
@@ -126,10 +132,10 @@ describe('appRoutes', () => {
     });
 
     it('should bind the placeholder text from the route', async () => {
-      const { harness } = await navigate('/directory', true);
+      const { harness } = await navigate('/metrics', true);
 
       expect(harness.routeNativeElement?.textContent).toContain(
-        'Browse the plan’s provider directory.',
+        'Prior authorization volumes and turnaround times.',
       );
     });
   });

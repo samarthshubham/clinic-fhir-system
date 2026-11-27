@@ -58,6 +58,12 @@
       </span>
     </div>
 
+    @if (canOrder()) {
+      <button mat-button type="button" (click)="openDirectory()">
+        Find in-network provider
+      </button>
+    }
+
     @if (sortedPending().length) {
       <ul class="orders-list">
         @for (order of sortedPending(); track order.id) {

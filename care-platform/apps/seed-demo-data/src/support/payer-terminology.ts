@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
-import { isDeepStrictEqual } from 'node:util';
 import type { FhirResource } from './api-client';
 
 interface SeedCodeSystem extends FhirResource {
@@ -142,14 +141,17 @@ async function importSnapshot(
     method: 'POST',
     headers: { Prefer: 'respond-async' },
   });
-  const until = Date.now() + 180000;
+  const until = Date.now() + 300_000;
   for (;;) {
     const status = await checked(op + 'poll-for-status' + query);
     if (status.status !== 202) {
       checkBatchResult((await status.json()) as BatchResult);
       return;
     }
-    if (Date.now() >= until) throw new Error('Timed out importing ' + system);
+    if (Date.now() >= until)
+      throw new Error(
+        `Timed out importing ${system}|${version} (job ${job}). Last response: ${(await status.text()).slice(0, 1500)}`,
+      );
     await delay(1000);
   }
 }
@@ -219,8 +221,6 @@ export async function waitForFragmentLookups(
 
 type TaggedCodeSystem = {
   id: string;
-  content?: string;
-  concept?: SeedCodeSystem['concept'];
   meta?: { tag?: { system?: string; code?: string }[] };
 };
 
@@ -251,18 +251,13 @@ async function seedComplete(
   if (installed(existing, digest, snapshotHash)) return;
   const id = existing?.id ?? source.id;
   const url = base + '/CodeSystem/' + id;
-  const matchingConcepts =
-    existing?.content === 'complete' &&
-    isDeepStrictEqual(existing.concept, source.concept);
-  if (!matchingConcepts || !(await hasConcepts(base, source, version, true))) {
-    // A resource update indexes a COMPLETE system under its own canonical and version.
-    await checked(url, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/fhir+json' },
-      body: JSON.stringify({ ...source, id }),
-    });
-    await waitForConcepts(base, source, version, true);
-  }
+  // On cold HAPI a pre-update lookup miss can be cached for ten minutes.
+  await checked(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/fhir+json' },
+    body: JSON.stringify({ ...source, id }),
+  });
+  await waitForConcepts(base, source, version, true);
   await checked(url + '/$meta-add', {
     method: 'POST',
     headers: { 'Content-Type': 'application/fhir+json' },

@@ -47,12 +47,10 @@ export const appRoutes: Route[] = [
       {
         path: 'directory',
         title: 'Directory · Praxis Health Plan',
-        loadComponent: placeholderPage,
-        data: {
-          heading: 'Directory',
-          icon: 'local_hospital',
-          description: 'Browse the plan’s provider directory.',
-        },
+        loadComponent: () =>
+          import('./features/directory/directory.component').then(
+            (m) => m.CpDirectoryComponent,
+          ),
       },
       {
         path: 'metrics',

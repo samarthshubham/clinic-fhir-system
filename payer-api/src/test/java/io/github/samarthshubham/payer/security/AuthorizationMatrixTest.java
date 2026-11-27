@@ -14,6 +14,7 @@ import io.github.samarthshubham.payer.cdshooks.CrdHookService;
 import io.github.samarthshubham.payer.service.AuthService;
 import io.github.samarthshubham.payer.service.ClaimSubmitService;
 import io.github.samarthshubham.payer.service.ClientCredentialsService;
+import io.github.samarthshubham.payer.service.DirectoryService;
 import io.github.samarthshubham.payer.service.MemberService;
 import io.github.samarthshubham.payer.service.TokenService;
 import io.github.samarthshubham.payer.support.TestAuth;
@@ -81,6 +82,7 @@ class AuthorizationMatrixTest {
           json("POST", "/api/auth/refresh", JSON, "{\"refreshToken\":\"r\"}", EVERYONE),
           json("POST", "/oauth/token", FORM, "grant_type=client_credentials", EVERYONE),
           json("GET", "/actuator/health", null, null, EVERYONE),
+          json("GET", "/api/directory", null, null, STAFF),
           json("GET", "/api/members?name=Nair", null, null, STAFF),
           json("GET", "/api/members/member-a", null, null, STAFF),
           fhir("GET", "/fhir/metadata", null, EVERYONE),
@@ -121,6 +123,7 @@ class AuthorizationMatrixTest {
   @MockitoBean private AuthService authService;
   @MockitoBean private ClientCredentialsService clientCredentialsService;
   @MockitoBean private MemberService memberService;
+  @MockitoBean private DirectoryService directoryService;
   @MockitoBean private CrdHookService crdHookService;
   @MockitoBean private ClaimSubmitService claimSubmitService;
 

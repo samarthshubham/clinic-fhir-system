@@ -26,7 +26,8 @@
       "coding": [
         {
           "system": "http://nucc.org/provider-taxonomy",
-          "code": "207R00000X"
+          "code": "207R00000X",
+          "display": "Internal Medicine Physician"
         }
       ]
     }

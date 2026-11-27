@@ -61,6 +61,9 @@ jobs:
           cache-dependency-path: care-platform/package-lock.json
 
       - name: Start PostgreSQL and both HAPI FHIR servers
+        env:
+          # Search parameters load before any test data on the fresh payer database.
+          HAPI_PAYER_REINDEX_EXISTING: 'false'
         run: |
           docker compose -f infra/docker-compose.yml up -d postgres hapi-fhir hapi-fhir-payer
           for i in $(seq 1 60); do

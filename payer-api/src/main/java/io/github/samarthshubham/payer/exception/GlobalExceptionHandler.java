@@ -8,9 +8,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.method.ParameterErrors;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -45,6 +47,25 @@ public class GlobalExceptionHandler {
         ex.getBindingResult().getFieldErrors().stream()
             .map(error -> error.getField() + " " + error.getDefaultMessage())
             .sorted()
+            .collect(Collectors.joining(", "));
+    return ResponseEntity.badRequest().body(new ErrorResponse(400, message));
+  }
+
+  @ExceptionHandler(HandlerMethodValidationException.class)
+  public ResponseEntity<ErrorResponse> handleParameterValidation(
+      HandlerMethodValidationException ex) {
+    String message =
+        ex.getParameterValidationResults().stream()
+            .flatMap(
+                result ->
+                    result.getResolvableErrors().stream()
+                        .map(
+                            error ->
+                                result instanceof ParameterErrors
+                                    ? error.getDefaultMessage()
+                                    : result.getMethodParameter().getParameterName()
+                                        + " "
+                                        + error.getDefaultMessage()))
             .collect(Collectors.joining(", "));
     return ResponseEntity.badRequest().body(new ErrorResponse(400, message));
   }
