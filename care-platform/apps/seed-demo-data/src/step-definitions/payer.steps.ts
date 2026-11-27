@@ -1,6 +1,5 @@
 import { DataTable, Given, Then } from '@cucumber/cucumber';
 import { readdirSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { apiClient, FhirResource } from '../support/api-client';
 import { daysAgo } from '../support/date-helpers';
 import {
@@ -8,15 +7,12 @@ import {
   waitForFragmentLookups,
   type SeedCodeSystem,
 } from '../support/payer-terminology';
+import { repoPath } from '../support/repo-paths';
 import { SeedWorld } from '../support/world';
 
 // The payer HAPI loads its validation terminology on the first write after a start, which takes about 30s.
 const PAYER_HAPI_WRITE = { timeout: 60_000 };
-const DTR_FIXTURES = resolve(__dirname, '../../../../../fixtures/davinci/dtr');
-const CODE_SYSTEMS = resolve(
-  __dirname,
-  '../../../../../terminology/codesystems',
-);
+const CODE_SYSTEMS = repoPath('terminology/codesystems');
 
 Given(
   'the seed has a payer-api system token',
@@ -101,7 +97,7 @@ Given(
   async function (this: SeedWorld, dataTable: DataTable) {
     for (const { file } of dataTable.hashes()) {
       const resource = JSON.parse(
-        readFileSync(resolve(DTR_FIXTURES, file), 'utf8'),
+        readFileSync(repoPath('fixtures/davinci/dtr', file), 'utf8'),
       ) as FhirResource;
       await apiClient.putPayerResource(resource);
       this.log(`${resource.resourceType}/${String(resource['id'])} (${file})`);
@@ -123,7 +119,7 @@ Given(
     const systems: SeedCodeSystem[] = [];
     for (const file of files) {
       const resource = JSON.parse(
-        readFileSync(resolve(CODE_SYSTEMS, file), 'utf8'),
+        readFileSync(repoPath('terminology/codesystems', file), 'utf8'),
       ) as SeedCodeSystem;
       if (resource.resourceType !== 'CodeSystem') {
         throw new Error(

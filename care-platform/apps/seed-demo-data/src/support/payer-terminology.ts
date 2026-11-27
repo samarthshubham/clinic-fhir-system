@@ -6,7 +6,7 @@ interface SeedCodeSystem extends FhirResource {
   id: string;
   url: string;
   version?: string;
-  concept: { code: string; display?: string }[];
+  concept: { code: string; display?: string; property?: object[] }[];
 }
 
 const icd10cm = 'http://hl7.org/fhir/sid/icd-10-cm';
@@ -19,6 +19,10 @@ const xml = (s: string) =>
 const csv = (s: string) => '"' + s.replace(/"/g, '""') + '"';
 
 function importFile(fragment: SeedCodeSystem) {
+  if (fragment.concept.some((concept) => concept.property?.length)) {
+    // The concepts.csv format does not carry properties used by ValueSet filters.
+    return { name: 'codesystem.json', data: JSON.stringify(fragment) };
+  }
   if (fragment.url === icd10cm) {
     const diagnoses = fragment.concept
       .map(

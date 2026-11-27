@@ -422,17 +422,14 @@ class ApiClient {
     );
   }
 
-  async publicDirectoryIds(
-    resourceType: string,
-    query: string,
-  ): Promise<string[]> {
+  async publicFhirIds(resourceType: string, query: string): Promise<string[]> {
     const url = `${PAYER_API}/fhir/${resourceType}?${query}`;
     const response = await this.fetchWithRetry(url, {
       headers: { Accept: 'application/fhir+json' },
     });
     if (!response.ok) {
       throw new Error(
-        `Public directory GET ${resourceType} failed [${response.status}]`,
+        `Public FHIR GET ${resourceType} failed [${response.status}]`,
       );
     }
     const bundle = (await response.json()) as FhirSearchBundle;

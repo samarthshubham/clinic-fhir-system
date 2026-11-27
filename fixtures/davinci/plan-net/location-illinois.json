@@ -3,7 +3,8 @@
   "id": "state-of-illinois",
   "meta": {
     "profile": [
-      "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Location"
+      "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Location",
+      "http://hl7.org/fhir/us/davinci-drug-formulary/StructureDefinition/usdf-InsurancePlanLocation"
     ]
   },
   "status": "active",

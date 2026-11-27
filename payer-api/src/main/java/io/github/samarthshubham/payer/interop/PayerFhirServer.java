@@ -14,7 +14,7 @@ public class PayerFhirServer extends RestfulServer {
       List<String> implementationGuides,
       List<IResourceProvider> resourceProviders,
       List<OperationScope> operationScopes,
-      PlanNetDirectory directory) {
+      PublicPayerCatalog directory) {
     super(fhirContext);
     setServerName("Praxis Health Plan payer-api");
     setDefaultResponseEncoding(EncodingEnum.JSON);

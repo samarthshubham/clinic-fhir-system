@@ -78,6 +78,30 @@ describe('payer terminology import', () => {
       expect(f).toHaveBeenCalledTimes(8);
     },
   );
+  it('preserves concept properties used by ValueSet filters', async () => {
+    const source: SeedCodeSystem = {
+      ...fragment,
+      concept: [{ code: 'A', property: [{ code: 'TTY', valueCode: 'SCD' }] }],
+    };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(ok())
+      .mockResolvedValueOnce(
+        ok({ parameter: [{ name: 'jobInstanceId', valueCode: 'job-1' }] }),
+      )
+      .mockResolvedValueOnce(ok())
+      .mockResolvedValueOnce(new Response(null, { status: 202 }))
+      .mockResolvedValueOnce(ok(batch([completed])))
+      .mockResolvedValueOnce(ok());
+    vi.stubGlobal('fetch', fetchMock);
+
+    await seedTerminology(base, source);
+
+    const [uploadUrl, upload] = fetchMock.mock.calls[3];
+    expect(uploadUrl).toContain('filename=codesystem.json');
+    expect(JSON.parse(upload.body)).toEqual(source);
+  });
   it('waits for a slow batch to finish before recording the digest', async () => {
     vi.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValue(185_000);
     const f = vi

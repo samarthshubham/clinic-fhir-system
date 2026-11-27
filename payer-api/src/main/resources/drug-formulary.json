@@ -1,0 +1,251 @@
+{
+  "resourceType": "CapabilityStatement",
+  "status": "active",
+  "date": "2025-02-26",
+  "kind": "capability",
+  "fhirVersion": "4.0.1",
+  "format": [
+    "json",
+    "xml"
+  ],
+  "rest": [
+    {
+      "mode": "server",
+      "resource": [
+        {
+          "type": "InsurancePlan",
+          "supportedProfile": [
+            "http://hl7.org/fhir/us/davinci-drug-formulary/StructureDefinition/usdf-PayerInsurancePlan",
+            "http://hl7.org/fhir/us/davinci-drug-formulary/StructureDefinition/usdf-Formulary"
+          ],
+          "referencePolicy": [
+            "resolves"
+          ],
+          "searchInclude": [
+            "InsurancePlan:formulary-coverage"
+          ],
+          "searchParam": [
+            {
+              "name": "_id",
+              "definition": "http://hl7.org/fhir/SearchParameter/Resource-id",
+              "type": "token"
+            },
+            {
+              "name": "_lastUpdated",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/InsurancePlan-lastupdated",
+              "type": "date"
+            },
+            {
+              "name": "identifier",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/InsurancePlan-identifier",
+              "type": "token"
+            },
+            {
+              "name": "status",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/InsurancePlan-status",
+              "type": "token"
+            },
+            {
+              "name": "period",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/InsurancePlan-period",
+              "type": "date"
+            },
+            {
+              "name": "type",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/InsurancePlan-type",
+              "type": "token"
+            },
+            {
+              "name": "name",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/InsurancePlan-name",
+              "type": "string"
+            },
+            {
+              "name": "coverage-type",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/InsurancePlan-coverage-type",
+              "type": "token"
+            },
+            {
+              "name": "formulary-coverage",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/InsurancePlan-formulary-coverage",
+              "type": "reference",
+              "extension": [
+                {
+                  "url": "target",
+                  "valueCode": "InsurancePlan"
+                }
+              ]
+            },
+            {
+              "name": "coverage-area",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/InsurancePlan-coverage-area",
+              "type": "reference"
+            }
+          ]
+        },
+        {
+          "type": "Basic",
+          "supportedProfile": [
+            "http://hl7.org/fhir/us/davinci-drug-formulary/StructureDefinition/usdf-FormularyItem"
+          ],
+          "referencePolicy": [
+            "resolves"
+          ],
+          "searchInclude": [
+            "Basic:subject",
+            "Basic:formulary"
+          ],
+          "searchParam": [
+            {
+              "name": "_id",
+              "definition": "http://hl7.org/fhir/SearchParameter/Resource-id",
+              "type": "token"
+            },
+            {
+              "name": "_lastUpdated",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/Basic-lastupdated",
+              "type": "date"
+            },
+            {
+              "name": "code",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/Basic-code",
+              "type": "token"
+            },
+            {
+              "name": "subject",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/Basic-subject",
+              "type": "reference",
+              "extension": [
+                {
+                  "url": "target",
+                  "valueCode": "MedicationKnowledge"
+                },
+                {
+                  "url": "forward-chain",
+                  "valueCode": "code"
+                },
+                {
+                  "url": "forward-chain",
+                  "valueCode": "drug-name"
+                }
+              ]
+            },
+            {
+              "name": "status",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/Basic-status",
+              "type": "token"
+            },
+            {
+              "name": "period",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/Basic-period",
+              "type": "date"
+            },
+            {
+              "name": "formulary",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/Basic-formulary",
+              "type": "reference",
+              "extension": [
+                {
+                  "url": "target",
+                  "valueCode": "InsurancePlan"
+                }
+              ]
+            },
+            {
+              "name": "pharmacy-benefit-type",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/Basic-pharmacy-benefit-type",
+              "type": "token"
+            },
+            {
+              "name": "drug-tier",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/Basic-drug-tier",
+              "type": "token"
+            }
+          ]
+        },
+        {
+          "type": "MedicationKnowledge",
+          "supportedProfile": [
+            "http://hl7.org/fhir/us/davinci-drug-formulary/StructureDefinition/usdf-FormularyDrug"
+          ],
+          "referencePolicy": [
+            "resolves"
+          ],
+          "searchParam": [
+            {
+              "name": "_id",
+              "definition": "http://hl7.org/fhir/SearchParameter/Resource-id",
+              "type": "token"
+            },
+            {
+              "name": "_lastUpdated",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/MedicationKnowledge-lastupdated",
+              "type": "date"
+            },
+            {
+              "name": "status",
+              "definition": "http://hl7.org/fhir/SearchParameter/MedicationKnowledge-status",
+              "type": "token"
+            },
+            {
+              "name": "code",
+              "definition": "http://hl7.org/fhir/SearchParameter/MedicationKnowledge-code",
+              "type": "token"
+            },
+            {
+              "name": "drug-name",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/MedicationKnowledge-drug-name",
+              "type": "string"
+            },
+            {
+              "name": "doseform",
+              "definition": "http://hl7.org/fhir/us/davinci-drug-formulary/SearchParameter/MedicationKnowledge-doseform",
+              "type": "token"
+            }
+          ]
+        },
+        {
+          "type": "Location",
+          "supportedProfile": [
+            "http://hl7.org/fhir/us/davinci-drug-formulary/StructureDefinition/usdf-InsurancePlanLocation"
+          ],
+          "referencePolicy": [
+            "resolves"
+          ],
+          "searchParam": [
+            {
+              "name": "_id",
+              "definition": "http://hl7.org/fhir/SearchParameter/Resource-id",
+              "type": "token"
+            },
+            {
+              "name": "_lastUpdated",
+              "definition": "http://hl7.org/fhir/SearchParameter/Resource-lastUpdated",
+              "type": "date"
+            },
+            {
+              "name": "address",
+              "definition": "http://hl7.org/fhir/SearchParameter/Location-address",
+              "type": "string"
+            },
+            {
+              "name": "address-city",
+              "definition": "http://hl7.org/fhir/SearchParameter/Location-address-city",
+              "type": "string"
+            },
+            {
+              "name": "address-state",
+              "definition": "http://hl7.org/fhir/SearchParameter/Location-address-state",
+              "type": "string"
+            },
+            {
+              "name": "address-postalcode",
+              "definition": "http://hl7.org/fhir/SearchParameter/Location-address-postalcode",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

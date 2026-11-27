@@ -39,7 +39,7 @@ Then(
   'the public directory has these search matches:',
   async function (this: SeedWorld, dataTable: DataTable) {
     for (const { type, query, id } of dataTable.hashes()) {
-      const matches = await apiClient.publicDirectoryIds(type, query);
+      const matches = await apiClient.publicFhirIds(type, query);
       if (!matches.includes(id)) {
         throw new Error(`${type}?${query} did not return ${id}`);
       }

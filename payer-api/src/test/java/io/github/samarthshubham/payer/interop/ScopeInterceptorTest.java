@@ -22,7 +22,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 class ScopeInterceptorTest {
 
   private final ScopeInterceptor interceptor =
-      new ScopeInterceptor(FhirContext.forR4Cached(), List.of(), mock(PlanNetDirectory.class));
+      new ScopeInterceptor(FhirContext.forR4Cached(), List.of(), mock(PublicPayerCatalog.class));
 
   @BeforeEach
   void authenticateWithEveryScope() {
@@ -60,7 +60,7 @@ class ScopeInterceptorTest {
             List.of(
                 new OperationScope("$for-members", "Questionnaire", SmartPermission.READ),
                 new OperationScope("$system-only", "Questionnaire", SmartPermission.READ, true)),
-            mock(PlanNetDirectory.class));
+            mock(PublicPayerCatalog.class));
     RequestDetails operation = request(RestOperationTypeEnum.EXTENDED_OPERATION_TYPE);
 
     authenticate(Map.of(JwtConfig.SCOPE_CLAIM, "patient/*.r", JwtConfig.PATIENT_CLAIM, "a"));
