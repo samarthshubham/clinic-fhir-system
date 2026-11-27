@@ -30,6 +30,7 @@ Each file starts from an example in the published IG package (all CC0-1.0) and i
 | `pas/request-mri.json` | `pas/request-polysomnography.json` with an MRI lumbar spine request for Sandra Okafor, a CRD coverage assertion on the order and her DTR QuestionnaireResponse (4 weeks of conservative therapy) in `supportingInfo` | hl7.fhir.us.davinci-pas#2.2.1 |
 | `pas/request-cgm.json` | the same with a continuous glucose monitor request for Ramon Castillo and his DTR QuestionnaireResponse (diabetes, insulin-treated) | hl7.fhir.us.davinci-pas#2.2.1 |
 | `pas/response-pended.json`, `response-denied.json`, `response-approved.json` | `Bundle/ReferralPendingAuthorizationResponseBundleExample`; payer-api's `Claim/$submit` answers to the polysomnography, MRI and CGM requests | hl7.fhir.us.davinci-pas#2.2.1 |
+| `pas/inquire-request.json`, `pas/inquire-response.json` | The Gerald Horton polysomnography submission and its updated decision, profiled as a PAS inquiry request and a `Parameters` response containing a PAS inquiry response bundle | hl7.fhir.us.davinci-pas#2.2.1 |
 | `cdex/task-attachment-request.json` | `Task/cdex-task-example19` | hl7.fhir.us.davinci-cdex#2.1.0 |
 | `cdex/submit-attachment-parameters.json` | `Parameters/cdex-parameters-example4` | hl7.fhir.us.davinci-cdex#2.1.0 |
 | `pdex/prior-authorization-eob.json` | `ExplanationOfBenefit/PDexPriorAuth1` | hl7.fhir.us.davinci-pdex#2.2.0 |

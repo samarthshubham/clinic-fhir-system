@@ -14,6 +14,9 @@ import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Coverage;
 import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.Identifier;
+import org.hl7.fhir.r4.model.Organization;
+import org.hl7.fhir.r4.model.Practitioner;
+import org.hl7.fhir.r4.model.PractitionerRole;
 import org.hl7.fhir.r4.model.Quantity;
 import org.hl7.fhir.r4.model.QuestionnaireResponse;
 import org.hl7.fhir.r4.model.Reference;
@@ -49,6 +52,19 @@ final class PasRequest {
   }
 
   static PasRequest of(Bundle bundle) {
+    PasRequest request = withClaim(bundle);
+    Claim claim = request.claim();
+    if (!claim.hasItem()) {
+      throw new InvalidRequestException("The Claim has no items");
+    }
+    if (request.coverage().isEmpty()) {
+      throw new InvalidRequestException(
+          "The Claim's focal insurance must reference a Coverage in the bundle");
+    }
+    return request;
+  }
+
+  static PasRequest withClaim(Bundle bundle) {
     List<Bundle.BundleEntryComponent> claims =
         bundle.getEntry().stream().filter(entry -> entry.getResource() instanceof Claim).toList();
     if (claims.size() != 1) {
@@ -62,14 +78,43 @@ final class PasRequest {
     if (request.identifier().isEmpty()) {
       throw new InvalidRequestException("The Claim needs an identifier with a system and a value");
     }
-    if (!claim.hasItem()) {
-      throw new InvalidRequestException("The Claim has no items");
-    }
-    if (request.coverage().isEmpty()) {
-      throw new InvalidRequestException(
-          "The Claim's focal insurance must reference a Coverage in the bundle");
-    }
     return request;
+  }
+
+  Optional<Identifier> providerNpi() {
+    return entry(claim().getProvider())
+        .map(Bundle.BundleEntryComponent::getResource)
+        .flatMap(
+            resource ->
+                switch (resource) {
+                  case Organization organization -> npi(organization.getIdentifier());
+                  case PractitionerRole role ->
+                      entry(role.getPractitioner())
+                          .map(Bundle.BundleEntryComponent::getResource)
+                          .filter(Practitioner.class::isInstance)
+                          .map(Practitioner.class::cast)
+                          .flatMap(practitioner -> npi(practitioner.getIdentifier()));
+                  default -> Optional.empty();
+                });
+  }
+
+  private static Optional<Identifier> npi(List<Identifier> identifiers) {
+    return identifiers.stream()
+        .filter(identifier -> "http://hl7.org/fhir/sid/us-npi".equals(identifier.getSystem()))
+        .filter(Identifier::hasValue)
+        .findFirst();
+  }
+
+  static Reference providerReference(Bundle.BundleEntryComponent entry, FhirContext fhirContext) {
+    String fullUrl = entry.getFullUrl();
+    if (fullUrl != null && (fullUrl.startsWith("http://") || fullUrl.startsWith("https://"))) {
+      return new Reference(fullUrl);
+    }
+    Reference logical = new Reference().setType(entry.getResource().fhirType());
+    fhirContext.newTerser().getValues(entry.getResource(), "identifier", Identifier.class).stream()
+        .findFirst()
+        .ifPresent(identifier -> logical.setIdentifier(identifier.copy()));
+    return logical;
   }
 
   Bundle bundle() {

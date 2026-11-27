@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import io.github.samarthshubham.payer.cdshooks.CrdHookService;
 import io.github.samarthshubham.payer.service.AuthService;
+import io.github.samarthshubham.payer.service.ClaimInquiryService;
 import io.github.samarthshubham.payer.service.ClaimSubmitService;
 import io.github.samarthshubham.payer.service.ClientCredentialsService;
 import io.github.samarthshubham.payer.service.DirectoryService;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.Parameters;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -102,6 +104,11 @@ class AuthorizationMatrixTest {
               "{\"resourceType\":\"Bundle\",\"type\":\"collection\"}",
               EnumSet.of(CLINIC_API)),
           fhir(
+              "POST",
+              "/fhir/Claim/$inquire",
+              "{\"resourceType\":\"Bundle\",\"type\":\"collection\"}",
+              EnumSet.of(SYSTEM_READER)),
+          fhir(
               "POST", "/fhir/Claim/$test-unmapped", EMPTY_PARAMETERS, EnumSet.noneOf(Caller.class)),
           fhir("GET", "/fhir/Questionnaire/q1", null, EnumSet.of(CLINIC_API, SYSTEM_READER)),
           fhir(
@@ -126,11 +133,13 @@ class AuthorizationMatrixTest {
   @MockitoBean private DirectoryService directoryService;
   @MockitoBean private CrdHookService crdHookService;
   @MockitoBean private ClaimSubmitService claimSubmitService;
+  @MockitoBean private ClaimInquiryService claimInquiryService;
 
   @BeforeEach
-  void submitAnswersWithAResponseBundle() {
+  void pasOperationsAnswer() {
     when(claimSubmitService.submit(any(), any()))
         .thenReturn(new Bundle().setType(Bundle.BundleType.COLLECTION));
+    when(claimInquiryService.inquire(any(), any())).thenReturn(new Parameters());
   }
 
   static Stream<Arguments> endpointsByCaller() {
