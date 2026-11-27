@@ -303,6 +303,91 @@ describe('payer-api token', () => {
   });
 });
 
+describe('PAS seed client', () => {
+  const identifier = {
+    system: 'https://example.test/claims',
+    value: 'seed-pa',
+  };
+  const decision = { resourceType: 'ClaimResponse', id: 'decision-1' };
+
+  it('looks up the Claim identifier and returns its included decision', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        resourceType: 'Bundle',
+        entry: [
+          { resource: { resourceType: 'Claim', id: 'claim-1' } },
+          { resource: decision },
+        ],
+      }),
+    );
+
+    await expect(apiClient.findPriorAuthDecision(identifier)).resolves.toEqual(
+      decision,
+    );
+    expect(calls()).toEqual([
+      {
+        url: `${PAYER_HAPI}/Claim?${new URLSearchParams({
+          identifier: 'https://example.test/claims|seed-pa',
+          _revinclude: 'ClaimResponse:request',
+        })}`,
+        init: { headers: { Accept: 'application/fhir+json' } },
+      },
+    ]);
+  });
+
+  it('returns null when payer HAPI finds no decision', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ resourceType: 'Bundle' }));
+
+    await expect(
+      apiClient.findPriorAuthDecision(identifier),
+    ).resolves.toBeNull();
+  });
+
+  it('reports a lookup error instead of treating it as a missing decision', async () => {
+    fetchMock.mockResolvedValueOnce(textResponse('Unavailable', 503));
+
+    await expect(apiClient.findPriorAuthDecision(identifier)).rejects.toThrow(
+      'PAS seed lookup failed [503]',
+    );
+  });
+
+  it('submits a FHIR Bundle using the payer system token', async () => {
+    const request = { resourceType: 'Bundle', id: 'request-1' };
+    const result = {
+      resourceType: 'Bundle',
+      entry: [{ resource: decision }],
+    };
+    fetchMock.mockResolvedValueOnce(jsonResponse(result));
+
+    await expect(
+      apiClient.submitPriorAuth('system-token', request),
+    ).resolves.toEqual(result);
+    expect(calls()).toEqual([
+      {
+        url: `${PAYER_API}/fhir/Claim/$submit`,
+        init: {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/fhir+json',
+            Accept: 'application/fhir+json',
+            Authorization: 'Bearer system-token',
+          },
+          body: JSON.stringify(request),
+        },
+      },
+    ]);
+  });
+
+  it('reports the submission status and bounds the error detail', async () => {
+    const details = 'x'.repeat(301);
+    fetchMock.mockResolvedValueOnce(textResponse(details, 422));
+
+    await expect(
+      apiClient.submitPriorAuth('system-token', { resourceType: 'Bundle' }),
+    ).rejects.toThrow(/^PAS submission failed \[422\]: x{300}$/);
+  });
+});
+
 describe('payer HAPI conditional creates', () => {
   const plan = {
     id: 'ip1',
