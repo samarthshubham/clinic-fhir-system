@@ -99,7 +99,7 @@ teardown() {
     rm -f "$PID_FILE"
   fi
 
-  for port in 9090 9095 4200 4201 4400 8082; do
+  for port in 9090 9095 4200 4300 4400 8082; do
     kill_port "$port"
   done
 
@@ -212,10 +212,10 @@ startup() {
   echo "$CLINICIAN_PID" >> "$PID_FILE"
   ok "clinician-app starting → http://localhost:4200 (PID $CLINICIAN_PID, logs → logs/clinician-app.log)"
 
-  NO_COLOR=1 npx nx serve patient-app --port=4201 2>&1 | log_with_ts "$LOG_DIR/patient-app.log" &
+  NO_COLOR=1 npx nx serve patient-app --port=4300 2>&1 | log_with_ts "$LOG_DIR/patient-app.log" &
   PATIENT_PID=$!
   echo "$PATIENT_PID" >> "$PID_FILE"
-  ok "patient-app starting  → http://localhost:4201 (PID $PATIENT_PID, logs → logs/patient-app.log)"
+  ok "patient-app starting  → http://localhost:4300 (PID $PATIENT_PID, logs → logs/patient-app.log)"
 
   NO_COLOR=1 npx nx serve payer-app --port=4400 2>&1 | log_with_ts "$LOG_DIR/payer-app.log" &
   PAYER_APP_PID=$!
@@ -243,17 +243,23 @@ startup() {
 
   echo ""
   echo -e "${BOLD}All services started.${NC}"
-  echo -e "  Postgres      → localhost:5432"
-  echo -e "  HAPI FHIR     → http://localhost:8080/fhir"
-  echo -e "  Payer HAPI    → http://localhost:8081/fhir"
-  echo -e "  clinic-api    → http://localhost:9090"
-  echo -e "  payer-api     → http://localhost:9095"
-  echo -e "  clinician-app → http://localhost:4200"
-  echo -e "  patient-app   → http://localhost:4201"
-  echo -e "  payer-app     → http://localhost:4400"
-  echo -e "  Swagger UI    → http://localhost:8082"
-  echo -e "  Prometheus    → http://localhost:9091"
-  echo -e "  Grafana       → http://localhost:3000 (admin/admin)"
+  echo ""
+  echo -e "  ${CYAN}Frontend${NC}"
+  echo -e "    clinician-app → http://localhost:4200"
+  echo -e "    patient-app   → http://localhost:4300"
+  echo -e "    payer-app     → http://localhost:4400"
+  echo ""
+  echo -e "  ${CYAN}Backend${NC}"
+  echo -e "    clinic-api    → http://localhost:9090"
+  echo -e "    payer-api     → http://localhost:9095"
+  echo -e "    HAPI FHIR     → http://localhost:8080/fhir"
+  echo -e "    Payer HAPI    → http://localhost:8081/fhir"
+  echo -e "    Postgres      → localhost:5432"
+  echo ""
+  echo -e "  ${CYAN}Utilities${NC}"
+  echo -e "    Swagger UI    → http://localhost:8082"
+  echo -e "    Prometheus    → http://localhost:9091"
+  echo -e "    Grafana       → http://localhost:3000 (admin/admin)"
   echo ""
   echo -e "Logs are in ${CYAN}./logs/${NC} — tail any service in a separate terminal:"
   echo -e "  tail -f logs/clinic-api.log"

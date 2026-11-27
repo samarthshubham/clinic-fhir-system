@@ -66,7 +66,7 @@ Services start in the correct order, each waiting for the previous to be healthy
 | Payer HAPI FHIR server (Da Vinci IGs) | `http://localhost:8081/fhir` |
 | clinic-api (Spring Boot) | `http://localhost:9090` |
 | clinician-app (Angular) | `http://localhost:4200` |
-| patient-app (Angular) | `http://localhost:4201` |
+| patient-app (Angular) | `http://localhost:4300` |
 | Swagger UI | `http://localhost:8082` |
 | Prometheus | `http://localhost:9091` |
 | Grafana | `http://localhost:3000` (login `admin` / `admin`) |
@@ -82,7 +82,7 @@ The API, clinician-app and patient-app require a login. These accounts live in t
 | `admin` | `Admin#2026` | `ADMIN` | everything, including registering practitioners |
 | `clinician` | `Clinician#2026` | `CLINICIAN` | all clinical reads and writes |
 | `frontdesk` | `FrontDesk#2026` | `FRONT_DESK` | register patients, book appointments; no clinical data |
-| `tony` | `Tony#2026` | `PATIENT` (Tony Stark) | patient-app (`localhost:4201`): only his own record and vitals |
+| `tony` | `Tony#2026` | `PATIENT` (Tony Stark) | patient-app (`localhost:4300`): only his own record and vitals |
 | `priya` | `Priya#2026` | `PATIENT` (Priya Nair) | patient-app: only her own record and vitals |
 | `e2e-patient` | `E2ePatient#2026` | `PATIENT` (`e2e-patient-1`) | e2e suite only: its patient is created and deleted by the tests |
 | `e2e-patient-2` | `E2ePatient#2026` | `PATIENT` (`e2e-patient-2`) | e2e suite only: used to check one patient cannot read another |
@@ -139,7 +139,7 @@ cd clinic-api && ./mvnw spring-boot:run
 ```bash
 cd care-platform
 npx nx serve clinician-app --port=4200
-npx nx serve patient-app --port=4201   # in a second terminal
+npx nx serve patient-app --port=4300   # in a second terminal
 ```
 
 **Stop infrastructure:**

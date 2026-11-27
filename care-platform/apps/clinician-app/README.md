@@ -46,5 +46,5 @@ npx nx run-many -t build test lint -p clinician-app
 npx nx serve clinician-app --port=4200
 
 # Terminal 2
-npx nx serve patient-app --port=4201
+npx nx serve patient-app --port=4300
 ```
