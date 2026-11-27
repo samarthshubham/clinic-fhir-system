@@ -18,7 +18,7 @@ All commands must be run from the `care-platform/` directory.
 npx nx serve patient-app
 
 # Serve on a different port (needed when running alongside clinician-app)
-npx nx serve patient-app --port=4201
+npx nx serve patient-app --port=4300
 ```
 
 ## Other commands
@@ -46,5 +46,5 @@ npx nx run-many -t build test lint -p patient-app
 npx nx serve clinician-app --port=4200
 
 # Terminal 2
-npx nx serve patient-app --port=4201
+npx nx serve patient-app --port=4300
 ```
