@@ -250,6 +250,26 @@ export const e2eTasks = {
       periodStart: daysAgo(730),
     });
     const { period } = await apiClient.findInsurancePlan(GOLD_PPO.name);
+
+    // The Gold PPO fixture references the formulary even without the demo seed.
+    const formulary = JSON.parse(
+      await readFile(
+        repoPath('fixtures/davinci/formulary/formulary.json'),
+        'utf8',
+      ),
+    ) as FhirResource;
+    const formularyUrl = `${PAYER_HAPI}/InsurancePlan/${formulary['id']}`;
+    const existingFormulary = await fetch(formularyUrl, {
+      headers: { Accept: 'application/fhir+json' },
+    });
+    if (existingFormulary.status === 404 || existingFormulary.status === 410) {
+      await apiClient.putPayerResource(formulary);
+    } else if (!existingFormulary.ok) {
+      throw new Error(
+        `GET ${formularyUrl} failed [${existingFormulary.status}]`,
+      );
+    }
+
     for (const name of [
       'organization-payer',
       'organization-clinic',

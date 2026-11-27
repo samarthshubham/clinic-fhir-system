@@ -356,13 +356,19 @@ describe('ensureMriDtrFixtures', () => {
 });
 
 describe('ensurePlanNetFixtures', () => {
-  it('publishes the directory while retaining the existing payer and plan identity and period', async () => {
-    const { e2eTasks } = await loadTasks();
+  const period = { start: '2020-01-01' };
+  const formularyUrl = `${PAYER_HAPI}/InsurancePlan/praxis-formulary-2026`;
+
+  beforeEach(() => {
     payer.ensurePayerOrganization.mockResolvedValue({ id: 'existing-payer' });
     payer.ensureInsurancePlan.mockResolvedValue({ id: 'existing-plan' });
-    const period = { start: '2020-01-01' };
     payer.findInsurancePlan.mockResolvedValue({ period });
     payer.putPayerResource.mockClear();
+  });
+
+  it('publishes the directory while retaining seeded resources and plan identity', async () => {
+    const { e2eTasks } = await loadTasks();
+    fetchMock.mockResolvedValueOnce(status(200));
 
     await expect(e2eTasks.ensurePlanNetFixtures()).resolves.toBeNull();
     const taxonomy = expect.objectContaining({
@@ -373,6 +379,7 @@ describe('ensurePlanNetFixtures', () => {
     expect(waitForFragmentLookups).toHaveBeenCalledBefore(
       payer.putPayerResource,
     );
+    expect(requests()).toEqual([`GET ${formularyUrl}`]);
     expect(payer.putPayerResource).toHaveBeenCalledTimes(12);
     expect(payer.putPayerResource).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -382,5 +389,38 @@ describe('ensurePlanNetFixtures', () => {
         ownedBy: { reference: 'Organization/existing-payer' },
       }),
     );
+  });
+
+  it.each([404, 410])(
+    'publishes the formulary before the directory plan when its read returns %i',
+    async (code) => {
+      const { e2eTasks } = await loadTasks();
+      fetchMock.mockResolvedValueOnce(status(code));
+
+      await expect(e2eTasks.ensurePlanNetFixtures()).resolves.toBeNull();
+      expect(payer.putPayerResource).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          resourceType: 'InsurancePlan',
+          id: 'praxis-formulary-2026',
+        }),
+      );
+      expect(payer.putPayerResource).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          resourceType: 'InsurancePlan',
+          id: 'existing-plan',
+        }),
+      );
+    },
+  );
+
+  it('reports other formulary read failures before publishing the directory', async () => {
+    const { e2eTasks } = await loadTasks();
+    fetchMock.mockResolvedValueOnce(status(503));
+
+    await expect(e2eTasks.ensurePlanNetFixtures()).rejects.toThrow(
+      `GET ${formularyUrl} failed [503]`,
+    );
+    expect(payer.putPayerResource).not.toHaveBeenCalled();
   });
 });
