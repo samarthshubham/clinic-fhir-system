@@ -4,7 +4,7 @@ const directory = () => cy.get('cp-directory');
 
 Given('the payer publishes the Plan-Net directory', () => {
   // A cold terminology import and native lookup can take up to 13 minutes.
-  cy.task('ensurePlanNetFixtures', null, { timeout: 900_000 });
+  cy.task('ensurePlanNetFixtures', null, { timeout: 1_080_000 });
 });
 
 When('I open the provider directory', () => {

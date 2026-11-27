@@ -81,7 +81,7 @@ const question = (linkId: string) =>
   documentation().find(`[data-link-id="${linkId}"]`);
 
 Given('the payer offers the MRI documentation questionnaire', () => {
-  cy.task('ensureMriDtrFixtures', null, { timeout: 120_000 });
+  cy.task('ensureMriDtrFixtures', null, { timeout: 780_000 });
 });
 
 Given('the test patient has a chart diagnosis of low back pain', () => {

@@ -332,6 +332,16 @@ describe('ensureMriDtrFixtures', () => {
     const { e2eTasks } = await loadTasks();
     payer.putPayerResource.mockClear();
     await expect(e2eTasks.ensureMriDtrFixtures()).resolves.toBeNull();
+    for (const id of [
+      'dtr-completionTime-codes',
+      'dtr-intendedaudience-codes',
+    ]) {
+      expect(seedTerminology).toHaveBeenCalledWith(
+        PAYER_HAPI,
+        expect.objectContaining({ id }),
+      );
+    }
+    expect(seedTerminology).toHaveBeenCalledBefore(payer.putPayerResource);
     expect(
       payer.putPayerResource.mock.calls.map(([resource]) => [
         resource.resourceType,

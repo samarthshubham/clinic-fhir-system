@@ -19,6 +19,14 @@ const HAPI_CONTAINER = 'clinic-hapi-fhir';
 const TEST_FAMILY_PREFIX = 'E2E-';
 const LOGIN_PATIENT_IDS = ['e2e-patient-1', 'e2e-patient-2'];
 
+async function readCodeSystem(name: string): Promise<SeedCodeSystem> {
+  const fixture = await readFile(
+    repoPath('terminology/codesystems', name + '.json'),
+    'utf8',
+  );
+  return JSON.parse(fixture) as SeedCodeSystem;
+}
+
 export interface TrackedData {
   patientIds?: string[];
   practitionerIds?: string[];
@@ -212,6 +220,11 @@ export const e2eTasks = {
     return { id: patient.id };
   },
   async ensureMriDtrFixtures(): Promise<null> {
+    await Promise.all(
+      ['dtr-completionTime-codes', 'dtr-intendedaudience-codes'].map(
+        async (name) => seedTerminology(PAYER_HAPI, await readCodeSystem(name)),
+      ),
+    );
     for (const name of [
       'valueset-lumbar-spine-indications',
       'library-mri-lumbar-spine',
@@ -226,12 +239,7 @@ export const e2eTasks = {
     return null;
   },
   async ensurePlanNetFixtures(): Promise<null> {
-    const taxonomy = JSON.parse(
-      await readFile(
-        repoPath('terminology/codesystems/nucc-provider-taxonomy.json'),
-        'utf8',
-      ),
-    ) as SeedCodeSystem;
+    const taxonomy = await readCodeSystem('nucc-provider-taxonomy');
     await seedTerminology(PAYER_HAPI, taxonomy);
     await waitForFragmentLookups(PAYER_HAPI, [taxonomy]);
 
