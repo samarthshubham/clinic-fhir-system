@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class PractitionerMapper {
 
-  private static final String NPI_SYSTEM = "http://hl7.org/fhir/sid/us-npi";
+  public static final String NPI_SYSTEM = "http://hl7.org/fhir/sid/us-npi";
   public static final String USERNAME_SYSTEM = "http://praxis.clinic/fhir/identifier/username";
 
   public Practitioner toFhir(PractitionerRequest request) {

@@ -5,7 +5,7 @@
   },
   "identifier": {
     "system": "http://praxis.clinic/fhir/identifier/pas-submission",
-    "value": "PX-PA-0002"
+    "value": "PX-PA-mri-lumbar-spine-sandra-okafor"
   },
   "type": "collection",
   "timestamp": "2026-08-20T15:15:05+00:00",
@@ -19,7 +19,7 @@
       },
       "identifier": [ {
         "system": "http://praxishealthplan.example/fhir/identifier/prior-auth",
-        "value": "PHP-PA-1BABCC0C"
+        "value": "PHP-PA-3702D4FE"
       } ],
       "status": "active",
       "type": {
@@ -30,21 +30,21 @@
       },
       "use": "preauthorization",
       "patient": {
-        "reference": "Patient/sandra-okafor"
+        "reference": "http://praxis.clinic/fhir/Patient/sandra-okafor"
       },
       "created": "2026-08-20T15:15:05+00:00",
       "insurer": {
-        "reference": "Organization/praxis-health-plan"
+        "reference": "http://praxis.clinic/fhir/Organization/praxis-health-plan"
       },
       "requestor": {
-        "reference": "Organization/praxis-clinic"
+        "reference": "http://praxis.clinic/fhir/Organization/praxis-clinic"
       },
       "request": {
-        "reference": "Claim/pa-mri-lumbar-spine-sandra-okafor"
+        "reference": "urn:uuid:ee9b1f23-08cd-3947-ab0b-ec591234f135"
       },
       "outcome": "complete",
       "disposition": "Denied: Under 6 weeks of conservative therapy. Lumbar spine MRI needs at least 6 weeks of documented conservative therapy.",
-      "preAuthRef": "PHP-PA-1BABCC0C",
+      "preAuthRef": "PHP-PA-3702D4FE",
       "item": [ {
         "itemSequence": 1,
         "adjudication": [ {
@@ -103,7 +103,7 @@
       "birthDate": "1981-03-14"
     }
   }, {
-    "fullUrl": "http://praxishealthplan.example/fhir/Organization/praxis-health-plan",
+    "fullUrl": "http://praxis.clinic/fhir/Organization/praxis-health-plan",
     "resource": {
       "resourceType": "Organization",
       "id": "praxis-health-plan",

@@ -1,6 +1,5 @@
 {
   "resourceType": "Bundle",
-  "id": "pas-request-mri-lumbar-spine-sandra-okafor",
   "meta": {
     "profile": [
       "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/profile-pas-request-bundle"
@@ -8,16 +7,15 @@
   },
   "identifier": {
     "system": "http://praxis.clinic/fhir/identifier/pas-submission",
-    "value": "PX-PA-0002"
+    "value": "PX-PA-mri-lumbar-spine-sandra-okafor"
   },
   "type": "collection",
   "timestamp": "2026-08-20T10:15:00-05:00",
   "entry": [
     {
-      "fullUrl": "http://praxis.clinic/fhir/Claim/pa-mri-lumbar-spine-sandra-okafor",
+      "fullUrl": "urn:uuid:ee9b1f23-08cd-3947-ab0b-ec591234f135",
       "resource": {
         "resourceType": "Claim",
-        "id": "pa-mri-lumbar-spine-sandra-okafor",
         "meta": {
           "profile": [
             "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/profile-claim"
@@ -26,7 +24,7 @@
         "identifier": [
           {
             "system": "http://praxis.clinic/fhir/identifier/claim",
-            "value": "PX-PA-0002"
+            "value": "PX-PA-mri-lumbar-spine-sandra-okafor"
           }
         ],
         "status": "active",
@@ -40,14 +38,14 @@
         },
         "use": "preauthorization",
         "patient": {
-          "reference": "Patient/sandra-okafor"
+          "reference": "http://praxis.clinic/fhir/Patient/sandra-okafor"
         },
         "created": "2026-08-20T10:15:00-05:00",
         "insurer": {
-          "reference": "Organization/praxis-health-plan"
+          "reference": "http://praxis.clinic/fhir/Organization/praxis-health-plan"
         },
         "provider": {
-          "reference": "Organization/praxis-clinic"
+          "reference": "http://praxis.clinic/fhir/Organization/praxis-clinic"
         },
         "priority": {
           "coding": [
@@ -67,7 +65,7 @@
             ],
             "sequence": 1,
             "provider": {
-              "reference": "PractitionerRole/aisha-patel-praxis-clinic"
+              "reference": "urn:uuid:2aee35b2-a615-337b-a6d2-8dd9ba6b5c21"
             }
           }
         ],
@@ -90,7 +88,7 @@
             "sequence": 1,
             "focal": true,
             "coverage": {
-              "reference": "Coverage/coverage-sandra-okafor"
+              "reference": "http://praxis.clinic/fhir/Coverage/coverage-sandra-okafor"
             }
           }
         ],
@@ -124,7 +122,7 @@
               {
                 "url": "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/extension-requestedService",
                 "valueReference": {
-                  "reference": "ServiceRequest/mri-lumbar-spine-sandra-okafor"
+                  "reference": "http://praxis.clinic/fhir/ServiceRequest/mri-lumbar-spine-sandra-okafor"
                 }
               }
             ],
@@ -192,7 +190,7 @@
               ]
             },
             "valueReference": {
-              "reference": "QuestionnaireResponse/mri-lumbar-spine-sandra-okafor-dtr"
+              "reference": "http://praxis.clinic/fhir/QuestionnaireResponse/mri-lumbar-spine-sandra-okafor-dtr"
             }
           }
         ]
@@ -240,7 +238,7 @@
       }
     },
     {
-      "fullUrl": "http://praxishealthplan.example/fhir/Organization/praxis-health-plan",
+      "fullUrl": "http://praxis.clinic/fhir/Organization/praxis-health-plan",
       "resource": {
         "resourceType": "Organization",
         "id": "praxis-health-plan",
@@ -296,7 +294,7 @@
         "status": "active",
         "subscriberId": "PHP-10005",
         "beneficiary": {
-          "reference": "Patient/sandra-okafor"
+          "reference": "http://praxis.clinic/fhir/Patient/sandra-okafor"
         },
         "relationship": {
           "coding": [
@@ -312,7 +310,7 @@
         },
         "payor": [
           {
-            "reference": "Organization/praxis-health-plan"
+            "reference": "http://praxis.clinic/fhir/Organization/praxis-health-plan"
           }
         ]
       }
@@ -381,30 +379,79 @@
           "code": "1"
         },
         "subject": {
-          "reference": "Patient/sandra-okafor"
-        }
+          "reference": "http://praxis.clinic/fhir/Patient/sandra-okafor"
+        },
+        "priority": "routine",
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/us/davinci-crd/StructureDefinition/ext-coverage-information",
+            "extension": [
+              {
+                "url": "coverage",
+                "valueReference": {
+                  "reference": "http://praxis.clinic/fhir/Coverage/coverage-sandra-okafor"
+                }
+              },
+              {
+                "url": "covered",
+                "valueCode": "covered"
+              },
+              {
+                "url": "pa-needed",
+                "valueCode": "auth-needed"
+              },
+              {
+                "url": "doc-needed",
+                "valueCode": "clinical"
+              },
+              {
+                "url": "reason",
+                "valueCodeableConcept": {
+                  "text": "Clinical documentation is needed for the prior authorization request"
+                }
+              },
+              {
+                "url": "questionnaire",
+                "valueCanonical": "http://praxishealthplan.example/fhir/Questionnaire/mri-lumbar-spine"
+              },
+              {
+                "url": "date",
+                "valueDate": "2026-08-20"
+              },
+              {
+                "url": "coverage-assertion-id",
+                "valueString": "a9ca32f9-f406-36e8-a145-1768cb763da1"
+              }
+            ]
+          }
+        ]
       }
     },
     {
-      "fullUrl": "http://praxis.clinic/fhir/PractitionerRole/aisha-patel-praxis-clinic",
+      "fullUrl": "urn:uuid:2aee35b2-a615-337b-a6d2-8dd9ba6b5c21",
       "resource": {
         "resourceType": "PractitionerRole",
-        "id": "aisha-patel-praxis-clinic",
         "meta": {
           "profile": [
             "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/profile-practitionerrole"
           ]
         },
         "practitioner": {
-          "reference": "Practitioner/aisha-patel"
+          "reference": "http://praxis.clinic/fhir/Practitioner/aisha-patel"
         },
         "organization": {
-          "reference": "Organization/praxis-clinic"
+          "reference": "http://praxis.clinic/fhir/Organization/praxis-clinic"
         },
         "telecom": [
           {
             "system": "phone",
             "value": "5550100100"
+          }
+        ],
+        "identifier": [
+          {
+            "system": "http://praxis.clinic/fhir/identifier/practitioner-role",
+            "value": "2aee35b2-a615-337b-a6d2-8dd9ba6b5c21"
           }
         ]
       }
@@ -442,6 +489,7 @@
       "fullUrl": "http://praxis.clinic/fhir/QuestionnaireResponse/mri-lumbar-spine-sandra-okafor-dtr",
       "resource": {
         "resourceType": "QuestionnaireResponse",
+        "id": "mri-lumbar-spine-sandra-okafor-dtr",
         "meta": {
           "profile": [
             "http://hl7.org/fhir/us/core/StructureDefinition/us-core-questionnaireresponse"
@@ -449,9 +497,12 @@
         },
         "questionnaire": "http://praxishealthplan.example/fhir/Questionnaire/mri-lumbar-spine",
         "status": "completed",
+        "subject": {
+          "reference": "http://praxis.clinic/fhir/Patient/sandra-okafor"
+        },
         "authored": "2026-08-20T10:10:00-05:00",
         "author": {
-          "reference": "PractitionerRole/aisha-patel-praxis-clinic"
+          "reference": "http://praxis.clinic/fhir/Practitioner/aisha-patel"
         },
         "item": [
           {
@@ -474,11 +525,7 @@
                         ]
                       }
                     ],
-                    "valueCoding": {
-                      "system": "http://snomed.info/sct",
-                      "code": "128196005",
-                      "display": "Lumbar radiculopathy"
-                    }
+                    "valueString": "Lumbar radiculopathy"
                   }
                 ]
               },
@@ -498,7 +545,38 @@
                         ]
                       }
                     ],
-                    "valueDate": "2026-07-23"
+                    "valueDate": "2026-10-05"
+                  }
+                ]
+              },
+              {
+                "linkId": "pain-location",
+                "text": "Where is the pain (side and level)?",
+                "answer": [
+                  {
+                    "extension": [
+                      {
+                        "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/information-origin",
+                        "extension": [
+                          {
+                            "url": "source",
+                            "valueCode": "manual"
+                          },
+                          {
+                            "url": "author",
+                            "extension": [
+                              {
+                                "url": "practitioner",
+                                "valueReference": {
+                                  "reference": "http://praxis.clinic/fhir/Practitioner/aisha-patel"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ],
+                    "valueString": "L5, left side"
                   }
                 ]
               }
@@ -519,12 +597,65 @@
                         "extension": [
                           {
                             "url": "source",
-                            "valueCode": "auto-client"
+                            "valueCode": "override"
+                          },
+                          {
+                            "url": "author",
+                            "extension": [
+                              {
+                                "url": "practitioner",
+                                "valueReference": {
+                                  "reference": "http://praxis.clinic/fhir/Practitioner/aisha-patel"
+                                }
+                              }
+                            ]
                           }
                         ]
                       }
                     ],
                     "valueInteger": 4
+                  }
+                ]
+              },
+              {
+                "linkId": "conservative-therapy-types",
+                "text": "Which conservative therapies were tried?",
+                "answer": [
+                  {
+                    "extension": [
+                      {
+                        "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/information-origin",
+                        "extension": [
+                          {
+                            "url": "source",
+                            "valueCode": "auto-client"
+                          }
+                        ]
+                      }
+                    ],
+                    "valueCoding": {
+                      "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+                      "code": "physical-therapy",
+                      "display": "Physical therapy"
+                    }
+                  },
+                  {
+                    "extension": [
+                      {
+                        "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/information-origin",
+                        "extension": [
+                          {
+                            "url": "source",
+                            "valueCode": "auto-client"
+                          }
+                        ]
+                      }
+                    ],
+                    "valueCoding": {
+                      "system": "http://praxishealthplan.example/fhir/CodeSystem/dtr-answers",
+                      "code": "nsaids-other-analgesics",
+                      "display": "NSAIDs or other analgesics"
+                    }
                   }
                 ]
               }
@@ -576,17 +707,33 @@
                         ]
                       }
                     ],
-                    "valueBoolean": false
+                    "valueBoolean": true
+                  }
+                ]
+              },
+              {
+                "linkId": "prior-imaging-date",
+                "text": "Date of the most recent imaging",
+                "answer": [
+                  {
+                    "extension": [
+                      {
+                        "url": "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/information-origin",
+                        "extension": [
+                          {
+                            "url": "source",
+                            "valueCode": "auto-client"
+                          }
+                        ]
+                      }
+                    ],
+                    "valueDate": "2026-10-14"
                   }
                 ]
               }
             ]
           }
-        ],
-        "id": "mri-lumbar-spine-sandra-okafor-dtr",
-        "subject": {
-          "reference": "Patient/sandra-okafor"
-        }
+        ]
       }
     }
   ]
