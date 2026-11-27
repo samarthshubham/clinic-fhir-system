@@ -78,7 +78,7 @@ class DirectoryServiceTest {
             row -> {
               assertThat(row.name()).isEqualTo("Aisha Patel, MD");
               assertThat(row.address()).contains("Springfield");
-              assertThat(row.specialties()).containsExactly("Internal Medicine");
+              assertThat(row.specialties()).containsExactly("Internal Medicine Physician");
             });
     http.verify();
   }

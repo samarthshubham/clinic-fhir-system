@@ -29,7 +29,7 @@ class DirectoryServiceTest {
         .satisfies(
             row -> {
               assertThat(row.name()).isEqualTo("Aisha Patel, MD");
-              assertThat(row.specialties()).containsExactly("Internal Medicine");
+              assertThat(row.specialties()).containsExactly("Internal Medicine Physician");
               assertThat(row.organization()).isEqualTo("Praxis Clinic");
               assertThat(row.address()).contains("400 Example Avenue");
             });
