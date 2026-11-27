@@ -70,7 +70,7 @@ A member token has `scope=patient/*.r` and `patient=<payer Patient id>`. ADR 000
 
 - Anything without a rule is denied: 403 with an `OperationOutcome` (NFR-SEC-1).
 - Compartment checks are HAPI's. A member reading `Patient/B` or a `Claim` whose patient is B gets 403, including resources inside search results and the top-level resources of an operation response (NFR-SEC-2).
-- HAPI does not check resources nested deeper in an operation response, such as the Bundles inside the `Parameters` that `$questionnaire-package` returns. An operation whose response nests resources is declared `systemOnly`, so member tokens get 403 for it. `$questionnaire-package` (`system/Questionnaire.r`) and `Claim/$submit` (`system/Claim.c`, PAS) are such operations: clinic-api calls them with its system token.
+- HAPI does not check resources nested deeper in an operation response, such as the Bundles inside the `Parameters` that `$questionnaire-package` returns. An operation whose response nests resources is declared `systemOnly`, so member tokens get 403 for it. `$questionnaire-package` (`system/Questionnaire.r`), `Claim/$submit` (`system/Claim.c`) and `Claim/$inquire` (`system/Claim.r`) are such operations: clinic-api calls them with its system token.
 - `patient/` scopes count only with a `patient` claim, and `system/` scopes only without one.
 - Batch and transaction Bundles get no rules and are denied, because the per-request `r`/`s`/`u` gating can't see the entries inside a Bundle.
 - SMART scopes say nothing about operations, so an operation needs an `OperationScope` naming the resource type and permission it requires. Operations without one are denied, so a new operation is closed until its story opens it.
@@ -92,7 +92,7 @@ Later stories register their providers as Spring beans (`IResourceProvider`) and
 |---|---|---|
 | `payer.auth.jwt-secret` | `${PAYER_JWT_SECRET:}`, so startup fails without it | dev default |
 | `payer.auth.users` | none | `reviewer` / `Reviewer#2026` (`UM_REVIEWER`), `payeradmin` / `PayerAdmin#2026` (`PAYER_ADMIN`) |
-| `payer.auth.clients` | none | `clinic-api` / `dev-only-clinic-api-client-secret` with `system/Claim.c`, `system/Coverage.r` (CRD hooks), `system/Questionnaire.r`; the hash can be replaced with `PAYER_CLINIC_API_CLIENT_SECRET_HASH` |
+| `payer.auth.clients` | none | `clinic-api` / `dev-only-clinic-api-client-secret` with `system/Claim.c`, `system/Claim.r`, `system/Coverage.r` (CRD hooks), `system/Questionnaire.r`; the hash can be replaced with `PAYER_CLINIC_API_CLIENT_SECRET_HASH` |
 
 `/actuator/health`, `/actuator/info` and `/actuator/prometheus` are public, like clinic-api. Nothing logs tokens, secrets or member data (NFR-SEC-6).
 
