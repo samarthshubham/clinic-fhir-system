@@ -5,8 +5,8 @@ import {
   input,
 } from '@angular/core';
 import { NgClass } from '@angular/common';
-import { DataPoint } from '../../../../shared/models/patient-app.models';
-import { CpMiniSparkComponent } from '../../../../shared/components/cp-mini-spark/cp-mini-spark.component';
+import { DataPoint } from '@shared/models/patient-app.models';
+import { CpMiniSparkComponent } from '@shared/components/cp-mini-spark/cp-mini-spark.component';
 
 export type VitalStatus = 'ok' | 'elevated' | 'warn';
 

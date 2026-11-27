@@ -1,13 +1,8 @@
 import { DataTable, Given, Then } from '@cucumber/cucumber';
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { apiClient, FhirResource } from '../support/api-client';
+import { repoPath } from '../support/repo-paths';
 import { SeedWorld } from '../support/world';
-
-const PLAN_NET_FIXTURES = resolve(
-  __dirname,
-  '../../../../../fixtures/davinci/plan-net',
-);
 
 Given(
   'the payer HAPI has these Plan-Net fixtures:',
@@ -18,7 +13,7 @@ Given(
 
     for (const { file } of dataTable.hashes()) {
       const resource = JSON.parse(
-        readFileSync(resolve(PLAN_NET_FIXTURES, file), 'utf8'),
+        readFileSync(repoPath('fixtures/davinci/plan-net', file), 'utf8'),
         (key, value: unknown) =>
           key === 'reference' && value === 'Organization/praxis-health-plan'
             ? `Organization/${payerId}`

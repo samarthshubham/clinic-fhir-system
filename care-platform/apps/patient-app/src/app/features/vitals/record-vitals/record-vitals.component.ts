@@ -10,9 +10,9 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { PatientAppService } from '../../../shared/services/patient-app.service';
-import { PatientSelectService } from '../../../shared/services/patient-select.service';
-import { PostVitalsRequest } from '../../../shared/models/patient-app.models';
+import { PatientAppService } from '@shared/services/patient-app.service';
+import { PatientSelectService } from '@shared/services/patient-select.service';
+import { PostVitalsRequest } from '@shared/models/patient-app.models';
 
 @Component({
   selector: 'cp-record-vitals',

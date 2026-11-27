@@ -8,14 +8,14 @@ import {
 import { Router } from '@angular/router';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, of, shareReplay, startWith, switchMap } from 'rxjs';
-import { PatientAppService } from '../../shared/services/patient-app.service';
-import { PatientSelectService } from '../../shared/services/patient-select.service';
+import { PatientAppService } from '@shared/services/patient-app.service';
+import { PatientSelectService } from '@shared/services/patient-select.service';
 import { CpBpChartComponent } from './components/cp-bp-chart/cp-bp-chart.component';
 import { CpLineChartComponent } from './components/cp-line-chart/cp-line-chart.component';
 import {
   DataPoint,
   TrendsApiResponse,
-} from '../../shared/models/patient-app.models';
+} from '@shared/models/patient-app.models';
 
 type Period = '7d' | '30d' | '90d';
 

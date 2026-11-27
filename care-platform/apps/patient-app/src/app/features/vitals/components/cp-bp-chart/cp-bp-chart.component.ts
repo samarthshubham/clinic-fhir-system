@@ -4,7 +4,7 @@ import {
   computed,
   input,
 } from '@angular/core';
-import { DataPoint } from '../../../../shared/models/patient-app.models';
+import { DataPoint } from '@shared/models/patient-app.models';
 
 const DEFAULT_MIN = 60;
 const DEFAULT_MAX = 170;

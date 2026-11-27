@@ -8,9 +8,9 @@ import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, of, shareReplay, startWith } from 'rxjs';
-import { PatientAppService } from '../../shared/services/patient-app.service';
-import { PatientSelectService } from '../../shared/services/patient-select.service';
-import { CpAvatarComponent } from '../../shared/components/cp-avatar/cp-avatar.component';
+import { PatientAppService } from '@shared/services/patient-app.service';
+import { PatientSelectService } from '@shared/services/patient-select.service';
+import { CpAvatarComponent } from '@shared/components/cp-avatar/cp-avatar.component';
 import {
   CpVitalSnapshotCardComponent,
   VitalStatus,
@@ -19,7 +19,7 @@ import {
   DataPoint,
   DashboardResponse,
   AlertItem,
-} from '../../shared/models/patient-app.models';
+} from '@shared/models/patient-app.models';
 
 @Component({
   selector: 'cp-home',

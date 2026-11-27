@@ -4,7 +4,7 @@ import {
   computed,
   input,
 } from '@angular/core';
-import { DataPoint } from '../../../../shared/models/patient-app.models';
+import { DataPoint } from '@shared/models/patient-app.models';
 
 @Component({
   selector: 'cp-line-chart',

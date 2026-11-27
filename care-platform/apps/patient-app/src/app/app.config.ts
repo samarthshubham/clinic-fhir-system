@@ -12,7 +12,7 @@ import {
 } from '@angular/common/http';
 import { AuthService, authInterceptor, provideAuth } from '@care-platform/auth';
 import { appRoutes } from './app.routes';
-import { ThemeService } from './theme.service';
+import { ThemeService } from '@core/theme.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
