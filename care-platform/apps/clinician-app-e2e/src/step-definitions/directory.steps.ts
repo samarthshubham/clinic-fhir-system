@@ -3,7 +3,8 @@ import { Given, Then, When } from '@badeball/cypress-cucumber-preprocessor';
 const directory = () => cy.get('cp-referral-directory');
 
 Given('the payer publishes the Plan-Net directory', () => {
-  cy.task('ensurePlanNetFixtures', null, { timeout: 120_000 });
+  // A cold terminology import and native lookup can take up to 13 minutes.
+  cy.task('ensurePlanNetFixtures', null, { timeout: 900_000 });
 });
 
 When('I open the provider directory', () => {

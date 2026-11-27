@@ -2,6 +2,8 @@ package io.github.samarthshubham.payer.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import ca.uhn.fhir.context.FhirContext;
@@ -13,6 +15,9 @@ import org.hl7.fhir.r4.model.Practitioner;
 import org.hl7.fhir.r4.model.PractitionerRole;
 import org.hl7.fhir.r4.model.Resource;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.io.ClassPathResource;
 
 class DirectoryServiceTest {
@@ -48,6 +53,32 @@ class DirectoryServiceTest {
     page.getEntry().remove(1);
     when(publisher.practitionerRoles(0)).thenReturn(page);
     assertThat(directory.search("", "")).isEmpty();
+  }
+
+  @Test
+  void followsTheOffsetEvenWhenThePageHasNoPublishedMatches() {
+    var firstPage = bundle();
+    firstPage.addLink().setRelation(Bundle.LINK_NEXT).setUrl("/fhir/PractitionerRole?_offset=50");
+    when(publisher.practitionerRoles(0)).thenReturn(firstPage);
+    when(publisher.practitionerRoles(50)).thenReturn(directoryPage());
+
+    assertThat(directory.search("", ""))
+        .extracting(row -> row.name())
+        .containsExactly("Aisha Patel, MD");
+  }
+
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(
+      strings = {"/fhir/PractitionerRole", "?_offset=0", "?_offset=bad", "?_offset=2&_offset=3"})
+  void stopsWhenTheNextOffsetCannotAdvance(String nextUrl) {
+    var page = directoryPage();
+    page.addLink().setRelation(Bundle.LINK_NEXT).setUrl(nextUrl);
+    when(publisher.practitionerRoles(0)).thenReturn(page);
+
+    assertThat(directory.search("", "")).hasSize(1);
+    verify(publisher).practitionerRoles(0);
+    verifyNoMoreInteractions(publisher);
   }
 
   private static Bundle directoryPage() {

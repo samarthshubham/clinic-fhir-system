@@ -26,6 +26,9 @@ import org.hl7.fhir.r4.model.PractitionerRole;
 import org.hl7.fhir.r4.model.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
@@ -134,6 +137,54 @@ class DirectoryServiceTest {
                 start,
                 end,
                 "self"));
+  }
+
+  @Test
+  void followsTheOffsetEvenWhenThePageHasNoPublishedMatches() {
+    var firstPage = bundle();
+    firstPage.addLink().setRelation(Bundle.LINK_NEXT).setUrl("https://other.test/path?_offset=50");
+
+    expectPlan();
+    expectRolePage(0, firstPage);
+    expectRolePage(50, directoryPage());
+
+    assertThat(directory.search("private-patient", "", "").providers())
+        .extracting(row -> row.name())
+        .containsExactly("Aisha Patel, MD");
+    http.verify();
+  }
+
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(
+      strings = {"/fhir/PractitionerRole", "?_offset=0", "?_offset=bad", "?_offset=2&_offset=3"})
+  void stopsWhenTheNextOffsetCannotAdvance(String nextUrl) {
+    var page = directoryPage();
+    page.addLink().setRelation(Bundle.LINK_NEXT).setUrl(nextUrl);
+    expectPlan();
+    expectRolePage(0, page);
+
+    assertThat(directory.search("private-patient", "", "").providers()).hasSize(1);
+    http.verify();
+  }
+
+  private void expectPlan() {
+    cover("praxis", null, null);
+    http.expect(requestTo(startsWith(PAYER + "/fhir/InsurancePlan?")))
+        .andRespond(
+            withSuccess(
+                FHIR.newJsonParser()
+                    .encodeResourceToString(
+                        bundle(resource("insurance-plan", InsurancePlan.class))),
+                MediaType.APPLICATION_JSON));
+  }
+
+  private void expectRolePage(int offset, Bundle page) {
+    http.expect(requestTo(startsWith(PAYER + "/fhir/PractitionerRole?")))
+        .andExpect(queryParam("_offset", Integer.toString(offset)))
+        .andRespond(
+            withSuccess(
+                FHIR.newJsonParser().encodeResourceToString(page), MediaType.APPLICATION_JSON));
   }
 
   private static Bundle directoryPage() {
