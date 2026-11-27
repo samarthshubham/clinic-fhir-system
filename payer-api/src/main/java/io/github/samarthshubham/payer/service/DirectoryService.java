@@ -1,7 +1,7 @@
 package io.github.samarthshubham.payer.service;
 
 import io.github.samarthshubham.payer.dto.DirectoryProvider;
-import io.github.samarthshubham.payer.interop.PlanNetDirectory;
+import io.github.samarthshubham.payer.interop.PublicPayerCatalog;
 import io.github.samarthshubham.payer.mapper.DirectoryMapper;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,9 +12,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Service
 public class DirectoryService {
 
-  private final PlanNetDirectory directory;
+  private final PublicPayerCatalog directory;
 
-  public DirectoryService(PlanNetDirectory directory) {
+  public DirectoryService(PublicPayerCatalog directory) {
     this.directory = directory;
   }
 

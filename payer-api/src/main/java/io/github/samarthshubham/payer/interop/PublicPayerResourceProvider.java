@@ -19,18 +19,18 @@ import org.hl7.fhir.r4.model.Endpoint;
 import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.Resource;
 
-public class PlanNetResourceProvider implements IResourceProvider {
+public class PublicPayerResourceProvider implements IResourceProvider {
 
   private static final int PAGE_SIZE = 50;
   private static final int MAX_PAGE_SIZE = 100;
 
-  private final PlanNetDirectory directory;
+  private final PublicPayerCatalog directory;
   private final IGenericClient fhirClient;
   private final Class<? extends Resource> resourceType;
   private final String resourceName;
 
-  PlanNetResourceProvider(
-      PlanNetDirectory directory,
+  PublicPayerResourceProvider(
+      PublicPayerCatalog directory,
       IGenericClient fhirClient,
       Class<? extends Resource> resourceType,
       String resourceName) {
@@ -49,13 +49,13 @@ public class PlanNetResourceProvider implements IResourceProvider {
   public Resource read(@IdParam IdType id) {
     // The current profile is the publication decision, including for a historic version.
     Resource current =
-        PlanNetDirectory.fromStore(() -> fhirClient.read(resourceType, id.getIdPart()));
+        PublicPayerCatalog.fromStore(() -> fhirClient.read(resourceType, id.getIdPart()));
     requirePublished(current);
     if (!id.hasVersionIdPart()) {
       return publicResource(current);
     }
     Resource version =
-        PlanNetDirectory.fromStore(
+        PublicPayerCatalog.fromStore(
             () -> fhirClient.vread(resourceType, id.getIdPart(), id.getVersionIdPart()));
     requirePublished(version);
     return publicResource(version);
@@ -78,11 +78,11 @@ public class PlanNetResourceProvider implements IResourceProvider {
             + "&_profile="
             + encode(String.join(",", directory.profiles(resourceName)));
     Bundle source =
-        PlanNetDirectory.fromStore(
+        PublicPayerCatalog.fromStore(
             () -> fhirClient.search().byUrl(upstream).returnBundle(Bundle.class).execute());
 
     Bundle bundle = new Bundle().setType(Bundle.BundleType.SEARCHSET);
-    long matches = source.getEntry().stream().filter(PlanNetResourceProvider::isMatch).count();
+    long matches = source.getEntry().stream().filter(PublicPayerResourceProvider::isMatch).count();
     for (var entry : source.getEntry()) {
       if (!entry.hasResource() || !directory.isPublished(entry.getResource())) {
         continue;
@@ -96,7 +96,8 @@ public class PlanNetResourceProvider implements IResourceProvider {
           .setSearch(entry.getSearch().copy());
     }
     if (source.hasTotal()
-        && bundle.getEntry().stream().filter(PlanNetResourceProvider::isMatch).count() == matches) {
+        && bundle.getEntry().stream().filter(PublicPayerResourceProvider::isMatch).count()
+            == matches) {
       bundle.setTotal(source.getTotal());
     }
     bundle.addLink().setRelation("self").setUrl(searchUrl(typeUrl, query));
@@ -125,13 +126,13 @@ public class PlanNetResourceProvider implements IResourceProvider {
       endpoint.setHeader(null);
     }
     if (resource instanceof DomainResource domain) {
-      domain.getContained().forEach(PlanNetResourceProvider::removeConnectionHeaders);
+      domain.getContained().forEach(PublicPayerResourceProvider::removeConnectionHeaders);
     }
   }
 
   private void requirePublished(Resource resource) {
     if (!directory.isPublished(resource)) {
-      throw new ResourceNotFoundException("Directory resource not found");
+      throw new ResourceNotFoundException("Public catalog resource not found");
     }
   }
 

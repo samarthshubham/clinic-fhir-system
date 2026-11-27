@@ -1,0 +1,343 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "rxnorm-demo",
+  "url": "http://www.nlm.nih.gov/research/umls/rxnorm",
+  "version": "02-Nov-2026",
+  "name": "PraxisDemoRxNorm",
+  "title": "RxNorm codes used by the Praxis formulary",
+  "status": "active",
+  "experimental": true,
+  "publisher": "Praxis Health Plan (demo)",
+  "description": "Semantic Clinical Drug and Dose Form concepts retrieved from the NLM RxNorm API for the demo formulary. Term types support the Drug Formulary ValueSet filters.",
+  "caseSensitive": true,
+  "content": "fragment",
+  "filter": [
+    {
+      "code": "TTY",
+      "description": "RxNorm term type",
+      "operator": [
+        "="
+      ],
+      "value": "RxNorm term type code"
+    }
+  ],
+  "property": [
+    {
+      "code": "TTY",
+      "description": "RxNorm term type",
+      "type": "code"
+    }
+  ],
+  "concept": [
+    {
+      "code": "10312",
+      "display": "Delayed Release Oral Tablet",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "DF"
+        }
+      ]
+    },
+    {
+      "code": "197361",
+      "display": "amlodipine 5 MG Oral Tablet",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCD"
+        }
+      ]
+    },
+    {
+      "code": "197805",
+      "display": "ibuprofen 400 MG Oral Tablet",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCD"
+        }
+      ]
+    },
+    {
+      "code": "198014",
+      "display": "naproxen 500 MG Oral Tablet",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCD"
+        }
+      ]
+    },
+    {
+      "code": "200033",
+      "display": "carvedilol 25 MG Oral Tablet",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCD"
+        }
+      ]
+    },
+    {
+      "code": "308135",
+      "display": "amlodipine 10 MG Oral Tablet",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCD"
+        }
+      ]
+    },
+    {
+      "code": "308416",
+      "display": "aspirin 81 MG Delayed Release Oral Tablet",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCD"
+        }
+      ]
+    },
+    {
+      "code": "314076",
+      "display": "lisinopril 10 MG Oral Tablet",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCD"
+        }
+      ]
+    },
+    {
+      "code": "316949",
+      "display": "Injectable Solution",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "DF"
+        }
+      ]
+    },
+    {
+      "code": "317541",
+      "display": "Oral Tablet",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "DF"
+        }
+      ]
+    },
+    {
+      "code": "617310",
+      "display": "atorvastatin 20 MG Oral Tablet",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCD"
+        }
+      ]
+    },
+    {
+      "code": "858813",
+      "display": "enalapril maleate 5 MG Oral Tablet",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCD"
+        }
+      ]
+    },
+    {
+      "code": "861004",
+      "display": "metformin hydrochloride 1000 MG Oral Tablet",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCD"
+        }
+      ]
+    },
+    {
+      "code": "861007",
+      "display": "metformin hydrochloride 500 MG Oral Tablet",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCD"
+        }
+      ]
+    },
+    {
+      "code": "896771",
+      "display": "labetalol hydrochloride 5 MG/ML Injectable Solution",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCD"
+        }
+      ]
+    },
+    {
+      "code": "905395",
+      "display": "hydralazine hydrochloride 50 MG Oral Tablet",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCD"
+        }
+      ]
+    },
+    {
+      "code": "1014678",
+      "display": "cetirizine hydrochloride 10 MG Oral Tablet",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCD"
+        }
+      ]
+    },
+    {
+      "code": "1152292",
+      "display": "amlodipine Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1152447",
+      "display": "cetirizine Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1154070",
+      "display": "aspirin Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1156278",
+      "display": "ibuprofen Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1157518",
+      "display": "naproxen Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1158285",
+      "display": "atorvastatin Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1160590",
+      "display": "carvedilol Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1161585",
+      "display": "labetalol Injectable Product",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1161611",
+      "display": "metformin Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1162117",
+      "display": "hydralazine Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1162653",
+      "display": "enalapril Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1164690",
+      "display": "lisinopril Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1488567",
+      "display": "dapagliflozin Pill",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCDG"
+        }
+      ]
+    },
+    {
+      "code": "1488569",
+      "display": "dapagliflozin 10 MG Oral Tablet",
+      "property": [
+        {
+          "code": "TTY",
+          "valueCode": "SCD"
+        }
+      ]
+    }
+  ]
+}

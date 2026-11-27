@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import ca.uhn.fhir.context.FhirContext;
-import io.github.samarthshubham.payer.interop.PlanNetDirectory;
+import io.github.samarthshubham.payer.interop.PublicPayerCatalog;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Location;
 import org.hl7.fhir.r4.model.Organization;
@@ -23,7 +23,7 @@ import org.springframework.core.io.ClassPathResource;
 class DirectoryServiceTest {
   private static final FhirContext FHIR = FhirContext.forR4Cached();
 
-  private final PlanNetDirectory publisher = mock(PlanNetDirectory.class);
+  private final PublicPayerCatalog publisher = mock(PublicPayerCatalog.class);
   private final DirectoryService directory = new DirectoryService(publisher);
 
   @Test

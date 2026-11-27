@@ -31,3 +31,6 @@ Feature: Seed payer — Plan-Net directory
       | Organization            | coverage-area=Location/state-of-illinois  | praxis-standard-network       |
       | OrganizationAffiliation | participating-organization=Organization/praxis-clinic | praxis-clinic-affiliation |
       | Endpoint                | organization=Organization/praxis-clinic   | praxis-clinic-directory       |
+    And the public formulary has these search matches:
+      | type          | query                                                                                                                             | id                    |
+      | InsurancePlan | coverage-area=Location/state-of-illinois&coverage-type=DRUGPOL&formulary-coverage=InsurancePlan/praxis-formulary-2026&_include=InsurancePlan:formulary-coverage | praxis-formulary-2026 |

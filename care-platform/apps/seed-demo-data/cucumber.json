@@ -8,6 +8,7 @@
       "src/features/payer/payer-members.feature",
       "src/features/payer/payer-terminology.feature",
       "src/features/payer/payer-questionnaires.feature",
+      "src/features/payer/payer-formulary.feature",
       "src/features/payer/payer-directory.feature",
       "src/features/payer/payer-prior-auths.feature"
     ],

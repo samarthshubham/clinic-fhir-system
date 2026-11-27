@@ -31,10 +31,10 @@ public class ScopeInterceptor extends AuthorizationInterceptor {
 
   private final FhirContext fhirContext;
   private final List<OperationScope> operationScopes;
-  private final PlanNetDirectory directory;
+  private final PublicPayerCatalog directory;
 
   public ScopeInterceptor(
-      FhirContext fhirContext, List<OperationScope> operationScopes, PlanNetDirectory directory) {
+      FhirContext fhirContext, List<OperationScope> operationScopes, PublicPayerCatalog directory) {
     this.fhirContext = fhirContext;
     this.operationScopes = List.copyOf(operationScopes);
     this.directory = directory;

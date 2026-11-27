@@ -21,9 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.hl7.fhir.instance.model.api.IBaseConformance;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.CanonicalType;
@@ -39,7 +37,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Interceptor
-public class PlanNetDirectory {
+public class PublicPayerCatalog {
 
   private static final Set<RestOperationTypeEnum> PUBLIC_OPERATIONS =
       Set.of(
@@ -48,24 +46,19 @@ public class PlanNetDirectory {
           RestOperationTypeEnum.SEARCH_TYPE);
 
   private final Map<String, CapabilityStatementRestResourceComponent> catalog;
+  private final Set<String> directoryTypes;
   private final List<IResourceProvider> providers;
-  private final PlanNetResourceProvider practitionerRoles;
+  private final PublicPayerResourceProvider practitionerRoles;
 
-  public PlanNetDirectory(FhirContext context, IGenericClient fhirClient) {
-    // The profile and search parameter lists come from the Plan-Net 1.2.0 CapabilityStatement.
-    try (InputStream source = new ClassPathResource("plan-net-directory.json").getInputStream()) {
-      CapabilityStatement capability =
-          context.newJsonParser().parseResource(CapabilityStatement.class, source);
-      catalog =
-          capability.getRestFirstRep().getResource().stream()
-              .collect(
-                  Collectors.toUnmodifiableMap(
-                      CapabilityStatementRestResourceComponent::getType, Function.identity()));
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
+  public PublicPayerCatalog(FhirContext context, IGenericClient fhirClient) {
+    Map<String, CapabilityStatementRestResourceComponent> specifications = new LinkedHashMap<>();
+    addSpecifications(context, "plan-net-directory.json", specifications);
+    directoryTypes = Set.copyOf(specifications.keySet());
+    addSpecifications(context, "drug-formulary.json", specifications);
+    catalog = Map.copyOf(specifications);
     practitionerRoles =
-        new PlanNetResourceProvider(this, fhirClient, PractitionerRole.class, "PractitionerRole");
+        new PublicPayerResourceProvider(
+            this, fhirClient, PractitionerRole.class, "PractitionerRole");
     providers =
         catalog.keySet().stream()
             .sorted()
@@ -73,7 +66,7 @@ public class PlanNetDirectory {
                 type ->
                     "PractitionerRole".equals(type)
                         ? practitionerRoles
-                        : new PlanNetResourceProvider(
+                        : new PublicPayerResourceProvider(
                             this,
                             fhirClient,
                             context
@@ -83,6 +76,34 @@ public class PlanNetDirectory {
                             type))
             .map(IResourceProvider.class::cast)
             .toList();
+  }
+
+  private static void addSpecifications(
+      FhirContext context,
+      String filename,
+      Map<String, CapabilityStatementRestResourceComponent> specifications) {
+    try (InputStream source = new ClassPathResource(filename).getInputStream()) {
+      var capability = context.newJsonParser().parseResource(CapabilityStatement.class, source);
+      for (var resource : capability.getRestFirstRep().getResource()) {
+        specifications.merge(resource.getType(), resource, PublicPayerCatalog::combine);
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private static CapabilityStatementRestResourceComponent combine(
+      CapabilityStatementRestResourceComponent existing,
+      CapabilityStatementRestResourceComponent addition) {
+    existing.getSupportedProfile().addAll(addition.getSupportedProfile());
+    existing.getSearchInclude().addAll(addition.getSearchInclude());
+    for (var parameter : addition.getSearchParam()) {
+      if (existing.getSearchParam().stream()
+          .noneMatch(prior -> prior.getName().equals(parameter.getName()))) {
+        existing.addSearchParam(parameter);
+      }
+    }
+    return existing;
   }
 
   public List<IResourceProvider> providers() {
@@ -114,16 +135,20 @@ public class PlanNetDirectory {
   }
 
   boolean isPublished(Resource resource) {
-    return containsOnlyDirectoryTypes(resource)
+    return catalog.containsKey(resource.fhirType())
+        && containsOnlyDirectoryResources(resource)
         && resource.getMeta().getProfile().stream()
             .map(CanonicalType::getValue)
             .anyMatch(profile -> profiles(resource.fhirType()).contains(profile));
   }
 
-  private boolean containsOnlyDirectoryTypes(Resource resource) {
-    return catalog.containsKey(resource.fhirType())
-        && (!(resource instanceof DomainResource domain)
-            || domain.getContained().stream().allMatch(this::containsOnlyDirectoryTypes));
+  private boolean containsOnlyDirectoryResources(Resource resource) {
+    return !(resource instanceof DomainResource domain)
+        || domain.getContained().stream()
+            .allMatch(
+                contained ->
+                    directoryTypes.contains(contained.fhirType())
+                        && containsOnlyDirectoryResources(contained));
   }
 
   List<String> profiles(String type) {
@@ -147,7 +172,7 @@ public class PlanNetDirectory {
                 key.startsWith("_has:") ? isReverseChain(type, key) : isSearchParameter(type, key);
           };
       if (!valid) {
-        throw new InvalidRequestException("Unsupported Plan-Net search parameter");
+        throw new InvalidRequestException("Unsupported public catalog search parameter");
       }
     }
     return filters;
@@ -172,7 +197,8 @@ public class PlanNetDirectory {
     List<String> targets = extensionCodes(parameter, "target");
     if (dot >= 0) {
       String chain = key.substring(dot + 1);
-      return extensionCodes(parameter, "chain").contains(chain)
+      return (extensionCodes(parameter, "chain").contains(chain)
+              || extensionCodes(parameter, "forward-chain").contains(chain))
           && (selector.length == 1 || targets.contains(selector[1]));
     }
     if (selector.length == 1) {
@@ -212,7 +238,7 @@ public class PlanNetDirectory {
   }
 
   @Hook(Pointcut.SERVER_CAPABILITY_STATEMENT_GENERATED)
-  public void describeDirectory(IBaseConformance conformance) {
+  public void describeCatalog(IBaseConformance conformance) {
     CapabilityStatement statement = (CapabilityStatement) conformance;
     for (var resource : statement.getRestFirstRep().getResource()) {
       var specification = catalog.get(resource.getType());
@@ -232,13 +258,13 @@ public class PlanNetDirectory {
     try {
       return operation.get();
     } catch (FhirClientConnectionException e) {
-      throw new UnclassifiedServerFailureException(503, "Directory store is unavailable");
+      throw new UnclassifiedServerFailureException(503, "Public catalog store is unavailable");
     } catch (ResourceNotFoundException | ResourceGoneException e) {
-      throw new ResourceNotFoundException("Directory resource not found");
+      throw new ResourceNotFoundException("Public catalog resource not found");
     } catch (InvalidRequestException e) {
-      throw new InvalidRequestException("Invalid Plan-Net query");
+      throw new InvalidRequestException("Invalid public catalog query");
     } catch (BaseServerResponseException e) {
-      throw new UnclassifiedServerFailureException(502, "Directory store returned an error");
+      throw new UnclassifiedServerFailureException(502, "Public catalog store returned an error");
     }
   }
 }

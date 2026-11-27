@@ -6,7 +6,11 @@ interface SeedCodeSystem extends FhirResource {
   id: string;
   url: string;
   version?: string;
-  concept: { code: string; display?: string }[];
+  concept: {
+    code: string;
+    display?: string;
+    property?: { code: string; valueCode?: string; [key: string]: unknown }[];
+  }[];
 }
 
 const icd10cm = 'http://hl7.org/fhir/sid/icd-10-cm';
@@ -19,6 +23,10 @@ const xml = (s: string) =>
 const csv = (s: string) => '"' + s.replace(/"/g, '""') + '"';
 
 function importFile(fragment: SeedCodeSystem) {
+  if (fragment.concept.some((concept) => concept.property?.length)) {
+    // The concepts.csv format does not carry properties used by ValueSet filters.
+    return { name: 'codesystem.json', data: JSON.stringify(fragment) };
+  }
   if (fragment.url === icd10cm) {
     const diagnoses = fragment.concept
       .map(
@@ -141,16 +149,23 @@ async function importSnapshot(
     method: 'POST',
     headers: { Prefer: 'respond-async' },
   });
+  await pollTerminologyJob(
+    op + 'poll-for-status' + query,
+    `importing ${system}|${version} (job ${job})`,
+  );
+}
+
+async function pollTerminologyJob(url: string, operation: string) {
   const until = Date.now() + 300_000;
   for (;;) {
-    const status = await checked(op + 'poll-for-status' + query);
+    const status = await checked(url);
     if (status.status !== 202) {
       checkBatchResult((await status.json()) as BatchResult);
       return;
     }
     if (Date.now() >= until)
       throw new Error(
-        `Timed out importing ${system}|${version} (job ${job}). Last response: ${(await status.text()).slice(0, 1500)}`,
+        `Timed out ${operation}. Last response: ${(await status.text()).slice(0, 1500)}`,
       );
     await delay(1000);
   }
@@ -219,13 +234,13 @@ export async function waitForFragmentLookups(
   );
 }
 
-type TaggedCodeSystem = {
+type TaggedResource = {
   id: string;
   meta?: { tag?: { system?: string; code?: string }[] };
 };
 
 function installed(
-  resource: TaggedCodeSystem | undefined,
+  resource: TaggedResource | undefined,
   digest: string,
   system: string,
 ) {
@@ -243,7 +258,7 @@ async function seedComplete(
   const query = new URLSearchParams({ url: source.url, version });
   const search = await checked(`${base}/CodeSystem?${query}`);
   const found = (await search.json()) as {
-    entry?: { resource: TaggedCodeSystem }[];
+    entry?: { resource: TaggedResource }[];
   };
   if ((found.entry?.length ?? 0) > 1)
     throw new Error(`Duplicate CodeSystem: ${source.url}|${version}`);
@@ -258,6 +273,10 @@ async function seedComplete(
     body: JSON.stringify({ ...source, id }),
   });
   await waitForConcepts(base, source, version, true);
+  await addTag(url, snapshotHash, digest);
+}
+
+async function addTag(url: string, system: string, code: string) {
   await checked(url + '/$meta-add', {
     method: 'POST',
     headers: { 'Content-Type': 'application/fhir+json' },
@@ -266,7 +285,7 @@ async function seedComplete(
       parameter: [
         {
           name: 'meta',
-          valueMeta: { tag: [{ system: snapshotHash, code: digest }] },
+          valueMeta: { tag: [{ system, code }] },
         },
       ],
     }),
@@ -295,7 +314,7 @@ export async function seedTerminology(base: string, fragment: SeedCodeSystem) {
   const existing = await fetch(url);
   if (existing.ok) {
     if (
-      installed((await existing.json()) as TaggedCodeSystem, digest, sourceHash)
+      installed((await existing.json()) as TaggedResource, digest, sourceHash)
     )
       return;
   } else if (existing.status !== 404)
@@ -315,4 +334,137 @@ export async function seedTerminology(base: string, fragment: SeedCodeSystem) {
     meta: { tag: [{ system: sourceHash, code: digest }] },
   });
 }
+const formularyRelease = '2.1.0';
+const expansionHash =
+  'http://praxishealthplan.example/fhir/CodeSystem/seed-formulary-expansion';
+
+async function expandFormularyValueSet(
+  base: string,
+  url: string,
+  digest: string,
+) {
+  const search = new URLSearchParams({ url, version: formularyRelease });
+  const bundle = (await (
+    await checked(base + '/ValueSet?' + search)
+  ).json()) as { entry?: { resource: TaggedResource }[] };
+  if (bundle.entry?.length !== 1)
+    throw new Error('Expected one installed ValueSet: ' + url);
+  const valueSet = bundle.entry[0].resource;
+  const jsonHeaders = { 'Content-Type': 'application/fhir+json' };
+  // Existing databases installed these definitions before native ValueSet storage was enabled.
+  const tags = (valueSet.meta?.tag ?? []).filter(
+    (t) => t.system !== expansionHash,
+  );
+  await checked(base + '/ValueSet/' + encodeURIComponent(valueSet.id), {
+    method: 'PUT',
+    headers: jsonHeaders,
+    body: JSON.stringify({
+      ...valueSet,
+      meta: {
+        ...valueSet.meta,
+        tag: [...tags, { system: expansionHash, code: digest }],
+      },
+    }),
+  });
+  const job = await checked(base + '/ValueSet/$invalidate-expansion', {
+    method: 'POST',
+    headers: { ...jsonHeaders, Prefer: 'respond-async' },
+    body: JSON.stringify({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'url', valueUri: url },
+        { name: 'version', valueCode: formularyRelease },
+      ],
+    }),
+  });
+  const location = job.headers.get('Content-Location');
+  const id =
+    location && new URL(location, base).searchParams.get('jobInstanceId');
+  if (!id) throw new Error('Missing expansion job ID: ' + url);
+  const poll =
+    base +
+    '/ValueSet/$hapi.fhir.invalidate-expansion.poll-for-status?jobInstanceId=' +
+    encodeURIComponent(id);
+  await pollTerminologyJob(poll, 'expanding ' + url);
+}
+
+async function reindexTerminology(base: string) {
+  // HAPI defers a reindex while background terminology imports finish.
+  const until = Date.now() + 300_000;
+  for (;;) {
+    const response = await checked(base + '/$reindex-terminology', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/fhir+json' },
+      body: JSON.stringify({ resourceType: 'Parameters' }),
+    });
+    const result = (await response.json()) as {
+      parameter?: {
+        name: string;
+        valueBoolean?: boolean;
+        valueString?: string;
+      }[];
+    };
+    if (result.parameter?.some((p) => p.name === 'success' && p.valueBoolean))
+      return;
+    const message =
+      result.parameter?.find((p) => p.name === 'message')?.valueString ??
+      'No result';
+    if (
+      !message.includes('terminology background tasks') ||
+      Date.now() >= until
+    )
+      throw new Error('Terminology reindex failed: ' + message);
+    await delay(5000);
+  }
+}
+
+export async function prepareFormularyValueSets(
+  base: string,
+  rxnorm: SeedCodeSystem,
+) {
+  const digest = createHash('sha256')
+    .update(formularyRelease + JSON.stringify(rxnorm))
+    .digest('hex');
+  const resourceUrl = base + '/CodeSystem/' + rxnorm.id;
+  const source = (await (await checked(resourceUrl)).json()) as TaggedResource;
+  if (installed(source, digest, expansionHash)) return;
+  await reindexTerminology(base);
+  const termTypes = {
+    NonPackSemanticDrugVS: ['SCD', 'SBD'],
+    SemanticDrugVS: ['SCD', 'SBD', 'GPCK', 'BPCK'],
+    SemanticDrugFormGroupVS: ['SCDG', 'SBDG'],
+  };
+  for (const [name, types] of Object.entries(termTypes)) {
+    const url =
+      'http://hl7.org/fhir/us/davinci-drug-formulary/ValueSet/' + name;
+    await expandFormularyValueSet(base, url, digest);
+    const query = new URLSearchParams({
+      url,
+      valueSetVersion: formularyRelease,
+      count: '1000',
+    });
+    const expanded = (await (
+      await checked(base + '/ValueSet/$expand?' + query)
+    ).json()) as {
+      expansion?: { contains?: { system: string; code: string }[] };
+    };
+    const codes = new Set(
+      (expanded.expansion?.contains ?? [])
+        .filter((c) => c.system === rxnorm.url)
+        .map((c) => c.code),
+    );
+    for (const concept of rxnorm.concept) {
+      const belongs =
+        concept.property?.some(
+          (p) => p.code === 'TTY' && types.includes(p.valueCode ?? ''),
+        ) ?? false;
+      if (codes.has(concept.code) !== belongs)
+        throw new Error(
+          'Incorrect expansion for ' + name + ': ' + concept.code,
+        );
+    }
+  }
+  await addTag(resourceUrl, expansionHash, digest);
+}
+
 export type { SeedCodeSystem };

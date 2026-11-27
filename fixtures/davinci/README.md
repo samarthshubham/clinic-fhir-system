@@ -37,8 +37,9 @@ Each file starts from an example in the published IG package (all CC0-1.0) and i
 | `pdex/prior-authorization-eob.json` | `ExplanationOfBenefit/PDexPriorAuth1` | hl7.fhir.us.davinci-pdex#2.2.0 |
 | `pdex/member-match-in.json` | `Parameters/payer-multi-member-match-in` (one member) | hl7.fhir.us.davinci-pdex#2.2.0 |
 | `plan-net/organization-payer.json` | `Organization/Acme` | hl7.fhir.us.davinci-pdex-plan-net#1.2.0 |
-| `plan-net/insurance-plan.json` | `InsurancePlan/AcmeQHPGold` | hl7.fhir.us.davinci-pdex-plan-net#1.2.0 |
+| `plan-net/insurance-plan.json` | `InsurancePlan/AcmeQHPGold` extended to the PayerInsurancePlan profile with a drug benefit and formulary reference | hl7.fhir.us.davinci-pdex-plan-net#1.2.0, hl7.fhir.us.davinci-drug-formulary#2.1.0 |
 | `plan-net/practitioner.json` | `Practitioner/JoeSmith` | hl7.fhir.us.davinci-pdex-plan-net#1.2.0 |
+| `plan-net/location-illinois.json` | State coverage area shared by both catalogs | hl7.fhir.us.davinci-pdex-plan-net#1.2.0, hl7.fhir.us.davinci-drug-formulary#2.1.0 |
 | Other `plan-net/*.json` | Praxis directory, including the clinic, network, clinicians, affiliations and service locations | hl7.fhir.us.davinci-pdex-plan-net#1.2.0 |
 | `formulary/formulary.json` | `InsurancePlan/FormularyD1002` | hl7.fhir.us.davinci-drug-formulary#2.1.0 |
 | `formulary/formulary-drug.json` | `MedicationKnowledge/FormularyDrug-1000091` | hl7.fhir.us.davinci-drug-formulary#2.1.0 |
