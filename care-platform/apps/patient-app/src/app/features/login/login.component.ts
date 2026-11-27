@@ -13,8 +13,8 @@ import { MatInputModule } from '@angular/material/input';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, exhaustMap, map, of, startWith, Subject } from 'rxjs';
 import { AuthService } from '@care-platform/auth';
-import { CpAvatarComponent } from '../../shared/components/cp-avatar/cp-avatar.component';
-import { hashHue } from '../../shared/utils/hash-hue';
+import { CpAvatarComponent } from '@shared/components/cp-avatar/cp-avatar.component';
+import { hashHue } from '@shared/utils/hash-hue';
 import { DemoAccount } from './demo-account.model';
 import { DEMO_ACCOUNTS } from './demo-accounts';
 

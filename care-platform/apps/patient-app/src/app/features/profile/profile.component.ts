@@ -8,10 +8,10 @@ import { AuthService } from '@care-platform/auth';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { catchError, of, startWith } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { PatientAppService } from '../../shared/services/patient-app.service';
-import { PatientSelectService } from '../../shared/services/patient-select.service';
-import { ThemeService } from '../../theme.service';
-import { CpAvatarComponent } from '../../shared/components/cp-avatar/cp-avatar.component';
+import { PatientAppService } from '@shared/services/patient-app.service';
+import { PatientSelectService } from '@shared/services/patient-select.service';
+import { ThemeService } from '@core/theme.service';
+import { CpAvatarComponent } from '@shared/components/cp-avatar/cp-avatar.component';
 
 @Component({
   selector: 'cp-profile',

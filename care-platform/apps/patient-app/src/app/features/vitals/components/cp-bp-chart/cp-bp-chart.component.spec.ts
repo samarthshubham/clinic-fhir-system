@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { DataPoint } from '../../../../shared/models/patient-app.models';
+import { DataPoint } from '@shared/models/patient-app.models';
 import { CpBpChartComponent } from './cp-bp-chart.component';
 
 function points(...values: number[]): DataPoint[] {
