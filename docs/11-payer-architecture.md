@@ -154,6 +154,8 @@ Payer-api serves unauthenticated FHIR read, versioned read and search at `/fhir/
 
 The payer HAPI stores the directory. The Plan-Net profile is the publication marker applied to the curated provider directory records. Search is restricted to those profiles, and reads and included resources are checked for the corresponding profile. The directory publishes practice details, links and contact information. Connection headers are omitted from public Endpoint representations.
 
+The payer app reads the same published practitioner roles through its staff-only JSON `GET /api/directory?specialty=&city=`. The clinic app uses its own `GET /api/directory?patientId=&specialty=&city=`, protected by `order:write`. It resolves the chart’s active coverage with the configured payer to a unique active InsurancePlan by plan name and searches the plan’s networks. Calls to the public Plan-Net endpoint carry no patient or member identifiers. Both app APIs return provider names, specialties, practice locations and organizations.
+
 ## 4. What we reuse instead of building
 
 | Need | Reused |

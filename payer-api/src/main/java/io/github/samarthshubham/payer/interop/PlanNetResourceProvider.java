@@ -63,12 +63,15 @@ public class PlanNetResourceProvider implements IResourceProvider {
 
   @Search(allowUnknownParams = true)
   public Bundle search(RequestDetails request) {
-    Map<String, String[]> query = directory.filterParameters(resourceName, request.getParameters());
+    return search(request.getFhirServerBase(), request.getParameters());
+  }
+
+  Bundle search(String serverBase, Map<String, String[]> parameters) {
+    Map<String, String[]> query = directory.filterParameters(resourceName, parameters);
     int offset = getInt(query, "_offset", 0);
     int count = Math.min(MAX_PAGE_SIZE, getInt(query, "_count", PAGE_SIZE));
     query.put("_count", new String[] {Integer.toString(count)});
     query.put("_offset", new String[] {Integer.toString(offset)});
-    String serverBase = request.getFhirServerBase();
     String typeUrl = serverBase + "/" + resourceName;
     String upstream =
         searchUrl(resourceName, query)

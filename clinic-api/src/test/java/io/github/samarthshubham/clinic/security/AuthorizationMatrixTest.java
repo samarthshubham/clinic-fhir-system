@@ -16,6 +16,7 @@ import io.github.samarthshubham.clinic.service.ConditionService;
 import io.github.samarthshubham.clinic.service.CoverageService;
 import io.github.samarthshubham.clinic.service.DashboardService;
 import io.github.samarthshubham.clinic.service.DiagnosticReportService;
+import io.github.samarthshubham.clinic.service.DirectoryService;
 import io.github.samarthshubham.clinic.service.EncounterService;
 import io.github.samarthshubham.clinic.service.GoalService;
 import io.github.samarthshubham.clinic.service.HighBpAlertService;
@@ -115,6 +116,7 @@ class AuthorizationMatrixTest {
               """,
               CLINICAL_STAFF),
           get("/api/medications?patientId=p1", CLINICAL_STAFF),
+          get("/api/directory?patientId=p1", CLINICAL_STAFF),
           get("/api/service-requests/sr1", CLINICAL_STAFF),
           get("/api/service-requests?patientId=p1", CLINICAL_STAFF),
           get("/api/service-requests/sr1/documentation", CLINICAL_STAFF),
@@ -182,6 +184,7 @@ class AuthorizationMatrixTest {
   @MockitoBean private AlertService alertService;
   @MockitoBean private AuthService authService;
   @MockitoBean private CoverageService coverageService;
+  @MockitoBean private DirectoryService directoryService;
   @MockitoBean private DtrService dtrService;
 
   static Stream<Arguments> endpoints() {

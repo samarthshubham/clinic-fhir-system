@@ -5,6 +5,10 @@ import {
   type SeedCodeSystem,
 } from '../src/support/payer-terminology';
 
+vi.mock('node:timers/promises', () => ({
+  setTimeout: vi.fn().mockResolvedValue(undefined),
+}));
+
 const base = 'http://localhost:8081/fhir';
 const fragment: SeedCodeSystem = {
   resourceType: 'CodeSystem',
@@ -34,6 +38,7 @@ const ok = (data: unknown = {}) => new Response(JSON.stringify(data));
 describe('payer terminology import', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
   it.each([false, true])(
     'imports the demo vocabulary, then recognizes the same source on reseed (ICD=%s)',
@@ -73,6 +78,50 @@ describe('payer terminology import', () => {
       expect(f).toHaveBeenCalledTimes(8);
     },
   );
+  it('waits for a slow batch to finish before recording the digest', async () => {
+    vi.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValue(185_000);
+    const f = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(ok())
+      .mockResolvedValueOnce(
+        ok({ parameter: [{ name: 'jobInstanceId', valueCode: 'job-1' }] }),
+      )
+      .mockResolvedValueOnce(ok())
+      .mockResolvedValueOnce(new Response(null, { status: 202 }))
+      .mockResolvedValueOnce(new Response(null, { status: 202 }))
+      .mockResolvedValueOnce(ok(batch([completed])))
+      .mockResolvedValueOnce(ok());
+    vi.stubGlobal('fetch', f);
+
+    await expect(seedTerminology(base, fragment)).resolves.toBeUndefined();
+    expect(f.mock.calls[5][0]).toContain('poll-for-status?jobInstanceId=job-1');
+    expect(f.mock.calls[6][0]).toBe(f.mock.calls[5][0]);
+    expect(JSON.parse(f.mock.calls[7][1].body).meta.tag).toHaveLength(1);
+  });
+
+  it('reports the last job status when the server exceeds the import deadline', async () => {
+    vi.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValue(300_000);
+    const f = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(ok())
+      .mockResolvedValueOnce(
+        ok({ parameter: [{ name: 'jobInstanceId', valueCode: 'job-1' }] }),
+      )
+      .mockResolvedValueOnce(ok())
+      .mockResolvedValueOnce(new Response(null, { status: 202 }))
+      .mockResolvedValueOnce(
+        new Response('Current step: import-concepts', { status: 202 }),
+      );
+    vi.stubGlobal('fetch', f);
+
+    await expect(seedTerminology(base, fragment)).rejects.toThrow(
+      'job job-1). Last response: Current step: import-concepts',
+    );
+    expect(f).toHaveBeenCalledTimes(6);
+  });
+
   it('requires fragment codes to resolve through the same unversioned lookup as PAS', async () => {
     const response = ok({
       parameter: [{ name: 'version', valueString: 'praxis-demo' }],
@@ -123,31 +172,26 @@ describe('payer terminology import', () => {
     await seedTerminology(base, source);
     expect(f).toHaveBeenCalledTimes(6);
   });
-  it.each(['1.0', 'DELETED_old'])(
-    'verifies installed complete concepts when HAPI resolves the version to %s',
-    async (resolved) => {
-      const source = { ...fragment, content: 'complete', version: '1.0' };
-      const lookup = (valueString: string) =>
-        ok({ parameter: [{ name: 'version', valueString }] });
-      const f = vi
-        .fn()
-        .mockResolvedValueOnce(ok({ entry: [{ resource: source }] }))
-        .mockResolvedValueOnce(lookup(resolved));
-      if (resolved !== source.version) {
-        f.mockResolvedValueOnce(ok()).mockResolvedValueOnce(
-          lookup(source.version),
-        );
-      }
-      f.mockResolvedValueOnce(ok());
-      vi.stubGlobal('fetch', f);
-      await seedTerminology(base, source);
-      const writes = f.mock.calls.filter(([, init]) => init?.method === 'PUT');
-      expect(writes).toHaveLength(resolved === source.version ? 0 : 1);
-      expect(f.mock.calls.at(-1)?.[0]).toBe(
-        base + '/CodeSystem/demo/$meta-add',
-      );
-    },
-  );
+  it('writes an untagged package resource before probing its native lookup', async () => {
+    const source = { ...fragment, content: 'complete', version: '1.0' };
+    const lookup = (valueString: string) =>
+      ok({ parameter: [{ name: 'version', valueString }] });
+    const f = vi
+      .fn()
+      .mockResolvedValueOnce(ok({ entry: [{ resource: source }] }))
+      .mockResolvedValueOnce(ok())
+      .mockResolvedValueOnce(lookup('DELETED_old'))
+      .mockResolvedValueOnce(lookup(source.version))
+      .mockResolvedValueOnce(ok());
+    vi.stubGlobal('fetch', f);
+
+    await seedTerminology(base, source);
+    expect(f.mock.calls[1][1].method).toBe('PUT');
+    expect(f.mock.calls[2][0]).toContain('/CodeSystem/$lookup?');
+    expect(f.mock.calls[3][0]).toBe(f.mock.calls[2][0]);
+    expect(f.mock.calls[4][0]).toBe(base + '/CodeSystem/demo/$meta-add');
+  });
+
   it.each([
     ['500 Internal Server Error', 'error', 'HAPI-0844'],
     ['200 OK', 'error', 'HAPI-0844'],
