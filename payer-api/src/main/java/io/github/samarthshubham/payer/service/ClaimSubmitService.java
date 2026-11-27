@@ -6,9 +6,8 @@ import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.param.TokenParam;
 import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException;
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
-import ca.uhn.fhir.rest.server.exceptions.PreconditionFailedException;
 import ca.uhn.fhir.rest.server.exceptions.ResourceVersionConflictException;
-import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException;
+import io.github.samarthshubham.payer.mapper.MemberMapper;
 import io.github.samarthshubham.payer.mapper.PageMapper;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -40,8 +39,6 @@ import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.InstantType;
 import org.hl7.fhir.r4.model.Meta;
-import org.hl7.fhir.r4.model.OperationOutcome;
-import org.hl7.fhir.r4.model.Parameters;
 import org.hl7.fhir.r4.model.QuestionnaireResponse;
 import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.Resource;
@@ -107,7 +104,7 @@ public class ClaimSubmitService {
       PasRequest request = PasRequest.of(bundle);
       Identifier identifier = request.identifier().orElseThrow();
       requestId = identifier.getValue();
-      requireValid(bundle);
+      PasBundleValidation.requireValid(fhirClient, fhirContext, bundle, PAS_REQUEST_BUNDLE);
       ClaimResponse decided = firstDecision(request, identifier, payerReferences);
       return responseBundle(request, decided);
     } catch (BaseServerResponseException e) {
@@ -132,47 +129,22 @@ public class ClaimSubmitService {
     Claim storedClaim = request.claim().copy();
     storedClaim.setIdElement(null);
     rewriteReferences(storedClaim, references);
+    if (request.memberId() != null && !request.memberId().isBlank()) {
+      storedClaim
+          .getPatient()
+          .setIdentifier(
+              new Identifier()
+                  .setSystem(MemberMapper.MEMBER_ID_SYSTEM)
+                  .setValue(request.memberId()));
+    }
+    if (storedClaim.getProvider().hasReference()) {
+      request.providerNpi().ifPresent(npi -> storedClaim.getProvider().setIdentifier(npi.copy()));
+    }
     return storedResponse(identifier, storedClaim, payerReferences)
         .orElseGet(
             () ->
                 adjudicateAndStore(
                     request, identifier, storedClaim, references, check, now, payerReferences));
-  }
-
-  private void requireValid(Bundle bundle) {
-    Bundle profiled = bundle.copy();
-    // The 8.12 validator resolves the profile from meta on a resource passed to $validate.
-    if (!profiled.getMeta().hasProfile(PAS_REQUEST_BUNDLE)) {
-      profiled.getMeta().addProfile(PAS_REQUEST_BUNDLE);
-    }
-    Parameters input = new Parameters();
-    input.addParameter().setName("resource").setResource(profiled);
-    OperationOutcome outcome;
-    try {
-      outcome =
-          fhirClient
-              .operation()
-              .onType(Bundle.class)
-              .named("$validate")
-              .withParameters(input)
-              .returnResourceType(OperationOutcome.class)
-              .execute();
-    } catch (PreconditionFailedException | UnprocessableEntityException e) {
-      if (!(e.getOperationOutcome() instanceof OperationOutcome failed)) {
-        throw e;
-      }
-      outcome = failed;
-    }
-    OperationOutcome errors = new OperationOutcome();
-    outcome.getIssue().stream()
-        .filter(
-            issue ->
-                issue.getSeverity() == OperationOutcome.IssueSeverity.ERROR
-                    || issue.getSeverity() == OperationOutcome.IssueSeverity.FATAL)
-        .forEach(issue -> errors.addIssue(issue.copy()));
-    if (errors.hasIssue()) {
-      throw new UnprocessableEntityException(fhirContext, errors);
-    }
   }
 
   private Optional<ClaimResponse> storedResponse(
@@ -213,7 +185,7 @@ public class ClaimSubmitService {
     }
   }
 
-  private static boolean sameReference(Reference existing, Reference submitted) {
+  static boolean sameReference(Reference existing, Reference submitted) {
     if (existing.hasReference() || submitted.hasReference()) {
       return existing.hasReference()
           && submitted.hasReference()
@@ -253,7 +225,7 @@ public class ClaimSubmitService {
         "Claim identifier is already in use for a different request");
   }
 
-  private static boolean refersTo(ClaimResponse response, Claim claim) {
+  static boolean refersTo(ClaimResponse response, Claim claim) {
     return response.hasRequest()
         && referenceOf(claim)
             .equals(
@@ -382,7 +354,7 @@ public class ClaimSubmitService {
           entry,
           entry.getResource() instanceof QuestionnaireResponse
               ? new Reference("urn:uuid:" + UUID.randomUUID())
-              : providerReference(entry));
+              : PasRequest.providerReference(entry, fhirContext));
     }
     if (check.payerCoverageId() == null) {
       return references;
@@ -397,22 +369,6 @@ public class ClaimSubmitService {
             entry -> put(references, entry, new Reference("Coverage/" + check.payerCoverageId())));
     replace(references, request, claim.getInsurer(), payerCoverage.getPayorFirstRep());
     return references;
-  }
-
-  /**
-   * The payer does not store the provider's other resources, so references to them point at the
-   * provider's server, or, when the bundle only gave a urn:uuid, at the resource's identifier.
-   */
-  private Reference providerReference(Bundle.BundleEntryComponent entry) {
-    String fullUrl = entry.getFullUrl();
-    if (fullUrl != null && (fullUrl.startsWith("http://") || fullUrl.startsWith("https://"))) {
-      return new Reference(fullUrl);
-    }
-    Reference logical = new Reference().setType(entry.getResource().fhirType());
-    fhirContext.newTerser().getValues(entry.getResource(), "identifier", Identifier.class).stream()
-        .findFirst()
-        .ifPresent(identifier -> logical.setIdentifier(identifier.copy()));
-    return logical;
   }
 
   private static void put(
@@ -586,7 +542,7 @@ public class ClaimSubmitService {
     return referenceOf(entry.getResource());
   }
 
-  private static String referenceOf(Resource resource) {
+  static String referenceOf(Resource resource) {
     return resource.fhirType() + "/" + resource.getIdElement().getIdPart();
   }
 

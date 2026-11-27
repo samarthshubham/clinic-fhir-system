@@ -156,6 +156,14 @@ Terminology: the payer HAPI has no CPT, HCPCS, ICD-10-CM or X12 code systems, an
 
 The emergency cardiac workup has a clinical SNOMED code in the chart and no procedure billing code. PAS binds both the claim line and the linked order to the requested service type value set. Both use the X12 service classification `1365#86` for emergency services. The shared rules use the order priority to apply the emergency exemption. [PAS requested service value set](https://hl7.org/fhir/us/davinci-pas/STU2.2/ValueSet-X12278RequestedServiceType.html), [X12 service type codes](https://x12.org/codes/service-type-codes).
 
+### PAS: `Claim/$inquire`
+
+`POST /fhir/Claim/$inquire` uses a system token with `system/Claim.r`. It accepts a PAS Inquiry Request Bundle directly or as the `resource` parameter of a `Parameters`. The payer HAPI validates the bundle before any lookup.
+
+Decision: `Claim.identifier` carries the inquiry trace. Use `Claim.related.reference` for the original Claim's identifier system and value or supply the payer's authorization number as a PAS authorization reference. The request includes the patient with the Praxis member identifier and the submitting provider with its NPI. Matching also checks the provider reference stored at submission. A request without a matching Claim and decision returns empty `Parameters`. [PAS 2.2.1 Prior Authorization Inquiries](https://hl7.org/fhir/us/davinci-pas/2.2.1/en/specification.html#prior-authorization-inquiries), [FHIR R4 Claim.related.reference](https://hl7.org/fhir/R4/claim-definitions.html#Claim.related.reference)
+
+Each `return` parameter is a PAS Inquiry Response Bundle. Its first entry is the current ClaimResponse, chosen by decision creation time with last-update time as the tiebreaker. The wire response uses the patient, insurer and provider references from the inquiry. The inquiry records an AuditEvent and leaves the prior authorization state untouched.
+
 ### Public Plan-Net directory
 
 Payer-api serves unauthenticated FHIR read, versioned read and search at `/fhir/{resourceType}` for the [Plan-Net 1.2.0 capability statement](https://hl7.org/fhir/us/davinci-pdex-plan-net/STU1.2/CapabilityStatement-plan-net.html) types. This includes OrganizationAffiliation and the Network profile of Organization. `/fhir/metadata` lists their profiles, search fields and allowed inclusions. Other operations keep their existing SMART scope checks.

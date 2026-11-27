@@ -5,10 +5,12 @@ import ca.uhn.fhir.rest.annotation.OperationParam;
 import ca.uhn.fhir.rest.server.IResourceProvider;
 import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
 import io.github.samarthshubham.payer.config.JwtConfig;
+import io.github.samarthshubham.payer.service.ClaimInquiryService;
 import io.github.samarthshubham.payer.service.ClaimSubmitService;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Claim;
+import org.hl7.fhir.r4.model.Parameters;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -19,10 +21,15 @@ public class ClaimSubmitProvider implements IResourceProvider {
 
   public static final String OPERATION = "$submit";
 
-  private final ClaimSubmitService claimSubmitService;
+  public static final String INQUIRE = "$inquire";
 
-  public ClaimSubmitProvider(ClaimSubmitService claimSubmitService) {
+  private final ClaimSubmitService claimSubmitService;
+  private final ClaimInquiryService claimInquiryService;
+
+  public ClaimSubmitProvider(
+      ClaimSubmitService claimSubmitService, ClaimInquiryService claimInquiryService) {
     this.claimSubmitService = claimSubmitService;
+    this.claimInquiryService = claimInquiryService;
   }
 
   @Override
@@ -39,6 +46,17 @@ public class ClaimSubmitProvider implements IResourceProvider {
       throw new InvalidRequestException("Send the PAS request Bundle as the resource parameter");
     }
     return claimSubmitService.submit(bundle, clientId());
+  }
+
+  @Operation(
+      name = INQUIRE,
+      idempotent = true,
+      canonicalUrl = "http://hl7.org/fhir/us/davinci-pas/OperationDefinition/Claim-inquiry")
+  public Parameters inquire(@OperationParam(name = "resource", min = 1, max = 1) Bundle bundle) {
+    if (bundle == null) {
+      throw new InvalidRequestException("Send the PAS inquiry Bundle as the resource parameter");
+    }
+    return claimInquiryService.inquire(bundle, clientId());
   }
 
   private static String clientId() {

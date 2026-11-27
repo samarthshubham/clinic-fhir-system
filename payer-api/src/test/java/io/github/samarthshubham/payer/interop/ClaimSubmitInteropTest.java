@@ -38,6 +38,7 @@ import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.Parameters;
+import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.Period;
 import org.hl7.fhir.r4.model.QuestionnaireResponse;
 import org.hl7.fhir.r4.model.Reference;
@@ -46,6 +47,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -101,6 +103,70 @@ class ClaimSubmitInteropTest {
     assertThat(payerHapi.lastSearchCriteria(Coverage.class))
         .contains(
             "identifier=http://praxishealthplan.example/fhir/identifier/member-id|" + memberId);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void inquiryFindsTheCurrentDecisionForTheSubmittedClaim(boolean rawBundle) throws Exception {
+    givenActiveMember("member-gerald");
+    Bundle submitted = submit("request-polysomnography.json");
+    assertThat(resource(submitted, ClaimResponse.class).getDisposition())
+        .isEqualTo("Pended for clinical review");
+    Bundle transaction = payerHapi.transactions().getFirst();
+    Claim claim = resource(transaction, Claim.class);
+    claim.setId("1");
+    ClaimResponse pended = resource(transaction, ClaimResponse.class);
+    pended.setId("2");
+    pended.setRequest(new Reference("Claim/1"));
+    pended.setCreatedElement(new DateTimeType("2026-08-20T15:14:05Z"));
+    ClaimResponse approved =
+        resource(
+            (Bundle)
+                fixture(Parameters.class, "pas/inquire-response.json")
+                    .getParameterFirstRep()
+                    .getResource(),
+            ClaimResponse.class);
+    approved.setRequest(new Reference("Claim/1"));
+    approved.setPatient(claim.getPatient().copy());
+    Patient patient = new Patient();
+    patient
+        .addIdentifier()
+        .setSystem("http://praxishealthplan.example/fhir/identifier/member-id")
+        .setValue("PHP-10003");
+    payerHapi.givenStored(patient, "member-gerald");
+    payerHapi.givenSearchResult(Claim.class, FhirClientStub.bundleOf(claim));
+    payerHapi.givenSearchResult(ClaimResponse.class, FhirClientStub.bundleOf(pended, approved));
+
+    Bundle inquiry = fixture(Bundle.class, "pas/inquire-request.json");
+    Parameters input = new Parameters();
+    input.addParameter().setName("resource").setResource(inquiry);
+    FhirContext context = FhirContext.forR4Cached();
+    HttpResponse<String> response =
+        HttpClient.newHttpClient()
+            .send(
+                HttpRequest.newBuilder(
+                        URI.create("http://localhost:" + port + "/fhir/Claim/$inquire"))
+                    .header("Content-Type", "application/fhir+json")
+                    .header(
+                        "Authorization",
+                        "Bearer "
+                            + tokenService
+                                .issueSystemToken(
+                                    TestAuth.CLIENT_ID, java.util.List.of("system/Claim.r"))
+                                .accessToken())
+                    .POST(
+                        HttpRequest.BodyPublishers.ofString(
+                            context
+                                .newJsonParser()
+                                .encodeResourceToString(rawBundle ? inquiry : input)))
+                    .build(),
+                HttpResponse.BodyHandlers.ofString());
+
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertMatchesGolden(
+        context.newJsonParser().parseResource(Parameters.class, response.body()),
+        "pas/inquire-response.json");
+    assertThat(payerHapi.transactions()).hasSize(1);
   }
 
   @Test

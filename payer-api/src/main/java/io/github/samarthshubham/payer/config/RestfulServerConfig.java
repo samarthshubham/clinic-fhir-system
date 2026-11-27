@@ -43,6 +43,11 @@ public class RestfulServerConfig {
   }
 
   @Bean
+  public OperationScope claimInquiryScope() {
+    return new OperationScope(ClaimSubmitProvider.INQUIRE, "Claim", SmartPermission.READ, true);
+  }
+
+  @Bean
   public OperationScope questionnairePackageScope() {
     return new OperationScope(
         QuestionnairePackageProvider.OPERATION, "Questionnaire", SmartPermission.READ, true);
