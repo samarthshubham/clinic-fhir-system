@@ -10,7 +10,13 @@
     "target": "es2022",
     "moduleResolution": "bundler",
     "emitDecoratorMetadata": false,
-    "module": "preserve"
+    "module": "preserve",
+    "paths": {
+      "@care-platform/auth": ["../../libs/auth/src/index.ts"],
+      "@core/*": ["./src/app/core/*"],
+      "@shared/*": ["./src/app/shared/*"],
+      "@features/*": ["./src/app/features/*"]
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

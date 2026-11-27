@@ -36,7 +36,19 @@ export default [
       '**/*.cjs',
       '**/*.mjs',
     ],
-    // Override or add rules here
-    rules: {},
+    ignores: ['**/eslint.config.mjs'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '^\\.\\./\\.\\.(?:/|$)',
+              message: 'Use a path alias for imports more than one level up.',
+            },
+          ],
+        },
+      ],
+    },
   },
 ];

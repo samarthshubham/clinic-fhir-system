@@ -537,6 +537,7 @@ Every other `/api/**` endpoint needs `Authorization: Bearer <accessToken>` (exce
 ### Stack
 - Angular 21, Angular Material M3 (`@angular/material ~21.2.0`)
 - Nx monorepo (`npx nx` for all tasks)
+- Allow at most one parent-relative level in source imports. Use path aliases or `@care-platform/*` libraries for deeper imports and `repoPath('folder/…')` to locate repository files in seed and e2e code.
 - Prettier enforced via Husky pre-commit hook
 - UI/UX design decisions use the `/ui-ux-pro-max` skill — invoke it for new screens, component design, layout, color, and accessibility work
 

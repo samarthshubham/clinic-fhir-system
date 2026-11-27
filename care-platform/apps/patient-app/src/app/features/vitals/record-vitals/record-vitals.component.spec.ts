@@ -2,8 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { of } from 'rxjs';
-import { PatientAppService } from '../../../shared/services/patient-app.service';
-import { PatientSelectService } from '../../../shared/services/patient-select.service';
+import { PatientAppService } from '@shared/services/patient-app.service';
+import { PatientSelectService } from '@shared/services/patient-select.service';
 import { RecordVitalsComponent } from './record-vitals.component';
 
 describe('RecordVitalsComponent', () => {
