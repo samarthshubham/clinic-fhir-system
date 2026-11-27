@@ -46,6 +46,13 @@ public class ClaimInquiryService {
       Set.of(
           PAS + "extension-authorizationNumber", PAS + "extension-administrationReferenceNumber");
 
+  static final Comparator<ClaimResponse> CURRENT_DECISION_ORDER =
+      Comparator.comparing(ClaimResponse::getCreated)
+          .thenComparing(
+              response -> response.getMeta().getLastUpdated(),
+              Comparator.nullsFirst(Comparator.naturalOrder()))
+          .thenComparing(ClaimResponse::getIdPart);
+
   private final IGenericClient fhirClient;
   private final FhirContext fhirContext;
   private final AuditEventService auditEventService;
@@ -247,12 +254,7 @@ public class ClaimInquiryService {
                     .isPresent())
         .filter(response -> sameReference(response.getPatient(), claim.getPatient()))
         .filter(ClaimResponse::hasCreated)
-        .max(
-            Comparator.comparing(ClaimResponse::getCreated)
-                .thenComparing(
-                    response -> response.getMeta().getLastUpdated(),
-                    Comparator.nullsFirst(Comparator.naturalOrder()))
-                .thenComparing(ClaimResponse::getIdPart));
+        .max(CURRENT_DECISION_ORDER);
   }
 
   private <T extends Resource> List<T> resources(Bundle first, Class<T> type) {

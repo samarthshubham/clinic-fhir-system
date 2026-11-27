@@ -17,7 +17,7 @@ public class FlagNotifier implements Notifier {
   @Override
   public void send(ClinicianAlert alert) {
     if (alertService.raise(alert)) {
-      log.info("Clinician alert stored for {}", alert.observationReference());
+      log.info("Clinician alert stored for {}", alert.sourceReference());
     }
   }
 }

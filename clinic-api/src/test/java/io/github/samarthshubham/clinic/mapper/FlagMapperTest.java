@@ -85,7 +85,8 @@ class FlagMapperTest {
                 "Systolic BP above 180 mmHg",
                 OffsetDateTime.ofInstant(
                     RAISED_AT, flag.getPeriod().getStartElement().getTimeZone().toZoneId()),
-                "active"));
+                "active",
+                FlagMapper.HIGH_SYSTOLIC_BP));
   }
 
   @Test
@@ -95,7 +96,7 @@ class FlagMapperTest {
     flag.setSubject(new Reference("Patient/p2"));
 
     assertThat(mapper.toResponse(flag))
-        .isEqualTo(new AlertResponse("f2", "p2", null, null, null, null));
+        .isEqualTo(new AlertResponse("f2", "p2", null, null, null, null, null));
   }
 
   @Test

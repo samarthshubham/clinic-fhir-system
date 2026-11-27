@@ -181,7 +181,7 @@ export interface MemberCoverageFields {
   periodEnd?: string;
 }
 
-interface FhirIdentifier {
+export interface FhirIdentifier {
   system: string;
   value: string;
 }
@@ -385,6 +385,54 @@ class ApiClient {
     }
     const token = (await response.json()) as { access_token: string };
     return token.access_token;
+  }
+
+  async findPriorAuthDecision(
+    identifier: FhirIdentifier,
+  ): Promise<FhirResource | null> {
+    const claims = new URLSearchParams({
+      identifier: `${identifier.system}|${identifier.value}`,
+      _revinclude: 'ClaimResponse:request',
+    });
+    const response = await this.fetchWithRetry(
+      `${PAYER_FHIR}/Claim?${claims}`,
+      {
+        headers: { Accept: 'application/fhir+json' },
+      },
+    );
+    if (!response.ok) {
+      throw new Error(`PAS seed lookup failed [${response.status}]`);
+    }
+    const matches = (await response.json()) as {
+      entry?: { resource: FhirResource }[];
+    };
+    const responseEntry = matches.entry?.find(
+      ({ resource }) => resource.resourceType === 'ClaimResponse',
+    );
+    return responseEntry?.resource ?? null;
+  }
+
+  async submitPriorAuth(
+    token: string,
+    bundle: FhirResource,
+  ): Promise<FhirResource> {
+    const response = await this.fetchWithRetry(
+      `${PAYER_API}/fhir/Claim/$submit`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/fhir+json',
+          Accept: 'application/fhir+json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(bundle),
+      },
+    );
+    if (!response.ok) {
+      const details = (await response.text()).slice(0, 300);
+      throw new Error(`PAS submission failed [${response.status}]: ${details}`);
+    }
+    return (await response.json()) as FhirResource;
   }
 
   private async ensurePayerResource(

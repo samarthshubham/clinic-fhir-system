@@ -8,4 +8,5 @@ public record AlertResponse(
     String observationId,
     String reason,
     OffsetDateTime raisedAt,
-    String status) {}
+    String status,
+    String type) {}

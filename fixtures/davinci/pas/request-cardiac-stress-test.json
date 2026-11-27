@@ -1,0 +1,392 @@
+{
+  "resourceType": "Bundle",
+  "id": "pas-request-cardiac-stress-test-tony-stark",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/profile-pas-request-bundle"
+    ]
+  },
+  "identifier": {
+    "system": "http://praxis.clinic/fhir/identifier/pas-submission",
+    "value": "PX-PA-cardiac-stress-test-tony-stark"
+  },
+  "type": "collection",
+  "timestamp": "2026-08-20T10:15:00-05:00",
+  "entry": [
+    {
+      "fullUrl": "http://praxis.clinic/fhir/Claim/pa-cardiac-stress-test-tony-stark",
+      "resource": {
+        "resourceType": "Claim",
+        "id": "pa-cardiac-stress-test-tony-stark",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/profile-claim"
+          ]
+        },
+        "identifier": [
+          {
+            "system": "http://praxis.clinic/fhir/identifier/claim",
+            "value": "PX-PA-cardiac-stress-test-tony-stark"
+          }
+        ],
+        "status": "active",
+        "type": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/claim-type",
+              "code": "professional"
+            }
+          ]
+        },
+        "use": "preauthorization",
+        "patient": {
+          "reference": "Patient/tony-stark"
+        },
+        "created": "2026-08-20T10:15:00-05:00",
+        "insurer": {
+          "reference": "Organization/praxis-health-plan"
+        },
+        "provider": {
+          "reference": "Organization/praxis-clinic"
+        },
+        "priority": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/processpriority",
+              "code": "normal"
+            }
+          ]
+        },
+        "careTeam": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/extension-careTeamClaimScope",
+                "valueBoolean": true
+              }
+            ],
+            "sequence": 1,
+            "provider": {
+              "reference": "PractitionerRole/aisha-patel-praxis-clinic"
+            }
+          }
+        ],
+        "insurance": [
+          {
+            "sequence": 1,
+            "focal": true,
+            "coverage": {
+              "reference": "Coverage/coverage-tony-stark"
+            }
+          }
+        ],
+        "item": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/extension-serviceItemRequestType",
+                "valueCodeableConcept": {
+                  "coding": [
+                    {
+                      "system": "https://codesystem.x12.org/005010/1525",
+                      "code": "HS",
+                      "display": "Health Services Review"
+                    }
+                  ]
+                }
+              },
+              {
+                "url": "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/extension-certificationType",
+                "valueCodeableConcept": {
+                  "coding": [
+                    {
+                      "system": "https://codesystem.x12.org/005010/1322",
+                      "code": "I",
+                      "display": "Initial"
+                    }
+                  ]
+                }
+              },
+              {
+                "url": "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/extension-requestedService",
+                "valueReference": {
+                  "reference": "ServiceRequest/cardiac-stress-test-tony-stark"
+                }
+              }
+            ],
+            "sequence": 1,
+            "careTeamSequence": [
+              1
+            ],
+            "category": {
+              "coding": [
+                {
+                  "system": "https://codesystem.x12.org/005010/1365",
+                  "code": "1",
+                  "display": "Medical Care"
+                }
+              ]
+            },
+            "productOrService": {
+              "coding": [
+                {
+                  "system": "http://www.ama-assn.org/go/cpt",
+                  "code": "93015"
+                }
+              ],
+              "text": "Cardiac stress test"
+            },
+            "locationCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.cms.gov/Medicare/Coding/place-of-service-codes/Place_of_Service_Code_Set",
+                  "code": "11"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "http://praxis.clinic/fhir/Organization/praxis-clinic",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "praxis-clinic",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/profile-requestor"
+          ]
+        },
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "1987654328"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "https://codesystem.x12.org/005010/98",
+                "code": "X3"
+              }
+            ]
+          }
+        ],
+        "name": "Praxis Clinic",
+        "address": [
+          {
+            "line": [
+              "100 Example Way"
+            ],
+            "city": "Springfield",
+            "state": "IL",
+            "postalCode": "62701",
+            "country": "US"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "http://praxishealthplan.example/fhir/Organization/praxis-health-plan",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "praxis-health-plan",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/profile-insurer"
+          ]
+        },
+        "identifier": [
+          {
+            "system": "http://praxishealthplan.example/fhir/identifier/payer-id",
+            "value": "PHP01"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "https://codesystem.x12.org/005010/98",
+                "code": "PR"
+              }
+            ]
+          }
+        ],
+        "name": "Praxis Health Plan"
+      }
+    },
+    {
+      "fullUrl": "http://praxis.clinic/fhir/Coverage/coverage-tony-stark",
+      "resource": {
+        "resourceType": "Coverage",
+        "id": "coverage-tony-stark",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/profile-coverage"
+          ]
+        },
+        "identifier": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "MB"
+                }
+              ]
+            },
+            "system": "http://praxishealthplan.example/fhir/identifier/member-id",
+            "value": "PHP-10006"
+          }
+        ],
+        "status": "active",
+        "subscriberId": "PHP-10006",
+        "beneficiary": {
+          "reference": "Patient/tony-stark"
+        },
+        "relationship": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+              "code": "self"
+            },
+            {
+              "system": "https://codesystem.x12.org/005010/1069",
+              "code": "18"
+            }
+          ]
+        },
+        "payor": [
+          {
+            "reference": "Organization/praxis-health-plan"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "http://praxis.clinic/fhir/Patient/tony-stark",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "tony-stark",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/profile-subscriber"
+          ]
+        },
+        "identifier": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "MB"
+                }
+              ]
+            },
+            "system": "http://praxishealthplan.example/fhir/identifier/member-id",
+            "value": "PHP-10006"
+          }
+        ],
+        "name": [
+          {
+            "family": "Stark",
+            "given": [
+              "Tony"
+            ]
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1970-05-29"
+      }
+    },
+    {
+      "fullUrl": "http://praxis.clinic/fhir/ServiceRequest/cardiac-stress-test-tony-stark",
+      "resource": {
+        "resourceType": "ServiceRequest",
+        "id": "cardiac-stress-test-tony-stark",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/profile-servicerequest"
+          ]
+        },
+        "status": "active",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "http://www.ama-assn.org/go/cpt",
+              "code": "93015"
+            }
+          ],
+          "text": "Cardiac stress test"
+        },
+        "quantityQuantity": {
+          "value": 1,
+          "unit": "study",
+          "system": "http://unitsofmeasure.org",
+          "code": "1"
+        },
+        "subject": {
+          "reference": "Patient/tony-stark"
+        }
+      }
+    },
+    {
+      "fullUrl": "http://praxis.clinic/fhir/PractitionerRole/aisha-patel-praxis-clinic",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "id": "aisha-patel-praxis-clinic",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/profile-practitionerrole"
+          ]
+        },
+        "practitioner": {
+          "reference": "Practitioner/aisha-patel"
+        },
+        "organization": {
+          "reference": "Organization/praxis-clinic"
+        },
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "5550100100"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "http://praxis.clinic/fhir/Practitioner/aisha-patel",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "aisha-patel",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/profile-practitioner"
+          ]
+        },
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "1234567893"
+          }
+        ],
+        "name": [
+          {
+            "family": "Patel",
+            "given": [
+              "Aisha"
+            ],
+            "prefix": [
+              "Dr."
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

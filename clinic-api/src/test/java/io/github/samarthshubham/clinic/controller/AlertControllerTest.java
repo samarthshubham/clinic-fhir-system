@@ -100,7 +100,14 @@ class AlertControllerTest {
   void acknowledgeReturnsTheClosedAlert() throws Exception {
     when(alertService.acknowledge("f1"))
         .thenReturn(
-            new AlertResponse("f1", "p1", "obs-9", "Systolic BP above 180 mmHg", null, "inactive"));
+            new AlertResponse(
+                "f1",
+                "p1",
+                "obs-9",
+                "Systolic BP above 180 mmHg",
+                null,
+                "inactive",
+                "high-systolic-bp"));
 
     mockMvc
         .perform(post("/api/alerts/f1/acknowledge"))
@@ -116,5 +123,6 @@ class AlertControllerTest {
   }
 
   private static final AlertResponse ALERT =
-      new AlertResponse("f1", "p1", "obs-9", "Systolic BP above 180 mmHg", null, "active");
+      new AlertResponse(
+          "f1", "p1", "obs-9", "Systolic BP above 180 mmHg", null, "active", "high-systolic-bp");
 }

@@ -672,7 +672,7 @@ color: #334155;
 ### Status
 - **clinician-app**: login, patient roster, 3-panel patient dashboard (snapshot, timeline, care panel with trend charts), alerts Inbox.
 - **patient-app**: login, home, vitals with charts and recording, messages (static), profile.
-- **payer-app**: login (`reviewer` / `payeradmin`, dev only), sidenav shell, empty Queue, member search and detail (coverage, plan, prior auth history); Directory and Metrics are placeholders until their roadmap stories.
+- **payer-app**: login (`reviewer` / `payeradmin`, dev only), sidenav shell, prior authorization review queue, member search and detail (coverage, plan, prior auth history); Directory and Metrics are placeholders until their roadmap stories.
 - **libs/design-system, libs/ui, libs/shared**: Defined in `docs/08-design-system.md` but not yet created; each app keeps its own `styles.scss` tokens.
 
 ---

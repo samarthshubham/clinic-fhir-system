@@ -33,7 +33,9 @@ clinic:
     base-url: ${CLINIC_PAYER_API_URL:http://localhost:9095}
     client-id: clinic-api
     client-secret: ${CLINIC_PAYER_CLIENT_SECRET:}
-    scope: system/Coverage.r system/Questionnaire.r
+    scope: system/Claim.r system/Coverage.r system/Questionnaire.r
+    decision-webhook-secret: ${PAS_DECISION_WEBHOOK_SECRET:}
+    decision-poll-interval: ${PAS_DECISION_POLL_INTERVAL:1m}
     timeout: 2s
     payer-id: praxis-health-plan
 

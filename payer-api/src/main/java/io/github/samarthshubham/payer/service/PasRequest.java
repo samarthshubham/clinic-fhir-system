@@ -169,7 +169,11 @@ final class PasRequest {
   }
 
   boolean expedited() {
-    return claim().getPriority().getCoding().stream()
+    return expedited(claim());
+  }
+
+  static boolean expedited(Claim claim) {
+    return claim.getPriority().getCoding().stream()
         .anyMatch(
             coding ->
                 "http://terminology.hl7.org/CodeSystem/processpriority".equals(coding.getSystem())

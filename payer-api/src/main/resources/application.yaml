@@ -10,6 +10,9 @@ fhir:
     url: http://localhost:8081/fhir
 
 payer:
+  pas:
+    decision-webhook-url: ${PAS_DECISION_WEBHOOK_URL:}
+    decision-webhook-secret: ${PAS_DECISION_WEBHOOK_SECRET:}
   auth:
     jwt-secret: ${PAYER_JWT_SECRET:}
     issuer: payer-api

@@ -85,7 +85,10 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/api/auth/**")
                     .permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/alerts/bp-subscription")
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        "/api/alerts/bp-subscription",
+                        "/api/alerts/prior-auth-subscription")
                     .permitAll()
                     .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus")
                     .permitAll()

@@ -1,5 +1,9 @@
 import { IWorldOptions, setWorldConstructor, World } from '@cucumber/cucumber';
-import { CreateCoverageBody, CreateDiagnosticReportBody } from './api-client';
+import {
+  CreateCoverageBody,
+  CreateDiagnosticReportBody,
+  FhirResource,
+} from './api-client';
 
 export class SeedWorld extends World {
   currentPatientId: string | null = null;
@@ -13,6 +17,7 @@ export class SeedWorld extends World {
   allGoalIds: string[] = [];
   allConditionIds: string[] = [];
   payerApiToken: string | null = null;
+  pasDecision: FhirResource | null = null;
   payerOrganizationId: string | null = null;
 
   constructor(options: IWorldOptions) {

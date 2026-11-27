@@ -2,6 +2,9 @@
 # a packaged jar does not, so production has no demo accounts, no registered clients and
 # no default JWT secret.
 payer:
+  pas:
+    decision-webhook-url: ${PAS_DECISION_WEBHOOK_URL:http://host.docker.internal:9090/api/alerts/prior-auth-subscription}
+    decision-webhook-secret: ${PAS_DECISION_WEBHOOK_SECRET:dev-only-pas-decision-webhook-secret}
   auth:
     jwt-secret: ${PAYER_JWT_SECRET:dev-only-payer-jwt-secret-change-me-0123456789}
     users:

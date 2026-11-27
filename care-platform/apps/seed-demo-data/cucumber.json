@@ -9,7 +9,8 @@
       "src/features/payer/payer-terminology.feature",
       "src/features/payer/payer-questionnaires.feature",
       "src/features/payer/payer-formulary.feature",
-      "src/features/payer/payer-directory.feature"
+      "src/features/payer/payer-directory.feature",
+      "src/features/payer/payer-prior-auths.feature"
     ],
     "format": ["progress", "html:reports/seed-data-report.html"]
   }
