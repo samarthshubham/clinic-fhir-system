@@ -170,6 +170,14 @@ Each `return` parameter is a PAS Inquiry Response Bundle. Its first entry is the
 
 Decision for NFR-REG-1. The queue uses the deadline saved at submission, or applies the same `SlaClock` to older claims without a saved deadline. It flags a breach after the deadline passes and keeps overdue requests visible for review. [CMS-0057-F decision timeframes](https://www.cms.gov/newsroom/fact-sheets/cms-interoperability-prior-authorization-final-rule-cms-0057-f)
 
+### Prior authorization review
+
+`GET /api/prior-auths/{claimId}` requires `priorauth:read`. The queue links to a review page with claim lines, the matching coverage rule and criteria, questionnaire answers and attachment metadata. PAS submissions store referenced DocumentReferences and QuestionnaireResponses in the payer HAPI. The review follows local references for the same member and sends no external attachment URLs to the browser.
+
+`POST /api/prior-auths/{claimId}/decision` requires `priorauth:decide`, granted only to `UM_REVIEWER`. The request carries `decision` (`APPROVE`, `DENY`, or `PEND`). Denial requires `reasonCode` and `reasonText`. The request changes the pending PAS review actions and preserves the authorization reference and previous final line decisions. Tony Stark's overdue request from the demo seed opens directly from the review queue.
+
+The payer writes the new ClaimResponse version and reviewer Provenance in one FHIR transaction. The version precondition protects the update from a concurrent change. HAPI resolves the Provenance target to the stored ClaimResponse version. `$inquire` reads the latest version and a repeated `$submit` returns the original version. [FHIR version-aware updates](https://hl7.org/fhir/R4/http.html#concurrency), [FHIR Provenance](https://hl7.org/fhir/R4/provenance.html)
+
 ### Clinic decision notifications
 
 The payer API registers one named R4 rest-hook in the payer HAPI for `ClaimResponse?use=preauthorization`. The hook sends an empty POST with `X-PAS-Decision-Secret` to `/api/alerts/prior-auth-subscription`. Configure `PAS_DECISION_WEBHOOK_SECRET` on both applications and `PAS_DECISION_WEBHOOK_URL` on payer-api. Use HTTPS outside local development. The clinic compares the shared secret in constant time and derives all patient and decision data from authenticated inquiry responses.

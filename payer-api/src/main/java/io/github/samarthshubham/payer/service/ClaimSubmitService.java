@@ -34,6 +34,7 @@ import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Coverage;
 import org.hl7.fhir.r4.model.DateTimeType;
+import org.hl7.fhir.r4.model.DocumentReference;
 import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.Identifier;
@@ -68,6 +69,7 @@ public class ClaimSubmitService {
       QuestionnairePackageService.PAYER_BASE + "/identifier/prior-auth";
   public static final String QUESTIONNAIRE_RESPONSE_SYSTEM =
       QuestionnairePackageService.PAYER_BASE + "/identifier/pas-questionnaire-response";
+  static final String STAFF_DECISION_TAG = "staff-decision";
   public static final String DENIAL_REASON_SYSTEM =
       QuestionnairePackageService.PAYER_BASE + "/CodeSystem/denial-reason";
 
@@ -174,7 +176,14 @@ public class ClaimSubmitService {
             .filter(response -> refersTo(response, existing))
             .min(Comparator.comparing(ClaimResponse::getCreated))
             .orElseThrow(() -> new InternalErrorException("Prior authorization has no decision"));
-    return Optional.of(recordDecision(existing, first, payerReferences));
+    return Optional.of(recordDecision(existing, originalDecision(first), payerReferences));
+  }
+
+  private ClaimResponse originalDecision(ClaimResponse response) {
+    if (response.getMeta().getTag(PRIOR_AUTH_SYSTEM, STAFF_DECISION_TAG) == null) {
+      return response;
+    }
+    return fhirClient.vread(ClaimResponse.class, response.getIdPart(), "1");
   }
 
   private static void requireSameRequest(Claim existing, Claim submitted) {
@@ -286,6 +295,26 @@ public class ClaimSubmitService {
           .setUrl("QuestionnaireResponse")
           .setIfNoneExist(identifierQuery(answerIdentifier));
     }
+    List<Bundle.BundleEntryComponent> documentEntries = request.documentEntries();
+    for (int index = 0; index < documentEntries.size(); index++) {
+      Bundle.BundleEntryComponent entry = documentEntries.get(index);
+      DocumentReference document = (DocumentReference) entry.getResource().copy();
+      document.setIdElement(null);
+      rewriteReferences(document, references);
+      Identifier documentIdentifier =
+          new Identifier()
+              .setSystem(QuestionnairePackageService.PAYER_BASE + "/identifier/pas-document")
+              .setValue(stableUuid(identifier, "document-" + index).toString());
+      document.addIdentifier(documentIdentifier);
+      transaction
+          .addEntry()
+          .setFullUrl(references.get(submittedReference(entry)).getReference())
+          .setResource(document)
+          .getRequest()
+          .setMethod(Bundle.HTTPVerb.POST)
+          .setUrl("DocumentReference")
+          .setIfNoneExist(identifierQuery(documentIdentifier));
+    }
     Instant received =
         slaClock.received(claim.hasCreated() ? claim.getCreated().toInstant() : null);
     storedClaim.addExtension(
@@ -330,7 +359,7 @@ public class ClaimSubmitService {
       if (!refersTo(decided, existing)) {
         throw new InternalErrorException("Prior authorization decision does not match the request");
       }
-      return recordDecision(existing, decided, payerReferences);
+      return recordDecision(existing, originalDecision(decided), payerReferences);
     }
     storedClaim.setId(claimId);
     response.setId(responseId);
@@ -356,6 +385,9 @@ public class ClaimSubmitService {
               ? new Reference("urn:uuid:" + UUID.randomUUID())
               : PasRequest.providerReference(entry, fhirContext));
     }
+    request
+        .documentEntries()
+        .forEach(entry -> put(references, entry, new Reference("urn:uuid:" + UUID.randomUUID())));
     if (check.payerCoverageId() == null) {
       return references;
     }
@@ -432,19 +464,9 @@ public class ClaimSubmitService {
         (sequence, decision) -> {
           ClaimResponse.AdjudicationComponent adjudication =
               response.addItem().setItemSequence(sequence).addAdjudication();
-          Extension reviewAction = adjudication.addExtension().setUrl(REVIEW_ACTION);
-          reviewAction.addExtension(REVIEW_ACTION_CODE, reviewActionCode(decision.outcome()));
-          if (decision.outcome() == PriorAuthDecision.Outcome.APPROVED) {
-            reviewAction.addExtension("number", new StringType(preAuthRef));
-          }
           adjudication.setCategory(
               new CodeableConcept(new Coding(ADJUDICATION_SYSTEM, "submitted", null)));
-          if (decision.denialReason() != null) {
-            adjudication.setReason(
-                new CodeableConcept(
-                        new Coding(DENIAL_REASON_SYSTEM, decision.denialReason().code(), null))
-                    .setText(decision.denialReason().text()));
-          }
+          applyReviewAction(adjudication, preAuthRef, decision);
         });
     return response;
   }
@@ -489,6 +511,32 @@ public class ClaimSubmitService {
               });
     }
     return bundle;
+  }
+
+  static void applyReviewAction(
+      ClaimResponse.AdjudicationComponent adjudication,
+      String preAuthRef,
+      PriorAuthDecision decision) {
+    Extension reviewAction = adjudication.getExtensionByUrl(REVIEW_ACTION);
+    if (reviewAction == null) {
+      reviewAction = adjudication.addExtension().setUrl(REVIEW_ACTION);
+    }
+    reviewAction
+        .getExtension()
+        .removeIf(
+            extension ->
+                REVIEW_ACTION_CODE.equals(extension.getUrl())
+                    || "number".equals(extension.getUrl()));
+    reviewAction.addExtension(REVIEW_ACTION_CODE, reviewActionCode(decision.outcome()));
+    if (decision.outcome() == PriorAuthDecision.Outcome.APPROVED) {
+      reviewAction.addExtension("number", new StringType(preAuthRef));
+    }
+    adjudication.setReason(
+        decision.denialReason() == null
+            ? null
+            : new CodeableConcept(
+                    new Coding(DENIAL_REASON_SYSTEM, decision.denialReason().code(), null))
+                .setText(decision.denialReason().text()));
   }
 
   private static CodeableConcept reviewActionCode(PriorAuthDecision.Outcome outcome) {
@@ -556,7 +604,7 @@ public class ClaimSubmitService {
     return new IdType(result.getResponse().getLocation()).toUnqualifiedVersionless().getValue();
   }
 
-  private static DateTimeType utc(Instant instant) {
+  static DateTimeType utc(Instant instant) {
     return new DateTimeType(
         Date.from(instant), TemporalPrecisionEnum.SECOND, TimeZone.getTimeZone("UTC"));
   }

@@ -3,6 +3,7 @@ import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { QueueComponent } from './queue.component';
 
@@ -38,7 +39,11 @@ describe('QueueComponent', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+      ],
     });
   });
 

@@ -1,0 +1,189 @@
+<a mat-button routerLink="/queue">Back to review queue</a>
+<h1>Prior authorization review</h1>
+
+@let item = review();
+@if (item === null) {
+  <mat-progress-bar mode="indeterminate" aria-label="Loading authorization" />
+} @else if (item === 'error') {
+  <p role="alert">Could not load the prior authorization.</p>
+} @else {
+  <p>
+    @if (item.authorizationReference) {
+      <strong class="cp-font-mono">{{ item.authorizationReference }}</strong>
+    }
+    {{ item.disposition || 'Pended for clinical review' }}
+  </p>
+  <div class="app-review__sections">
+    <mat-card appearance="outlined">
+      <mat-card-header
+        ><h2 mat-card-title>Claim lines and rules</h2></mat-card-header
+      >
+      <mat-card-content>
+        <ol>
+          @for (line of item.lines; track line.sequence) {
+            <li [value]="line.sequence">
+              <strong>{{
+                line.service || line.code || 'Requested service'
+              }}</strong>
+              @if (line.service && line.code) {
+                <span class="cp-font-mono"> {{ line.code }}</span>
+              }
+              @if (line.rule; as rule) {
+                <p>
+                  {{ rule.name }} ·
+                  {{
+                    rule.requiresPriorAuth
+                      ? 'Prior authorization required'
+                      : 'No prior authorization required'
+                  }}
+                </p>
+                @if (rule.criteria.length) {
+                  <ul>
+                    @for (criterion of rule.criteria; track $index) {
+                      <li>
+                        {{ criterion.linkId }}
+                        {{ criterion.operator.toLowerCase().replace('_', ' ') }}
+                        {{ criterion.expected }} ·
+                        {{ criterion.matched ? 'Matched' : 'Not matched' }}
+                      </li>
+                    }
+                  </ul>
+                }
+              } @else {
+                <p>No matching coverage rule.</p>
+              }
+            </li>
+          }
+        </ol>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined">
+      <mat-card-header
+        ><h2 mat-card-title>Questionnaire answers</h2></mat-card-header
+      >
+      <mat-card-content>
+        @if (item.answers.length) {
+          <dl>
+            @for (answer of item.answers; track $index) {
+              <dt>{{ answer.question || answer.linkId }}</dt>
+              <dd>{{ answer.values.join(', ') }}</dd>
+            }
+          </dl>
+        } @else {
+          <p>No questionnaire answers supplied.</p>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined">
+      <mat-card-header><h2 mat-card-title>Attachments</h2></mat-card-header>
+      <mat-card-content>
+        @if (item.attachments.length) {
+          <ul>
+            @for (attachment of item.attachments; track $index) {
+              <li>
+                {{ attachment.title || 'Attachment' }}
+                @if (attachment.contentType) {
+                  · {{ attachment.contentType }}
+                }
+              </li>
+            }
+          </ul>
+        } @else {
+          <p>No attachments supplied.</p>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    @let outcome = currentResult();
+    @let saving = outcome?.status === 'saving';
+    @if (outcome?.status === 'saved') {
+      <p role="status">Decision saved.</p>
+    } @else if (outcome && outcome.status === 'error') {
+      <p role="alert">{{ outcome.message }}</p>
+    }
+    @if (canDecide() && item.pended) {
+      <mat-card appearance="outlined">
+        <mat-card-header><h2 mat-card-title>Decision</h2></mat-card-header>
+        <mat-card-content>
+          @if (denialOpen()) {
+            <form
+              [formGroup]="denial"
+              (ngSubmit)="submit('DENY')"
+              class="app-review__denial"
+            >
+              <mat-form-field appearance="outline">
+                <mat-label>Reason code</mat-label>
+                <input
+                  matInput
+                  formControlName="reasonCode"
+                  required
+                  maxlength="64"
+                />
+                <mat-error
+                  >Enter a reason code using letters, digits, dots, dashes or
+                  underscores.</mat-error
+                >
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Reason text</mat-label>
+                <textarea
+                  matInput
+                  formControlName="reasonText"
+                  required
+                  maxlength="1000"
+                ></textarea>
+                <mat-error>Enter a reason for the denial.</mat-error>
+              </mat-form-field>
+              <div class="app-review__actions">
+                <button
+                  mat-flat-button
+                  type="submit"
+                  [disabled]="saving || denial.invalid"
+                >
+                  Confirm denial
+                </button>
+                <button
+                  mat-button
+                  type="button"
+                  [disabled]="saving"
+                  (click)="denialOpen.set(false)"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          } @else {
+            <div class="app-review__actions">
+              <button
+                mat-flat-button
+                type="button"
+                [disabled]="saving"
+                (click)="submit('APPROVE')"
+              >
+                Approve
+              </button>
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="saving"
+                (click)="denialOpen.set(true)"
+              >
+                Deny
+              </button>
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="saving"
+                (click)="submit('PEND')"
+              >
+                Pend
+              </button>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    }
+  </div>
+}

@@ -23,6 +23,11 @@ public class GlobalExceptionHandler {
         .body(new ErrorResponse(404, ex.getMessage()));
   }
 
+  @ExceptionHandler(PriorAuthConflictException.class)
+  public ResponseEntity<ErrorResponse> handlePriorAuthConflict(PriorAuthConflictException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(409, ex.getMessage()));
+  }
+
   @ExceptionHandler(FhirClientConnectionException.class)
   public ResponseEntity<ErrorResponse> handleFhirConnectionError(FhirClientConnectionException ex) {
     return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)

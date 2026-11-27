@@ -57,7 +57,7 @@ public class PriorAuthAdjudicator {
         allMet ? PriorAuthDecision.Outcome.APPROVED : PriorAuthDecision.Outcome.PENDED);
   }
 
-  private CoverageRule rule(CodeableConcept service) {
+  CoverageRule rule(CodeableConcept service) {
     Coding coding =
         service.getCoding().stream()
             .filter(c -> coverageRuleService.hasRule(c.getSystem(), c.getCode()))
