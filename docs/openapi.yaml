@@ -1237,10 +1237,27 @@ paths:
 
   # ── Alerts ────────────────────────────────────────────────────────────────
 
+  /api/alerts/prior-auth-subscription:
+    post:
+      tags: [Alerts]
+      summary: Refresh pending prior authorizations after a payer notification
+      security: []
+      parameters:
+        - name: X-PAS-Decision-Secret
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Notification accepted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /api/alerts:
     get:
       tags: [Alerts]
-      summary: List stored high-BP alerts, newest first
+      summary: List stored clinician alerts, newest first
       description: |
         Requires the `alert:read` permission (ADMIN, CLINICIAN).
         Alerts are FHIR `Flag` resources that hold references only (no names, no reading values).
@@ -2129,6 +2146,10 @@ components:
         observationId:
           type: string
           example: "55"
+        type:
+          type: string
+          nullable: true
+          enum: [high-systolic-bp, prior-auth-decision]
         reason:
           type: string
           example: "Systolic BP above 180 mmHg"

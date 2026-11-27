@@ -132,7 +132,7 @@ public class HighBpAlertService {
             "Clinician alert via {} failed for {} ({}): {}",
             notifier.getClass().getSimpleName(),
             alert.patientReference(),
-            alert.observationReference(),
+            alert.sourceReference(),
             e.getClass().getSimpleName());
         allSent = false;
       }

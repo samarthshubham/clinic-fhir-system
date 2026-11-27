@@ -14,6 +14,6 @@ public class LoggingSmsNotifier implements Notifier {
         "[mock-sms] Clinician alert: {} for {} ({})",
         alert.reason(),
         alert.patientReference(),
-        alert.observationReference());
+        alert.sourceReference());
   }
 }

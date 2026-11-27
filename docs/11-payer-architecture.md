@@ -164,6 +164,14 @@ Decision: `Claim.identifier` carries the inquiry trace. Use `Claim.related.refer
 
 Each `return` parameter is a PAS Inquiry Response Bundle. Its first entry is the current ClaimResponse, chosen by decision creation time with last-update time as the tiebreaker. The wire response uses the patient, insurer and provider references from the inquiry. The inquiry records an AuditEvent and leaves the prior authorization state untouched.
 
+### Clinic decision notifications
+
+The payer API registers one named R4 rest-hook in the payer HAPI for `ClaimResponse?use=preauthorization`. The hook sends an empty POST with `X-PAS-Decision-Secret` to `/api/alerts/prior-auth-subscription`. Configure `PAS_DECISION_WEBHOOK_SECRET` on both applications and `PAS_DECISION_WEBHOOK_URL` on payer-api. Use HTTPS outside local development. The clinic compares the shared secret in constant time and derives all patient and decision data from authenticated inquiry responses.
+
+`PasDecisionService.track(submission, initialDecision)` is the clinic submission integration point for E4-S7. It conditionally creates one provider HAPI Bundle per clinic Claim identifier. The Bundle stores the minimum inquiry context and current ClaimResponse, excluding the submitted documentation and claim lines. The webhook and the scheduled poll (default one minute, configurable with `PAS_DECISION_POLL_INTERVAL`) refresh pending records from `Claim/$inquire`. The clinic checks the returned patient, provider, payer and authorization reference before applying a final result. An Inbox Flag's conditional create makes replay safe even if the decision write has to be retried after a clinician acknowledges the Flag.
+
+Decision: this internal signal follows ADR 0003 and uses a payloadless R4 rest-hook to limit data on the notification channel. PAS 2.2.1's external subscription contract uses the topic-based R5 backport, a sending-organization filter, and the full PAS response bundle. [FHIR R4 Subscription.channel.payload](https://hl7.org/fhir/R4/subscription-definitions.html#Subscription.channel.payload), [PAS 2.2.1 subscription requirements](https://hl7.org/fhir/us/davinci-pas/2.2.1/en/specification.html#subscription)
+
 ### Public Plan-Net directory
 
 Payer-api serves unauthenticated FHIR read, versioned read and search at `/fhir/{resourceType}` for the [Plan-Net 1.2.0 capability statement](https://hl7.org/fhir/us/davinci-pdex-plan-net/STU1.2/CapabilityStatement-plan-net.html) types. This includes OrganizationAffiliation and the Network profile of Organization. `/fhir/metadata` lists their profiles, search fields and allowed inclusions. Other operations keep their existing SMART scope checks.

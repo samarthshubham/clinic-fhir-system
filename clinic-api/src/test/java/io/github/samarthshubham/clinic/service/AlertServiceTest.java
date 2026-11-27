@@ -56,7 +56,27 @@ class AlertServiceTest {
   }
 
   @Test
-  void listsHighBpAlertsNewestFirstFilteredByStatus() {
+  void usesAConditionalCreateForPriorAuthAlerts() {
+    var decision =
+        new ClinicianAlert(
+            "Patient/p1",
+            "Bundle/b1",
+            "Prior authorization approved",
+            ClinicianAlert.Kind.PRIOR_AUTH_DECISION);
+    String criterion = "Flag?identifier=" + FlagMapper.PRIOR_AUTH_ALERT_IDENTIFIER_SYSTEM + "|b1";
+
+    assertThat(service.raise(decision)).isTrue();
+    fhir.givenConditionalCreateMatches(criterion, "f1");
+    assertThat(service.raise(decision)).isFalse();
+
+    var inserted = (Flag) fhir.created().getFirst();
+    assertThat(fhir.conditionalCreates()).containsExactly(criterion, criterion);
+    assertThat(mapper.toResponse(inserted).type()).isEqualTo(FlagMapper.PRIOR_AUTH_DECISION);
+    assertThat(mapper.toResponse(inserted).observationId()).isNull();
+  }
+
+  @Test
+  void listsAlertsNewestFirstFilteredByStatus() {
     Bundle bundle = new Bundle().setTotal(1);
     Flag flag = mapper.toFhir(ALERT, Instant.parse("2026-10-22T10:00:00Z"));
     flag.setId("f1");
@@ -69,7 +89,11 @@ class AlertServiceTest {
     assertThat(page.items()).extracting(AlertResponse::id).containsExactly("f1");
     assertThat(fhir.lastSearchCriteria(Flag.class))
         .containsExactly(
-            "identifier=" + FlagMapper.ALERT_IDENTIFIER_SYSTEM + "|",
+            "identifier="
+                + FlagMapper.ALERT_IDENTIFIER_SYSTEM
+                + "|,"
+                + FlagMapper.PRIOR_AUTH_ALERT_IDENTIFIER_SYSTEM
+                + "|",
             "_tag=" + FlagMapper.ALERT_STATUS_TAG_SYSTEM + "|active",
             "_sort=-date");
   }
