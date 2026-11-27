@@ -144,13 +144,11 @@ public class ClaimInquiryService {
     request
         .getItem()
         .forEach(item -> addAuthorizationNumbers(authorizationNumbers, item.getExtension()));
-    request
-        .getInsurance()
-        .forEach(
-            insurance ->
-                insurance
-                    .getPreAuthRef()
-                    .forEach(reference -> authorizationNumbers.add(reference.getValue())));
+    request.getInsurance().stream()
+        .flatMap(insurance -> insurance.getPreAuthRef().stream())
+        .filter(StringType::hasValue)
+        .map(StringType::getValue)
+        .forEach(authorizationNumbers::add);
 
     List<Claim> claims = new ArrayList<>();
     for (Identifier identifier : identifiers) {

@@ -19,6 +19,7 @@ import java.util.List;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Claim;
 import org.hl7.fhir.r4.model.ClaimResponse;
+import org.hl7.fhir.r4.model.CodeType;
 import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.Organization;
@@ -136,7 +137,15 @@ class ClaimInquiryServiceTest {
 
   @ParameterizedTest
   @ValueSource(
-      strings = {"claim", "patient", "provider", "provider-npi", "missing-patient", "trace"})
+      strings = {
+        "claim",
+        "patient",
+        "provider",
+        "provider-npi",
+        "missing-patient",
+        "trace",
+        "absent-authorization-number"
+      })
   void mismatchesDoNotReturnADecisionOrReadDecisionHistory(String mismatch) {
     switch (mismatch) {
       case "claim" -> inquiry.getRelatedFirstRep().getReference().setValue("unknown");
@@ -153,6 +162,13 @@ class ClaimInquiryServiceTest {
       case "trace" -> {
         inquiry.getIdentifierFirstRep().setValue("PX-PA-0001");
         inquiry.getRelated().clear();
+      }
+      case "absent-authorization-number" -> {
+        inquiry.getRelated().clear();
+        StringType absent = new StringType();
+        absent.addExtension(
+            "http://hl7.org/fhir/StructureDefinition/data-absent-reason", new CodeType("unknown"));
+        inquiry.getInsuranceFirstRep().getPreAuthRef().add(absent);
       }
       default -> throw new AssertionError(mismatch);
     }
