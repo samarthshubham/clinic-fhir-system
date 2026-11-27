@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
@@ -95,6 +96,7 @@ describe('appRoutes', () => {
             homePath: '/queue',
             refreshTokenKey: 'test.refreshToken',
           }),
+          provideHttpClientTesting(),
           {
             provide: AuthService,
             useValue: {
@@ -120,9 +122,7 @@ describe('appRoutes', () => {
       const { harness, router } = await navigate('/', true);
 
       expect(router.url).toBe('/queue');
-      expect(harness.routeNativeElement?.textContent).toContain(
-        'No prior authorization requests to review',
-      );
+      expect(harness.routeNativeElement?.textContent).toContain('Review queue');
     });
 
     it('should keep signed-in users away from the login page', async () => {

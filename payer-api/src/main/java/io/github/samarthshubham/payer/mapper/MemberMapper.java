@@ -155,7 +155,7 @@ public class MemberMapper {
     return coverage.hasStatus() ? coverage.getStatus().toCode() : null;
   }
 
-  private static String service(CodeableConcept concept) {
+  static String service(CodeableConcept concept) {
     if (concept.hasText()) {
       return concept.getText();
     }

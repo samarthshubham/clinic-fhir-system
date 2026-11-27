@@ -11,12 +11,14 @@ import static org.mockito.Mockito.when;
 
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import io.github.samarthshubham.payer.cdshooks.CrdHookService;
+import io.github.samarthshubham.payer.dto.PageResponse;
 import io.github.samarthshubham.payer.service.AuthService;
 import io.github.samarthshubham.payer.service.ClaimInquiryService;
 import io.github.samarthshubham.payer.service.ClaimSubmitService;
 import io.github.samarthshubham.payer.service.ClientCredentialsService;
 import io.github.samarthshubham.payer.service.DirectoryService;
 import io.github.samarthshubham.payer.service.MemberService;
+import io.github.samarthshubham.payer.service.PriorAuthQueueService;
 import io.github.samarthshubham.payer.service.TokenService;
 import io.github.samarthshubham.payer.support.TestAuth;
 import io.github.samarthshubham.payer.support.TestInteropProviders;
@@ -87,6 +89,7 @@ class AuthorizationMatrixTest {
           json("GET", "/api/directory", null, null, STAFF),
           json("GET", "/api/members?name=Nair", null, null, STAFF),
           json("GET", "/api/members/member-a", null, null, STAFF),
+          json("GET", "/api/prior-auths?status=pended", null, null, STAFF),
           fhir("GET", "/fhir/metadata", null, EVERYONE),
           fhir("GET", "/fhir/Patient/member-a", null, EnumSet.of(SYSTEM_READER, MEMBER_A)),
           fhir("GET", "/fhir/Patient/member-b", null, EnumSet.of(SYSTEM_READER, MEMBER_B)),
@@ -131,6 +134,7 @@ class AuthorizationMatrixTest {
   @MockitoBean private ClientCredentialsService clientCredentialsService;
   @MockitoBean private MemberService memberService;
   @MockitoBean private DirectoryService directoryService;
+  @MockitoBean private PriorAuthQueueService priorAuthQueueService;
   @MockitoBean private CrdHookService crdHookService;
   @MockitoBean private ClaimSubmitService claimSubmitService;
   @MockitoBean private ClaimInquiryService claimInquiryService;
@@ -140,6 +144,7 @@ class AuthorizationMatrixTest {
     when(claimSubmitService.submit(any(), any()))
         .thenReturn(new Bundle().setType(Bundle.BundleType.COLLECTION));
     when(claimInquiryService.inquire(any(), any())).thenReturn(new Parameters());
+    when(priorAuthQueueService.pended()).thenReturn(new PageResponse<>(List.of(), 0));
   }
 
   static Stream<Arguments> endpointsByCaller() {

@@ -27,13 +27,6 @@ Then('the payer app shows the review queue', () => {
   );
 });
 
-Then('the review queue is empty', () => {
-  cy.contains(
-    '[role="status"]',
-    'No prior authorization requests to review',
-  ).should('be.visible');
-});
-
 Given('a Praxis Gold PPO member {string}', (alias: string) => {
   const lastName = `E2E-${alias}-${runId}`;
   const memberId = `PHP-9${String(Math.floor(Math.random() * 10_000)).padStart(4, '0')}`;

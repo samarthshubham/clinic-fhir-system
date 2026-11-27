@@ -1,6 +1,79 @@
 <h1>Review queue</h1>
-<cp-empty-state
-  icon="inbox"
-  title="No prior authorization requests to review"
-  text="Pended requests appear here, the most urgent deadline first."
-/>
+
+@let items = queue();
+@if (items === null) {
+  <mat-progress-bar mode="indeterminate" aria-label="Loading review queue" />
+} @else if (items === 'error') {
+  <div role="alert">
+    <p>Could not load the review queue.</p>
+    <button mat-stroked-button type="button" (click)="reload()">
+      Try again
+    </button>
+  </div>
+} @else if (items.length === 0) {
+  <cp-empty-state
+    icon="inbox"
+    title="No prior authorization requests to review"
+    text="Pended requests appear here when they need review."
+  />
+} @else {
+  <div class="app-queue__table">
+    <table
+      mat-table
+      [dataSource]="items"
+      aria-label="Prior authorization review queue"
+    >
+      <ng-container matColumnDef="member">
+        <th mat-header-cell *matHeaderCellDef>Member</th>
+        <td mat-cell *matCellDef="let item">
+          {{ item.memberName || '—' }}
+          @if (item.memberId) {
+            <div class="cp-font-mono">{{ item.memberId }}</div>
+          }
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="service">
+        <th mat-header-cell *matHeaderCellDef>Service</th>
+        <td mat-cell *matCellDef="let item">
+          {{ item.service ?? '—' }}
+          @if (item.authorizationReference) {
+            <div class="cp-font-mono">{{ item.authorizationReference }}</div>
+          }
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="priority">
+        <th mat-header-cell *matHeaderCellDef>Priority</th>
+        <td mat-cell *matCellDef="let item">
+          @if (item.expedited) {
+            <span class="cp-status-badge cp-status-badge--warning"
+              >Expedited</span
+            >
+          } @else {
+            Standard
+          }
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="deadline">
+        <th mat-header-cell *matHeaderCellDef>Decision deadline</th>
+        <td mat-cell *matCellDef="let item">
+          <time [attr.datetime]="item.decisionDeadline">
+            {{ item.decisionDeadline | date: 'd MMM y, HH:mm' }}
+          </time>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="time">
+        <th mat-header-cell *matHeaderCellDef>Time remaining</th>
+        <td mat-cell *matCellDef="let item">
+          @if (item.breached) {
+            <span class="cp-status-badge cp-status-badge--critical"
+              >Breached</span
+            >
+          }
+          {{ remaining(item) }}
+        </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let item; columns: columns"></tr>
+    </table>
+  </div>
+}
