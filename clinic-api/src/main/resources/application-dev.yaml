@@ -2,6 +2,7 @@
 # a packaged jar does not, so production has no demo users and no default JWT secret.
 clinic:
   payer:
+    decision-webhook-secret: ${PAS_DECISION_WEBHOOK_SECRET:dev-only-pas-decision-webhook-secret}
     client-secret: ${CLINIC_PAYER_CLIENT_SECRET:dev-only-clinic-api-client-secret}
   auth:
     jwt-secret: ${CLINIC_JWT_SECRET:dev-only-jwt-secret-change-me-in-prod-0123456789}

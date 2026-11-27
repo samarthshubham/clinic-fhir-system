@@ -95,6 +95,28 @@ describe('InboxComponent', () => {
     expect(text(fixture)).toContain('Systolic BP above 180 mmHg');
   });
 
+  it('labels a prior authorization decision with its own alert type', async () => {
+    alerts.next({
+      items: [
+        {
+          ...alert('decision-1', 'p1'),
+          observationId: null,
+          type: 'prior-auth-decision',
+          reason: 'Prior authorization approved',
+        },
+      ],
+      total: 1,
+    });
+    const fixture = await render();
+
+    expect(text(fixture)).toContain('Prior authorization approved');
+    expect(
+      fixture.nativeElement
+        .querySelector('.cp-status-badge--info')
+        .textContent.trim(),
+    ).toBe('Prior authorization');
+  });
+
   it('should fall back to the patient id when the name cannot be loaded', async () => {
     alerts.next({ items: [alert('a3', 'p9')], total: 1 });
     const fixture = await render();

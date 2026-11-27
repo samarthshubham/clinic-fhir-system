@@ -346,7 +346,7 @@ public final class FhirClientStub {
               String id = String.valueOf(nextId++);
               store((Resource) resource, id);
               created.add(resource);
-              return new MethodOutcome(new IdType(resource.fhirType(), id));
+              return new MethodOutcome(new IdType(resource.fhirType(), id), true);
             })
         .when(createTyped)
         .execute();
@@ -365,7 +365,7 @@ public final class FhirClientStub {
     }
     ICreateTyped matched = lenientMock(ICreateTyped.class, Answers.RETURNS_DEFAULTS);
     lenient()
-        .doReturn(new MethodOutcome(new IdType(resource.fhirType(), existingId)))
+        .doReturn(new MethodOutcome(new IdType(resource.fhirType(), existingId), false))
         .when(matched)
         .execute();
     return matched;
@@ -415,7 +415,7 @@ public final class FhirClientStub {
               }
               store((Resource) resource, id);
               updated.add(resource);
-              return new MethodOutcome(new IdType(resource.fhirType(), id));
+              return new MethodOutcome(new IdType(resource.fhirType(), id), true);
             })
         .when(updateTyped)
         .execute();

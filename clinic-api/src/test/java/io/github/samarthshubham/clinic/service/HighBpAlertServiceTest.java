@@ -160,7 +160,7 @@ class HighBpAlertServiceTest {
     service.handleNotification();
 
     assertThat(sentAlerts())
-        .extracting(ClinicianAlert::observationReference)
+        .extracting(ClinicianAlert::sourceReference)
         .containsExactly("Observation/obs-1", "Observation/obs-2");
   }
 
@@ -210,7 +210,7 @@ class HighBpAlertServiceTest {
 
     assertThat(fhir.loadedPages()).containsExactly("page-2", "page-3");
     assertThat(sentAlerts())
-        .extracting(ClinicianAlert::observationReference)
+        .extracting(ClinicianAlert::sourceReference)
         .containsExactly("Observation/obs-1", "Observation/obs-2", "Observation/obs-3");
   }
 
@@ -256,7 +256,7 @@ class HighBpAlertServiceTest {
     lenient()
         .doThrow(new IllegalStateException("gateway down"))
         .when(notifier)
-        .send(argThat(alert -> alert.observationReference().equals("Observation/obs-2")));
+        .send(argThat(alert -> alert.sourceReference().equals("Observation/obs-2")));
     fhir.givenSearchResult(
         Observation.class,
         bundleOf(
@@ -267,7 +267,7 @@ class HighBpAlertServiceTest {
     service.handleNotification();
 
     assertThat(sentAlerts())
-        .extracting(ClinicianAlert::observationReference)
+        .extracting(ClinicianAlert::sourceReference)
         .containsExactly("Observation/obs-1", "Observation/obs-2", "Observation/obs-3");
     assertThat(output).contains("failed for Patient/p2 (Observation/obs-2): IllegalStateException");
   }
@@ -293,7 +293,7 @@ class HighBpAlertServiceTest {
     fanOut.handleNotification();
 
     assertThat(sentAlerts())
-        .extracting(ClinicianAlert::observationReference)
+        .extracting(ClinicianAlert::sourceReference)
         .containsExactly("Observation/obs-1");
     assertThat(lastUpdatedLowerBound(fhir.lastSearchCriteria(Observation.class)))
         .isNotEqualTo(new Date(1_000));
@@ -304,7 +304,7 @@ class HighBpAlertServiceTest {
     lenient()
         .doThrow(new IllegalStateException("gateway down"))
         .when(notifier)
-        .send(argThat(alert -> alert.observationReference().equals("Observation/obs-2")));
+        .send(argThat(alert -> alert.sourceReference().equals("Observation/obs-2")));
     fhir.givenSearchResult(
         Observation.class,
         bundleOf(

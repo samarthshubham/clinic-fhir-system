@@ -13,7 +13,11 @@
     <ul class="inbox__list">
       @for (row of rows(); track row.alert.id) {
         <li class="inbox__item">
-          <span class="cp-status-badge--critical">High BP</span>
+          @if (row.alert.type === 'prior-auth-decision') {
+            <span class="cp-status-badge--info">Prior authorization</span>
+          } @else {
+            <span class="cp-status-badge--critical">High BP</span>
+          }
           <div class="inbox__body">
             @if (row.alert.patientId) {
               <a

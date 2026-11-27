@@ -30,6 +30,7 @@ import io.github.samarthshubham.clinic.service.TokenService;
 import io.github.samarthshubham.clinic.service.TrendsService;
 import io.github.samarthshubham.clinic.service.VitalsService;
 import io.github.samarthshubham.clinic.service.dtr.DtrService;
+import io.github.samarthshubham.clinic.service.pas.PasDecisionService;
 import io.github.samarthshubham.clinic.support.TestAuth;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -55,6 +56,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 @Import(SecurityConfig.class)
 class AuthorizationMatrixTest {
 
+  private static final String PAS_WEBHOOK = "/api/alerts/prior-auth-subscription";
   private static final Set<Role> EVERYONE = EnumSet.of(ADMIN, CLINICIAN, FRONT_DESK);
   private static final Set<Role> EVERYONE_AND_OWNER =
       EnumSet.of(ADMIN, CLINICIAN, FRONT_DESK, PATIENT);
@@ -158,7 +160,8 @@ class AuthorizationMatrixTest {
               """,
               CLINICAL_STAFF),
           get("/api/alerts?status=active", CLINICAL_STAFF),
-          post("/api/alerts/f1/acknowledge", null, CLINICAL_STAFF));
+          post("/api/alerts/f1/acknowledge", null, CLINICAL_STAFF),
+          post(PAS_WEBHOOK, null, Set.of()));
 
   @Autowired private MockMvcTester mvc;
   @Autowired private JwtEncoder jwtEncoder;
@@ -182,6 +185,7 @@ class AuthorizationMatrixTest {
   @MockitoBean private GoalService goalService;
   @MockitoBean private HighBpAlertService highBpAlertService;
   @MockitoBean private AlertService alertService;
+  @MockitoBean private PasDecisionService pasDecisionService;
   @MockitoBean private AuthService authService;
   @MockitoBean private CoverageService coverageService;
   @MockitoBean private DirectoryService directoryService;
@@ -212,7 +216,9 @@ class AuthorizationMatrixTest {
   void eachRoleGetsExactlyItsAllowedEndpoints(Endpoint endpoint, Role role) {
     MvcTestResult result = send(endpoint, role);
 
-    if (endpoint.allowed().contains(role)) {
+    if (PAS_WEBHOOK.equals(endpoint.uri())) {
+      assertThat(result).hasStatus(HttpStatus.UNAUTHORIZED);
+    } else if (endpoint.allowed().contains(role)) {
       assertThat(result).hasStatus2xxSuccessful();
     } else {
       assertThat(result)

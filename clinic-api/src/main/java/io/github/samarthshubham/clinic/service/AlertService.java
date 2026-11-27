@@ -11,6 +11,7 @@ import io.github.samarthshubham.clinic.mapper.PageMapper;
 import java.time.Instant;
 import java.util.Date;
 import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Flag;
 import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.Meta;
@@ -28,6 +29,19 @@ public class AlertService {
   }
 
   public boolean raise(ClinicianAlert alert) {
+    if (alert.kind() == ClinicianAlert.Kind.PRIOR_AUTH_DECISION) {
+      var outcome =
+          fhirClient
+              .create()
+              .resource(flagMapper.toFhir(alert, Instant.now()))
+              .conditionalByUrl(
+                  "Flag?identifier="
+                      + FlagMapper.PRIOR_AUTH_ALERT_IDENTIFIER_SYSTEM
+                      + "|"
+                      + flagMapper.alertKey(alert))
+              .execute();
+      return Boolean.TRUE.equals(outcome.getCreated());
+    }
     Bundle existing =
         fhirClient
             .search()
@@ -52,7 +66,10 @@ public class AlertService {
             .forResource(Flag.class)
             .where(
                 new TokenClientParam("identifier")
-                    .hasSystemWithAnyCode(FlagMapper.ALERT_IDENTIFIER_SYSTEM));
+                    .exactly()
+                    .codings(
+                        new Coding().setSystem(FlagMapper.ALERT_IDENTIFIER_SYSTEM),
+                        new Coding().setSystem(FlagMapper.PRIOR_AUTH_ALERT_IDENTIFIER_SYSTEM)));
     if (status != null) {
       query =
           query.and(
