@@ -127,6 +127,7 @@ fixtures/davinci/       Golden Da Vinci fixtures per IG (provider, crd, dtr, pas
                         provider/ = clinic-api US Core mapper output
 
 terminology/            Terminology for payer HAPI validation
+  valuesets/            Limited demo expansions for PAS X12 bindings, sourced from published PAS examples
   codesystems/          CPT, HCPCS, ICD-10-CM and X12 demo fragments, plus complete THO and DTR snapshots;
                         payer-terminology.feature populates the native index and ig-validate checks the source files. The Formulary seed expands the IG’s RxNorm term-type ValueSets against the payer HAPI’s persistent Lucene index
 

@@ -10,6 +10,9 @@ import org.hl7.fhir.r4.model.Parameters;
 
 final class PasBundleValidation {
 
+  private static final String CRD_COVERAGE_SNAPSHOT =
+      "http://hl7.org/fhir/us/davinci-crd/StructureDefinition/ext-coverage-information|2.2.1";
+
   private PasBundleValidation() {}
 
   static void requireValid(
@@ -21,6 +24,18 @@ final class PasBundleValidation {
     }
     Parameters input = new Parameters();
     input.addParameter().setName("resource").setResource(profiled);
+    OperationOutcome errors = validationErrors(fhirClient, input);
+    // HAPI 8.12 can fail to evaluate the official CRD slices the first time it uses the snapshot.
+    if (errors.hasIssue()
+        && errors.getIssue().stream().allMatch(PasBundleValidation::coldSnapshot)) {
+      errors = validationErrors(fhirClient, input);
+    }
+    if (errors.hasIssue()) {
+      throw new UnprocessableEntityException(fhirContext, errors);
+    }
+  }
+
+  private static OperationOutcome validationErrors(IGenericClient fhirClient, Parameters input) {
     OperationOutcome outcome;
     try {
       outcome =
@@ -44,8 +59,21 @@ final class PasBundleValidation {
                 issue.getSeverity() == OperationOutcome.IssueSeverity.ERROR
                     || issue.getSeverity() == OperationOutcome.IssueSeverity.FATAL)
         .forEach(issue -> errors.addIssue(issue.copy()));
-    if (errors.hasIssue()) {
-      throw new UnprocessableEntityException(fhirContext, errors);
-    }
+    return errors;
+  }
+
+  private static boolean coldSnapshot(OperationOutcome.OperationOutcomeIssueComponent issue) {
+    return issue.getCode() == OperationOutcome.IssueType.PROCESSING
+        && issue.hasDiagnostics()
+        && issue
+            .getDiagnostics()
+            .startsWith(
+                "Slicing cannot be evaluated: Could not match discriminator (url) for slice Extension.extension:")
+        && issue
+            .getDiagnostics()
+            .endsWith(
+                " in profile "
+                    + CRD_COVERAGE_SNAPSHOT
+                    + " - the discriminator [url] does not have fixed value, binding or existence assertions");
   }
 }

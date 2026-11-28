@@ -1,0 +1,37 @@
+{
+  "resourceType": "ValueSet",
+  "id": "demo-pas-service-category",
+  "url": "https://valueset.x12.org/x217/005010/request/2000F/UM/1/03/00/1365",
+  "version": "praxis-demo",
+  "name": "PraxisDemoPasServiceCategory",
+  "status": "active",
+  "experimental": true,
+  "description": "Limited expansion for the Praxis demo. Membership illustrated by https://hl7.org/fhir/us/davinci-pas/2.2.1/en/Claim-MedicalServicesAuthorizationExample.html.",
+  "expansion": {
+    "timestamp": "2026-03-27T00:00:00Z",
+    "parameter": [
+      {
+        "name": "limitedExpansion",
+        "valueBoolean": true
+      }
+    ],
+    "contains": [
+      {
+        "system": "https://codesystem.x12.org/005010/1365",
+        "code": "1"
+      }
+    ]
+  },
+  "compose": {
+    "include": [
+      {
+        "system": "https://codesystem.x12.org/005010/1365",
+        "concept": [
+          {
+            "code": "1"
+          }
+        ]
+      }
+    ]
+  }
+}

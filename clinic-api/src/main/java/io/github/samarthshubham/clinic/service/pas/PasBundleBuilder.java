@@ -356,11 +356,7 @@ public class PasBundleBuilder {
     order.setQuantity(
         source.hasQuantity()
             ? source.getQuantity().copy()
-            : new Quantity()
-                .setValue(1)
-                .setUnit("each")
-                .setSystem("http://unitsofmeasure.org")
-                .setCode("1"));
+            : new Quantity().setValue(1).setUnit("each"));
     order.addExtension(source.getExtensionByUrl(CrdClient.COVERAGE_INFORMATION).copy());
     return order;
   }

@@ -512,6 +512,78 @@ class ClaimSubmitInteropTest {
   }
 
   @Test
+  void validatesTheSameBundleAgainAfterAColdCrdSnapshotFailure() {
+    givenActiveMember("member-sandra");
+    payerHapi.givenOperationResult(
+        () -> {
+          if (payerHapi.operationInputs().size() == 1) {
+            throw new UnprocessableEntityException(FhirContext.forR4Cached(), coldCrdSnapshot());
+          }
+          return new OperationOutcome();
+        });
+
+    submit("request-mri.json");
+
+    assertThat(payerHapi.operationInputs()).hasSize(2);
+    assertThat(
+            ((Parameters) payerHapi.operationInputs().getFirst())
+                .equalsDeep((Parameters) payerHapi.operationInputs().getLast()))
+        .isTrue();
+    assertThat(payerHapi.transactions()).hasSize(1);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void rejectsValidationErrorsWithoutPersistingTheClaim(boolean errorOnFirstAttempt) {
+    OperationOutcome cold = coldCrdSnapshot();
+    OperationOutcome malformed = new OperationOutcome();
+    malformed
+        .addIssue()
+        .setSeverity(OperationOutcome.IssueSeverity.ERROR)
+        .setCode(OperationOutcome.IssueType.STRUCTURE)
+        .setDiagnostics("Extension.extension:coverage.value: required Reference");
+    if (errorOnFirstAttempt) {
+      cold.addIssue(malformed.getIssueFirstRep());
+    }
+    payerHapi.givenOperationResult(
+        () -> payerHapi.operationInputs().size() == 1 ? cold : malformed);
+
+    assertThatThrownBy(() -> submit("request-mri.json"))
+        .isInstanceOfSatisfying(
+            UnprocessableEntityException.class,
+            error ->
+                assertThat(((OperationOutcome) error.getOperationOutcome()).getIssue())
+                    .hasSize(errorOnFirstAttempt ? 2 : 1)
+                    .extracting(OperationOutcome.OperationOutcomeIssueComponent::getDiagnostics)
+                    .contains("Extension.extension:coverage.value: required Reference"));
+    assertThat(payerHapi.operationInputs()).hasSize(errorOnFirstAttempt ? 1 : 2);
+    assertThat(payerHapi.transactions()).isEmpty();
+  }
+
+  @Test
+  void rejectsAColdSnapshotErrorThatPersistsAfterOneRetry() {
+    payerHapi.givenOperationResult(ClaimSubmitInteropTest::coldCrdSnapshot);
+
+    assertThatThrownBy(() -> submit("request-mri.json"))
+        .isInstanceOf(UnprocessableEntityException.class);
+    assertThat(payerHapi.operationInputs()).hasSize(2);
+    assertThat(payerHapi.transactions()).isEmpty();
+  }
+
+  private static OperationOutcome coldCrdSnapshot() {
+    OperationOutcome outcome = new OperationOutcome();
+    outcome
+        .addIssue()
+        .setSeverity(OperationOutcome.IssueSeverity.ERROR)
+        .setCode(OperationOutcome.IssueType.PROCESSING)
+        .setDiagnostics(
+            "Slicing cannot be evaluated: Could not match discriminator (url) for slice Extension.extension:coverage"
+                + " in profile http://hl7.org/fhir/us/davinci-crd/StructureDefinition/ext-coverage-information|2.2.1"
+                + " - the discriminator [url] does not have fixed value, binding or existence assertions");
+    return outcome;
+  }
+
+  @Test
   void validatesAgainstThePasRequestBundleProfile() {
     givenActiveMember("member-sandra");
 

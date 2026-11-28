@@ -6,6 +6,7 @@ const { cascadeDeletePatient, upsertPatient, execFileSync, payer } = vi.hoisted(
     upsertPatient: vi.fn<(patient: object) => Promise<void>>(),
     execFileSync: vi.fn(),
     payer: {
+      upsertOrganization: vi.fn(),
       ensurePayerOrganization: vi.fn(),
       ensureInsurancePlan: vi.fn(),
       findInsurancePlan: vi.fn(),
@@ -18,12 +19,16 @@ const { cascadeDeletePatient, upsertPatient, execFileSync, payer } = vi.hoisted(
 
 vi.mock('@seed-support/api-client', () => ({
   apiClient: { cascadeDeletePatient, upsertPatient, ...payer },
+  SEED_CLINIC: { id: 'seed-default-org' },
 }));
-const { seedTerminology, waitForFragmentLookups } = vi.hoisted(() => ({
-  seedTerminology: vi.fn(),
-  waitForFragmentLookups: vi.fn(),
-}));
+const { seedPasDemoValueSets, seedTerminology, waitForFragmentLookups } =
+  vi.hoisted(() => ({
+    seedPasDemoValueSets: vi.fn(),
+    seedTerminology: vi.fn(),
+    waitForFragmentLookups: vi.fn(),
+  }));
 vi.mock('@seed-support/payer-terminology', () => ({
+  seedPasDemoValueSets,
   seedTerminology,
   waitForFragmentLookups,
 }));
@@ -226,6 +231,28 @@ describe('cleanUpAfterSpec', () => {
 });
 
 describe('e2eTasks', () => {
+  it('installs the PAS bindings after the native CodeSystem fragments are ready', async () => {
+    const { e2eTasks } = await loadTasks();
+    await e2eTasks.ensurePasSubmissionFixtures();
+
+    expect(payer.upsertOrganization).toHaveBeenCalledWith(
+      'seed-default-org',
+      expect.objectContaining({ id: 'seed-default-org' }),
+    );
+    expect(seedTerminology).toHaveBeenCalledWith(
+      PAYER_HAPI,
+      expect.objectContaining({ id: 'x12-1525' }),
+    );
+    expect(waitForFragmentLookups).toHaveBeenCalledWith(
+      PAYER_HAPI,
+      expect.arrayContaining([expect.objectContaining({ id: 'x12-1525' })]),
+    );
+    expect(seedPasDemoValueSets).toHaveBeenCalledWith(PAYER_HAPI);
+    expect(seedPasDemoValueSets.mock.invocationCallOrder[0]).toBeGreaterThan(
+      waitForFragmentLookups.mock.invocationCallOrder[0],
+    );
+  });
+
   it('replaces a test patient and tracks it for cleanup', async () => {
     const { cleanUpAfterSpec, e2eTasks } = await loadTasks();
     const patient = {

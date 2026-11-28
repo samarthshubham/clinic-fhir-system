@@ -376,9 +376,7 @@
         },
         "quantityQuantity": {
           "value": 1,
-          "unit": "each",
-          "system": "http://unitsofmeasure.org",
-          "code": "1"
+          "unit": "each"
         },
         "subject": {
           "reference": "Patient/ramon-castillo"
