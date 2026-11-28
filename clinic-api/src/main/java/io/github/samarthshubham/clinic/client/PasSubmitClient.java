@@ -8,7 +8,9 @@ import io.github.samarthshubham.clinic.exception.PasRequestException;
 import io.github.samarthshubham.clinic.exception.PasSubmissionUnavailableException;
 import java.time.Duration;
 import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.Claim;
 import org.hl7.fhir.r4.model.ClaimResponse;
+import org.hl7.fhir.r4.model.Reference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -61,10 +63,7 @@ public class PasSubmitClient {
       if (!result.hasEntry()
           || !(result.getEntryFirstRep().getResource() instanceof ClaimResponse decision)
           || !submission.getIdentifier().equalsDeep(result.getIdentifier())
-          || !submission
-              .getEntryFirstRep()
-              .getFullUrl()
-              .equals(decision.getRequest().getReference())
+          || !matchesRequest(submission.getEntryFirstRep(), decision.getRequest())
           || !decision.hasOutcome()) {
         throw unavailable();
       }
@@ -86,6 +85,29 @@ public class PasSubmitClient {
     } catch (RestClientException | DataFormatException | PayerApiException e) {
       throw unavailable();
     }
+  }
+
+  private static boolean matchesRequest(Bundle.BundleEntryComponent entry, Reference request) {
+    if (request.hasReference()) {
+      if (request.getReference().equals(entry.getFullUrl())) {
+        return true;
+      }
+      return entry.getResource() instanceof Claim claim
+          && claim.hasId()
+          && entry.getFullUrl().endsWith("/Claim/" + claim.getIdPart())
+          && request.getReference().equals("Claim/" + claim.getIdPart());
+    }
+    if (!request.hasIdentifier() || !(entry.getResource() instanceof Claim claim)) {
+      return false;
+    }
+    var identifier = request.getIdentifier();
+    return identifier.hasSystem()
+        && identifier.hasValue()
+        && claim.getIdentifier().stream()
+            .anyMatch(
+                id ->
+                    identifier.getSystem().equals(id.getSystem())
+                        && identifier.getValue().equals(id.getValue()));
   }
 
   private static PasSubmissionUnavailableException unavailable() {

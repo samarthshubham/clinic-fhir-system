@@ -17,7 +17,9 @@ import io.github.samarthshubham.clinic.exception.PasRequestException;
 import io.github.samarthshubham.clinic.exception.PasSubmissionUnavailableException;
 import io.github.samarthshubham.clinic.support.GoldenFhir;
 import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.Claim;
 import org.hl7.fhir.r4.model.ClaimResponse;
+import org.hl7.fhir.r4.model.Reference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
@@ -67,6 +69,28 @@ class PasSubmitClientTest {
         .andRespond(withSuccess(FHIR.newJsonParser().encodeResourceToString(response), FHIR_JSON));
     assertThatThrownBy(() -> client.submit(request))
         .isInstanceOf(PasSubmissionUnavailableException.class);
+    server.verify();
+  }
+
+  @Test
+  void acceptsARelativeClaimReference() {
+    Claim claim = (Claim) request.getEntryFirstRep().getResource();
+    decision().setRequest(new Reference("Claim/" + claim.getIdPart()));
+    server
+        .expect(requestTo(URL))
+        .andRespond(withSuccess(FHIR.newJsonParser().encodeResourceToString(response), FHIR_JSON));
+    assertThat(client.submit(request).getPreAuthRef()).isEqualTo("PHP-PA-A6041E2F");
+    server.verify();
+  }
+
+  @Test
+  void acceptsALogicalClaimReference() {
+    Claim claim = (Claim) request.getEntryFirstRep().getResource();
+    decision().setRequest(new Reference().setIdentifier(claim.getIdentifierFirstRep().copy()));
+    server
+        .expect(requestTo(URL))
+        .andRespond(withSuccess(FHIR.newJsonParser().encodeResourceToString(response), FHIR_JSON));
+    assertThat(client.submit(request).getPreAuthRef()).isEqualTo("PHP-PA-A6041E2F");
     server.verify();
   }
 

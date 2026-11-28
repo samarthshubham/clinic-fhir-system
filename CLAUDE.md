@@ -454,7 +454,8 @@ LOINC system URI: `http://loinc.org`. Units system: `http://unitsofmeasure.org`.
 | `clinic.alerts.webhook-secret` | `${CLINIC_ALERTS_WEBHOOK_SECRET:dev-only-alert-secret}` | Shared secret HAPI sends as `X-Alert-Secret`; webhook returns 401 otherwise |
 | `clinic.alerts.first-lookback` | `24h` | How far back the first notification after a restart searches (may re-alert) |
 | `clinic.payer.base-url` | `${CLINIC_PAYER_API_URL:http://localhost:9095}` | payer-api base URL for CRD hooks and `/oauth/token` |
-| `clinic.payer.client-id` / `scope` | `clinic-api` / `system/Coverage.r system/Questionnaire.r` | clinic-api's `client_credentials` client at payer-api (CRD hooks, DTR `$questionnaire-package`) |
+| `clinic.payer.client-id` / `scope` | `clinic-api` / `system/Claim.c system/Claim.r system/Coverage.r system/Questionnaire.r` | clinic-api's `client_credentials` client at payer-api (PAS submission and inquiry, CRD hooks, DTR `$questionnaire-package`) |
+| `clinic.payer.pas-submit-timeout` | `${PAS_SUBMIT_TIMEOUT:60s}` | PAS submission timeout |
 | `clinic.payer.client-secret` | `${CLINIC_PAYER_CLIENT_SECRET}`; dev profile default `dev-only-clinic-api-client-secret` | Startup fails when empty |
 | `clinic.payer.payer-id` | `praxis-health-plan` | Hooks are called only when the active Coverage's payor identifier (`http://praxis.clinic/fhir/identifier/payer`) is this payer; otherwise no patient data is sent |
 | `clinic.payer.timeout` | `2s` | Connect and read timeout per payer-api call; on timeout, 5xx or connection error the order is saved with a "Coverage unknown" card, and the DTR documentation endpoints answer 503 |
@@ -502,6 +503,8 @@ Every other `/api/**` endpoint needs `Authorization: Bearer <accessToken>` (exce
 | `GET` | `/api/service-requests/{id}/documentation` | DTR form from the payer's `$questionnaire-package`: saved answers, or prefilled from the chart (not stored) (`clinical:read`) |
 | `PUT` | `/api/service-requests/{id}/documentation` | Save answers per linkId as the order's `in-progress` QuestionnaireResponse (`order:write`) |
 | `POST` | `/api/service-requests/{id}/documentation/complete` | Check enabled required items, save as `completed` (`order:write`); 422 lists missing linkIds |
+| `POST` | `/api/prior-auths` | Submit an order for prior authorization and return its current status (`priorauth:write`) |
+| `GET` | `/api/prior-auths?patientId={id}` | List tracked order authorizations for a patient (`priorauth:read`) |
 | `POST` | `/api/diagnostic-reports` | Create report (auto-completes linked ServiceRequest) |
 | `GET` | `/api/diagnostic-reports?patientId={id}` | List reports |
 | `POST` | `/api/care-plans` | Create care plan |

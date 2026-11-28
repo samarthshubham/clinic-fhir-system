@@ -48,6 +48,8 @@ tags:
     description: Scheduled appointments
   - name: Service Requests
     description: Lab and imaging orders
+  - name: Prior Authorizations
+    description: Submit orders for prior authorization and read their current status
   - name: Coverages
     description: Patient insurance (FHIR Coverage) and the payer Organization
   - name: Diagnostic Reports
@@ -894,6 +896,67 @@ paths:
           $ref: '#/components/responses/DocumentationInvalid'
         '503':
           $ref: '#/components/responses/PayerUnavailable'
+
+  /api/prior-auths:
+    get:
+      tags: [Prior Authorizations]
+      summary: List tracked prior authorizations for a patient
+      description: Requires `priorauth:read` (ADMIN, CLINICIAN).
+      parameters:
+        - name: patientId
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        '200':
+          description: Tracked prior authorizations for the chart
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PriorAuthResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Prior Authorizations]
+      summary: Submit a saved order for prior authorization
+      description: >-
+        Requires `priorauth:write` (ADMIN, CLINICIAN). An order that is already
+        tracked returns its current status.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PriorAuthRequest'
+      responses:
+        '200':
+          description: Current status of the prior authorization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriorAuthResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          description: The payer response could not be confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   # ── Coverages ─────────────────────────────────────────────────────────────
 
@@ -2384,6 +2447,61 @@ components:
           type: string
           description: Medical record number. Generated (`PX-` + 8 digits) when missing.
           example: "PX-10000004"
+
+    PriorAuthRequest:
+      type: object
+      required: [orderId, placeOfService, serviceCategory]
+      properties:
+        orderId:
+          type: string
+          pattern: '^[A-Za-z0-9.-]{1,64}$'
+        placeOfService:
+          type: string
+          pattern: '^[0-9]{2}$'
+          example: '11'
+        serviceCategory:
+          type: string
+          pattern: '^[A-Z0-9]{1,2}$'
+          example: '1'
+        service:
+          description: CPT or HCPCS coding to use in place of the order's billing code
+          allOf:
+            - $ref: '#/components/schemas/PriorAuthBillingCode'
+        diagnoses:
+          type: array
+          description: Optional ICD-10-CM codings
+          items:
+            $ref: '#/components/schemas/PriorAuthBillingCode'
+
+    PriorAuthBillingCode:
+      type: object
+      required: [system, code]
+      properties:
+        system:
+          type: string
+          minLength: 1
+        code:
+          type: string
+          minLength: 1
+
+    PriorAuthResponse:
+      type: object
+      required: [orderId, status]
+      properties:
+        orderId:
+          type: string
+        status:
+          type: string
+          enum: [SUBMITTED, PENDED, APPROVED, DENIED, NOT_REQUIRED, MIXED]
+        authorizationNumber:
+          type: string
+          nullable: true
+        denialReasonCode:
+          type: string
+          nullable: true
+        denialReason:
+          type: string
+          nullable: true
 
     CoverageRequest:
       type: object
