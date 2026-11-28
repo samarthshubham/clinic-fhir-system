@@ -1,0 +1,16 @@
+.app-review__sections {
+  display: grid;
+  gap: 16px;
+}
+
+.app-review__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app-review__denial {
+  display: grid;
+  gap: 8px;
+  max-width: 640px;
+}

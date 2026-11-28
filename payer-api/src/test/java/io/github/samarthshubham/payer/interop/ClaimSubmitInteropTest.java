@@ -5,6 +5,7 @@ import static io.github.samarthshubham.payer.support.GoldenFhir.fixture;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.Mockito.when;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
@@ -269,6 +270,29 @@ class ClaimSubmitInteropTest {
     FhirContext context = FhirContext.forR4Cached();
     assertThat(context.newJsonParser().encodeResourceToString(second))
         .isEqualTo(context.newJsonParser().encodeResourceToString(first));
+  }
+
+  @Test
+  void resubmittingAfterStaffReviewReturnsTheFirstVersion() {
+    givenActiveMember("member-gerald");
+    Bundle first = submit("request-polysomnography.json");
+    Bundle transaction = payerHapi.transactions().getFirst();
+    Claim existing = resource(transaction, Claim.class);
+    existing.setId("Claim/1");
+    ClaimResponse initial = resource(transaction, ClaimResponse.class);
+    initial.setId("ClaimResponse/2");
+    initial.setRequest(new Reference("Claim/1"));
+    ClaimResponse reviewed = initial.copy().setDisposition("Approved");
+    reviewed.getMeta().addTag(ClaimSubmitService.PRIOR_AUTH_SYSTEM, "staff-decision", null);
+    payerHapi.givenSearchResult(Claim.class, FhirClientStub.bundleOf(existing, reviewed));
+    when(payerHapi.client().vread(ClaimResponse.class, "2", "1")).thenReturn(initial);
+
+    Bundle replay = submit("request-polysomnography.json");
+
+    FhirContext context = FhirContext.forR4Cached();
+    assertThat(context.newJsonParser().encodeResourceToString(replay))
+        .isEqualTo(context.newJsonParser().encodeResourceToString(first));
+    assertThat(payerHapi.transactions()).hasSize(1);
   }
 
   @ParameterizedTest

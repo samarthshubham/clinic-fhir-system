@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
@@ -39,6 +40,7 @@ function compareQueueItems(
     MatButtonModule,
     MatProgressBarModule,
     MatTableModule,
+    RouterLink,
   ],
   templateUrl: './queue.component.html',
   styleUrl: './queue.component.scss',

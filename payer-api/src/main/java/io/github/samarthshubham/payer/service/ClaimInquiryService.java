@@ -237,7 +237,7 @@ public class ClaimInquiryService {
     }
   }
 
-  private Optional<ClaimResponse> currentDecision(Claim claim) {
+  Optional<ClaimResponse> currentDecision(Claim claim) {
     Bundle decisions =
         fhirClient
             .search()

@@ -29,6 +29,14 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'queue/:id',
+        title: 'Prior authorization review · Praxis Health Plan',
+        loadComponent: () =>
+          import('./features/review/review.component').then(
+            (m) => m.CpPriorAuthReviewComponent,
+          ),
+      },
+      {
         path: 'members',
         title: 'Members · Praxis Health Plan',
         loadComponent: () =>

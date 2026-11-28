@@ -125,7 +125,7 @@ public class PriorAuthQueueService {
         .anyMatch(PriorAuthQueueService::hasPendingAction);
   }
 
-  private static boolean hasPendingAction(AdjudicationComponent adjudication) {
+  static boolean hasPendingAction(AdjudicationComponent adjudication) {
     Extension action = adjudication.getExtensionByUrl(REVIEW_ACTION);
     Extension code = action == null ? null : action.getExtensionByUrl(REVIEW_ACTION_CODE);
     return code != null

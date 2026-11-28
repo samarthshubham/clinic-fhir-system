@@ -12,6 +12,7 @@ import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Claim;
 import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Coverage;
+import org.hl7.fhir.r4.model.DocumentReference;
 import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.Organization;
@@ -202,6 +203,17 @@ final class PasRequest {
         .toList();
   }
 
+  List<Bundle.BundleEntryComponent> documentEntries() {
+    return claim().getSupportingInfo().stream()
+        .map(Claim.SupportingInformationComponent::getValue)
+        .filter(Reference.class::isInstance)
+        .map(Reference.class::cast)
+        .flatMap(reference -> entry(reference).stream())
+        .filter(entry -> entry.getResource() instanceof DocumentReference)
+        .distinct()
+        .toList();
+  }
+
   /** The first answer to each linkId across the bundle's QuestionnaireResponses, as text. */
   Map<String, String> answers() {
     Map<String, String> answers = new HashMap<>();
@@ -211,7 +223,7 @@ final class PasRequest {
     return answers;
   }
 
-  private static void collectAnswers(
+  static void collectAnswers(
       List<QuestionnaireResponse.QuestionnaireResponseItemComponent> items,
       Map<String, String> answers) {
     for (QuestionnaireResponse.QuestionnaireResponseItemComponent item : items) {

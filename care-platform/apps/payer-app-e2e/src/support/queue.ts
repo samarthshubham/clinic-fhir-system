@@ -37,6 +37,31 @@ export async function createPendedRequest(memberId: string): Promise<null> {
     insurer,
   };
 
+  const questionnaireId = `e2e-questionnaire-response-${memberId}`;
+  const documentId = `e2e-document-${memberId}`;
+  await apiClient.putPayerResource({
+    resourceType: 'QuestionnaireResponse',
+    id: questionnaireId,
+    status: 'completed',
+    subject: patient,
+    item: [
+      {
+        linkId: 'stress-symptoms',
+        text: 'Reported symptoms',
+        answer: [{ valueString: 'Exertional chest discomfort' }],
+      },
+    ],
+  });
+  await apiClient.putPayerResource({
+    resourceType: 'DocumentReference',
+    id: documentId,
+    status: 'current',
+    subject: patient,
+    content: [
+      { attachment: { title: 'Cardiology note', contentType: 'text/plain' } },
+    ],
+  });
+
   await apiClient.putPayerResource({
     ...common,
     resourceType: 'Claim',
@@ -70,7 +95,29 @@ export async function createPendedRequest(memberId: string): Promise<null> {
         valueDateTime: deadline,
       },
     ],
-    item: [{ sequence: 1, productOrService: { text: description } }],
+    supportingInfo: [
+      {
+        sequence: 1,
+        category: { text: 'Questionnaire' },
+        valueReference: {
+          reference: `QuestionnaireResponse/${questionnaireId}`,
+        },
+      },
+      {
+        sequence: 2,
+        category: { text: 'Attachment' },
+        valueReference: { reference: `DocumentReference/${documentId}` },
+      },
+    ],
+    item: [
+      {
+        sequence: 1,
+        productOrService: {
+          text: description,
+          coding: [{ system: 'http://www.ama-assn.org/go/cpt', code: '93015' }],
+        },
+      },
+    ],
   });
   await apiClient.putPayerResource({
     ...common,
