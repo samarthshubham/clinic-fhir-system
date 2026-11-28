@@ -377,6 +377,30 @@ The form comes from the payer: clinic-api calls payer-api `POST /fhir/Questionna
 
 ---
 
+## Prior authorization APIs
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/prior-auths` | Submit a saved order to its payer and return its current status (`priorauth:write`) |
+| `GET` | `/api/prior-auths?patientId={id}` | List the chart's tracked authorizations as an array (`priorauth:read`) |
+
+Both permissions are granted to clinicians and administrators. Submission requires the order ID, the two-digit place of service and the X12 service category. Supply a CPT or HCPCS `service` coding when the order has no suitable billing code. `diagnoses` can supply ICD-10-CM codings.
+
+```json
+{ "orderId": "sr-02", "placeOfService": "11", "serviceCategory": "1" }
+```
+
+The POST returns HTTP 200 with the tracked result. A repeated POST for the same tracked order returns the current result.
+
+```json
+{ "orderId": "sr-02", "status": "APPROVED", "authorizationNumber": "PA-1234",
+  "denialReasonCode": null, "denialReason": null }
+```
+
+The status values are `SUBMITTED`, `PENDED`, `APPROVED`, `DENIED`, `NOT_REQUIRED`, and `MIXED`. The authorization number and denial fields are nullable. An unknown order returns 404. Invalid billing or a missing submission prerequisite returns 400. An unconfirmed payer response returns 503.
+
+---
+
 ## Coverage APIs
 
 | Method | Path | Description |

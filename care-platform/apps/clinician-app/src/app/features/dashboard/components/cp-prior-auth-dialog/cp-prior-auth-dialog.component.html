@@ -1,0 +1,70 @@
+<h2 mat-dialog-title>Submit prior authorization</h2>
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <mat-dialog-content>
+    <p>{{ order.code }}</p>
+    <div>
+      <mat-form-field>
+        <mat-label>Place of service code</mat-label>
+        <input matInput formControlName="placeOfService" inputmode="numeric" />
+        <mat-hint>For example, 11 for an office</mat-hint>
+        <mat-error>Enter a two-digit place of service code.</mat-error>
+      </mat-form-field>
+    </div>
+    <div>
+      <mat-form-field>
+        <mat-label>X12 service category</mat-label>
+        <input matInput formControlName="serviceCategory" />
+        <mat-hint>1 is Medical Care</mat-hint>
+        <mat-error>Enter an X12 service category code.</mat-error>
+      </mat-form-field>
+    </div>
+    <div>
+      <mat-form-field>
+        <mat-label>Billing code system</mat-label>
+        <mat-select formControlName="serviceSystem">
+          <mat-option value="http://www.ama-assn.org/go/cpt">CPT</mat-option>
+          <mat-option
+            value="http://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets"
+            >HCPCS</mat-option
+          >
+          <mat-option [value]="x12ServiceTypes">X12 service type</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <div>
+      <mat-form-field>
+        <mat-label>Billing code</mat-label>
+        <input matInput formControlName="serviceCode" />
+        <mat-hint>Leave blank to use the order's billing code.</mat-hint>
+      </mat-form-field>
+    </div>
+    <div>
+      <mat-form-field>
+        <mat-label>ICD-10-CM diagnosis code</mat-label>
+        <input matInput formControlName="diagnosis" />
+      </mat-form-field>
+    </div>
+    @if (state(); as current) {
+      @if (current.status === 'error') {
+        <p role="alert">{{ current.message }}</p>
+      }
+    }
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button
+      mat-button
+      type="button"
+      mat-dialog-close
+      [disabled]="state().status === 'saving'"
+    >
+      Cancel
+    </button>
+    <button
+      mat-flat-button
+      type="submit"
+      [disabled]="state().status === 'saving'"
+    >
+      {{ state().status === 'saving' ? 'Submitting…' : 'Submit to payer' }}
+    </button>
+  </mat-dialog-actions>
+</form>

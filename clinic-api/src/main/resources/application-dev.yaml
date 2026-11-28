@@ -19,6 +19,7 @@ clinic:
         first-name: Anika
         last-name: Patel
         title: Internal Medicine
+        npi: '1234567893'
       - username: frontdesk
         password-hash: $2a$10$ae4pXkgrLDkZTzlTyz49GeCOtsjnv7pw2th3ZWnIEFKaKLgK8mrf6
         role: FRONT_DESK

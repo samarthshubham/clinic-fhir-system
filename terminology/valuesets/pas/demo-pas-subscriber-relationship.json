@@ -1,0 +1,37 @@
+{
+  "resourceType": "ValueSet",
+  "id": "demo-pas-subscriber-relationship",
+  "url": "https://valueset.x12.org/x217/005010/request/2000D/INS/1/02/00/1069",
+  "version": "praxis-demo",
+  "name": "PraxisDemoPasSubscriberRelationship",
+  "status": "active",
+  "experimental": true,
+  "description": "Limited expansion for the Praxis demo. Membership illustrated by https://hl7.org/fhir/us/davinci-pas/2.2.1/en/Coverage-InsuranceExample.html.",
+  "expansion": {
+    "timestamp": "2026-03-27T00:00:00Z",
+    "parameter": [
+      {
+        "name": "limitedExpansion",
+        "valueBoolean": true
+      }
+    ],
+    "contains": [
+      {
+        "system": "https://codesystem.x12.org/005010/1069",
+        "code": "18"
+      }
+    ]
+  },
+  "compose": {
+    "include": [
+      {
+        "system": "https://codesystem.x12.org/005010/1069",
+        "concept": [
+          {
+            "code": "18"
+          }
+        ]
+      }
+    ]
+  }
+}

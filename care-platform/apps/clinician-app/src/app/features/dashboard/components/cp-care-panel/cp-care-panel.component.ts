@@ -2,21 +2,30 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   inject,
   input,
   output,
   signal,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import {
+  takeUntilDestroyed,
+  toObservable,
+  toSignal,
+} from '@angular/core/rxjs-interop';
 import {
   catchError,
   combineLatest,
   distinctUntilChanged,
   filter,
+  map,
+  merge,
   of,
   startWith,
+  Subject,
   switchMap,
+  timer,
 } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -35,6 +44,12 @@ import { CpGoalRowComponent } from '@features/dashboard/components/cp-goal-row/c
 import { CpTrendChartComponent } from '@features/dashboard/components/cp-trend-chart/cp-trend-chart.component';
 import { CpCrdCardsComponent } from '@features/dashboard/components/cp-crd-cards/cp-crd-cards.component';
 import { OrderDialogLauncher } from '@features/dashboard/order-dialog-launcher.service';
+import { CpPriorAuthDialogComponent } from '@features/dashboard/components/cp-prior-auth-dialog/cp-prior-auth-dialog.component';
+import {
+  PRIOR_AUTH_STATUS_LABEL,
+  PriorAuthResponse,
+  PriorAuthService,
+} from '@features/dashboard/prior-auth.service';
 
 type AsyncState<T> = T | null | 'error';
 
@@ -73,12 +88,46 @@ export class CpCarePanelComponent {
   private readonly dialog = inject(MatDialog);
   private readonly orderDialog = inject(OrderDialogLauncher);
 
+  private readonly priorAuths = inject(PriorAuthService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly refreshPriorAuths$ = new Subject<void>();
+
   readonly patientId = input.required<string>();
   readonly carePlan = input.required<ActiveCarePlan | null>();
   readonly pending = input.required<PendingOrder[]>();
   readonly orderPlaced = output<ServiceRequestResponse>();
 
   protected readonly canOrder = computed(() => this.orderDialog.canOrder());
+
+  protected readonly priorAuthLabels = PRIOR_AUTH_STATUS_LABEL;
+  protected readonly priorAuthByOrder = toSignal(
+    toObservable(this.patientId).pipe(
+      distinctUntilChanged(),
+      switchMap((id) =>
+        this.canOrder() && id
+          ? merge(
+              of(undefined),
+              timer(15_000, 15_000),
+              this.refreshPriorAuths$,
+            ).pipe(
+              switchMap(() =>
+                this.priorAuths.list(id).pipe(
+                  map(
+                    (results) =>
+                      new Map(
+                        results.map((result) => [result.orderId, result]),
+                      ),
+                  ),
+                  catchError(() => of('error' as const)),
+                ),
+              ),
+              startWith(null),
+            )
+          : of(null),
+      ),
+    ),
+    { initialValue: null },
+  );
 
   readonly periods = PERIODS;
   readonly period = signal<Period>('30d');
@@ -153,6 +202,20 @@ export class CpCarePanelComponent {
     this.orderDialog
       .open(this.patientId())
       .subscribe((order) => this.orderPlaced.emit(order));
+  }
+
+  openPriorAuth(order: PendingOrder): void {
+    this.dialog
+      .open<CpPriorAuthDialogComponent, PendingOrder, PriorAuthResponse>(
+        CpPriorAuthDialogComponent,
+        { data: order, width: '480px' },
+      )
+      .afterClosed()
+      .pipe(
+        filter((response) => response != null),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => this.refreshPriorAuths$.next());
   }
 
   setPeriod(p: Period): void {

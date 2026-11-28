@@ -1,0 +1,20 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "x12-98",
+  "url": "https://codesystem.x12.org/005010/98",
+  "name": "PraxisDemoX12EntityIdentifier",
+  "status": "active",
+  "experimental": true,
+  "publisher": "Praxis Health Plan (demo)",
+  "description": "Codes used by the Praxis PAS demo and illustrated by https://hl7.org/fhir/us/davinci-pas/2.2.1/en/Bundle-MedicalServicesAuthorizationBundleExample.html.",
+  "caseSensitive": true,
+  "content": "fragment",
+  "concept": [
+    {
+      "code": "PR"
+    },
+    {
+      "code": "X3"
+    }
+  ]
+}

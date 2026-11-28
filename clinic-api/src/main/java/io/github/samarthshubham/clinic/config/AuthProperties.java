@@ -35,5 +35,6 @@ public record AuthProperties(
       String firstName,
       String lastName,
       String title,
-      String patientId) {}
+      String patientId,
+      String npi) {}
 }

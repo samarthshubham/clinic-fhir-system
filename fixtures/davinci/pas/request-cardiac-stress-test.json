@@ -326,9 +326,7 @@
         },
         "quantityQuantity": {
           "value": 1,
-          "unit": "study",
-          "system": "http://unitsofmeasure.org",
-          "code": "1"
+          "unit": "study"
         },
         "subject": {
           "reference": "Patient/tony-stark"

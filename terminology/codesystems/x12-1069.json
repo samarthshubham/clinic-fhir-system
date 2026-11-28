@@ -1,0 +1,17 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "x12-1069",
+  "url": "https://codesystem.x12.org/005010/1069",
+  "name": "PraxisDemoX12SubscriberRelationship",
+  "status": "active",
+  "experimental": true,
+  "publisher": "Praxis Health Plan (demo)",
+  "description": "Codes used by the Praxis PAS demo and illustrated by https://hl7.org/fhir/us/davinci-pas/2.2.1/en/Coverage-InsuranceExample.html.",
+  "caseSensitive": true,
+  "content": "fragment",
+  "concept": [
+    {
+      "code": "18"
+    }
+  ]
+}

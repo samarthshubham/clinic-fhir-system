@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { apiClient, FhirResource } from '../support/api-client';
 import { daysAgo } from '../support/date-helpers';
 import {
+  seedPasDemoValueSets,
   seedTerminology,
   waitForFragmentLookups,
   type SeedCodeSystem,
@@ -106,7 +107,7 @@ Given(
 );
 
 Given(
-  'the payer HAPI has every CodeSystem in the terminology folder',
+  'the payer HAPI has the terminology fixtures',
   { timeout: 40 * 60_000 },
   async function (this: SeedWorld) {
     const files = readdirSync(CODE_SYSTEMS)
@@ -133,6 +134,7 @@ Given(
       );
     }
     await waitForFragmentLookups(base, systems);
+    await seedPasDemoValueSets(base);
   },
 );
 

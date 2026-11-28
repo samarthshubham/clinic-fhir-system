@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   prepareFormularyValueSets,
+  seedPasDemoValueSets,
   seedTerminology,
   waitForFragmentLookups,
   type SeedCodeSystem,
@@ -35,6 +36,50 @@ const completed = {
   },
 };
 const ok = (data: unknown = {}) => new Response(JSON.stringify(data));
+
+describe('PAS demo ValueSets', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('installs the limited expansions once and preserves installed canonicals', async () => {
+    const resources = new Map<string, Record<string, unknown>>([
+      [
+        'https://valueset.x12.org/x217/005010/request/2010A/NM1/1/01/00/98',
+        { id: 'licensed', version: 'official' },
+      ],
+    ]);
+    const put = vi.fn<(value: Record<string, unknown>) => void>();
+    vi.stubGlobal('fetch', (url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') {
+        const resource = JSON.parse(String(init.body));
+        put(resource);
+        resources.set(resource.url, resource);
+        return Promise.resolve(ok());
+      }
+      const canonical = new URL(url).searchParams.get('url') ?? '';
+      const resource = resources.get(canonical);
+      return Promise.resolve(ok({ entry: resource ? [{ resource }] : [] }));
+    });
+
+    await seedPasDemoValueSets(base);
+    await seedPasDemoValueSets(base);
+
+    expect(put).toHaveBeenCalledTimes(5);
+    expect(put).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'demo-pas-request-type',
+        version: 'praxis-demo',
+        expansion: expect.objectContaining({
+          parameter: [{ name: 'limitedExpansion', valueBoolean: true }],
+        }),
+      }),
+    );
+    expect(
+      resources.get(
+        'https://valueset.x12.org/x217/005010/request/2010A/NM1/1/01/00/98',
+      ),
+    ).toEqual({ id: 'licensed', version: 'official' });
+  });
+});
 
 describe('payer terminology import', () => {
   afterEach(() => {

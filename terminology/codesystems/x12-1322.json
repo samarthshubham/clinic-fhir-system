@@ -1,0 +1,18 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "x12-1322",
+  "url": "https://codesystem.x12.org/005010/1322",
+  "name": "PraxisDemoX12CertificationType",
+  "status": "active",
+  "experimental": true,
+  "publisher": "Praxis Health Plan (demo)",
+  "description": "Codes used by the Praxis PAS demo and illustrated by https://hl7.org/fhir/us/davinci-pas/2.2.1/en/Claim-HomecareAuthorizationExample.html.",
+  "caseSensitive": true,
+  "content": "fragment",
+  "concept": [
+    {
+      "code": "I",
+      "display": "Initial"
+    }
+  ]
+}

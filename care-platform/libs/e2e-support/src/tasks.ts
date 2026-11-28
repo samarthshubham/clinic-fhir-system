@@ -1,13 +1,18 @@
 import { execFileSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- reuses the seed app's cascade delete instead of duplicating it
-import { apiClient, type FhirResource } from '@seed-support/api-client';
+import {
+  apiClient,
+  type FhirResource,
+  SEED_CLINIC,
+} from '@seed-support/api-client';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- same relative dates as the seed
 import { daysAgo } from '@seed-support/date-helpers';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- uses the seed's fixture root
 import { repoPath } from '@seed-support/repo-paths';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- uses the seed's native terminology import
 import {
+  seedPasDemoValueSets,
   seedTerminology,
   waitForFragmentLookups,
   type SeedCodeSystem,
@@ -218,6 +223,27 @@ export const e2eTasks = {
       periodStart: daysAgo(30),
     });
     return { id: patient.id };
+  },
+  async ensurePasSubmissionFixtures(): Promise<null> {
+    await apiClient.upsertOrganization(SEED_CLINIC.id, SEED_CLINIC);
+    const systems = await Promise.all(
+      [
+        'claim-type',
+        'CMSPlaceofServiceCodes',
+        'cpt',
+        'x12-98',
+        'x12-1069',
+        'x12-1322',
+        'x12-1365',
+        'x12-1525',
+      ].map(readCodeSystem),
+    );
+    for (const system of systems) {
+      await seedTerminology(PAYER_HAPI, system);
+    }
+    await waitForFragmentLookups(PAYER_HAPI, systems);
+    await seedPasDemoValueSets(PAYER_HAPI);
+    return null;
   },
   async ensureMriDtrFixtures(): Promise<null> {
     await Promise.all(

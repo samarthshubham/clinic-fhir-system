@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
+import { readdir, readFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { FhirResource } from './api-client';
+import { repoPath } from './repo-paths';
 
 interface SeedCodeSystem extends FhirResource {
   id: string;
@@ -334,6 +336,33 @@ export async function seedTerminology(base: string, fragment: SeedCodeSystem) {
     meta: { tag: [{ system: sourceHash, code: digest }] },
   });
 }
+interface PasDemoValueSet extends FhirResource {
+  id: string;
+  url: string;
+}
+
+export async function seedPasDemoValueSets(base: string): Promise<void> {
+  const directory = repoPath('terminology/valuesets/pas');
+  const files = (await readdir(directory))
+    .filter((file) => file.endsWith('.json'))
+    .sort();
+  for (const file of files) {
+    const resource = JSON.parse(
+      await readFile(repoPath('terminology/valuesets/pas', file), 'utf8'),
+    ) as PasDemoValueSet;
+    const query = new URLSearchParams({ url: resource.url, _count: '1' });
+    const response = await checked(base + '/ValueSet?' + query);
+    const existing = (await response.json()) as { entry?: unknown[] };
+    // A licensed terminology installation may already resolve this canonical.
+    if (existing.entry?.length) continue;
+    await checked(base + '/ValueSet/' + resource.id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/fhir+json' },
+      body: JSON.stringify(resource),
+    });
+  }
+}
+
 const formularyRelease = '2.1.0';
 const expansionHash =
   'http://praxishealthplan.example/fhir/CodeSystem/seed-formulary-expansion';

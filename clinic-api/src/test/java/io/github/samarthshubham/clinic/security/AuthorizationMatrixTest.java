@@ -31,6 +31,7 @@ import io.github.samarthshubham.clinic.service.TrendsService;
 import io.github.samarthshubham.clinic.service.VitalsService;
 import io.github.samarthshubham.clinic.service.dtr.DtrService;
 import io.github.samarthshubham.clinic.service.pas.PasDecisionService;
+import io.github.samarthshubham.clinic.service.pas.PriorAuthService;
 import io.github.samarthshubham.clinic.support.TestAuth;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -119,6 +120,13 @@ class AuthorizationMatrixTest {
               CLINICAL_STAFF),
           get("/api/medications?patientId=p1", CLINICAL_STAFF),
           get("/api/directory?patientId=p1", CLINICAL_STAFF),
+          get("/api/prior-auths?patientId=p1", CLINICAL_STAFF),
+          post(
+              "/api/prior-auths",
+              """
+              {"orderId":"sr1","placeOfService":"11","serviceCategory":"1"}
+              """,
+              CLINICAL_STAFF),
           get("/api/service-requests/sr1", CLINICAL_STAFF),
           get("/api/service-requests?patientId=p1", CLINICAL_STAFF),
           get("/api/service-requests/sr1/documentation", CLINICAL_STAFF),
@@ -186,6 +194,7 @@ class AuthorizationMatrixTest {
   @MockitoBean private HighBpAlertService highBpAlertService;
   @MockitoBean private AlertService alertService;
   @MockitoBean private PasDecisionService pasDecisionService;
+  @MockitoBean private PriorAuthService priorAuthService;
   @MockitoBean private AuthService authService;
   @MockitoBean private CoverageService coverageService;
   @MockitoBean private DirectoryService directoryService;

@@ -810,7 +810,10 @@ describe('PUT to HAPI FHIR', () => {
     fetchMock.mockImplementation(async () => jsonResponse({}));
 
     await apiClient.upsertPractitioner('pr1');
-    await apiClient.upsertOrganization('org1');
+    await apiClient.upsertOrganization('org1', {
+      npi: '1987654328',
+      phone: '5550100100',
+    });
 
     const [practitioner, organization] = calls();
     expect(practitioner.url).toBe(`${HAPI}/Practitioner/pr1`);
@@ -822,6 +825,10 @@ describe('PUT to HAPI FHIR', () => {
     expect(JSON.parse(organization.init?.body as string)).toMatchObject({
       resourceType: 'Organization',
       id: 'org1',
+      telecom: [{ system: 'phone', value: '5550100100', use: 'work' }],
+      identifier: [
+        { system: 'http://hl7.org/fhir/sid/us-npi', value: '1987654328' },
+      ],
     });
   });
 
@@ -1068,6 +1075,7 @@ describe('upsertStaffPractitioner', () => {
       firstName: 'Anika',
       lastName: 'Patel',
       title: 'Internal Medicine',
+      npi: '1234567893',
     });
 
     const [call] = calls();
@@ -1078,6 +1086,11 @@ describe('upsertStaffPractitioner', () => {
       id: 'user-clinician',
       meta: { profile: [`${US_CORE}/us-core-practitioner`] },
       identifier: [
+        {
+          use: 'official',
+          system: 'http://hl7.org/fhir/sid/us-npi',
+          value: '1234567893',
+        },
         {
           use: 'secondary',
           system: 'http://praxis.clinic/fhir/identifier/username',

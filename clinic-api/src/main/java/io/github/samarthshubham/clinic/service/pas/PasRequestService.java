@@ -5,6 +5,7 @@ import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException;
 import io.github.samarthshubham.clinic.exception.PasRequestException;
+import io.github.samarthshubham.clinic.mapper.PractitionerMapper;
 import io.github.samarthshubham.clinic.service.CrdService;
 import io.github.samarthshubham.clinic.service.PatientService;
 import io.github.samarthshubham.clinic.service.PractitionerService;
@@ -25,6 +26,7 @@ import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.ServiceRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 public class PasRequestService {
@@ -84,13 +86,21 @@ public class PasRequestService {
             "The selected coverage needs a payer Organization");
     Patient patient = patients.findPatient(patientId);
     QuestionnaireResponse response = dtr.findSavedResponse(orderId, patientId);
+    Organization requestor = organization(organizationId);
+    if (requestor.getIdentifier().stream()
+        .noneMatch(
+            id ->
+                PractitionerMapper.NPI_SYSTEM.equals(id.getSystem())
+                    && StringUtils.hasText(id.getValue()))) {
+      throw new PasRequestException("The submitting clinic must have an NPI for PAS inquiry");
+    }
     return builder.build(
         new PasBundleBuilder.Request(
             order,
             patient,
             coverage,
             practitioner,
-            organization(organizationId),
+            requestor,
             organization(insurerId),
             response,
             documentationAuthors(response, practitionerId, baseUrl)),

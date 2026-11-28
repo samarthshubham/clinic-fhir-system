@@ -56,6 +56,9 @@ final class PasInquiryRequest {
   static Bundle forInquiry(Bundle template, Instant now) {
     Bundle request = template.copy();
     Claim claim = claim(request);
+    restoreBundledFullUrl(request, claim.getPatient());
+    restoreBundledFullUrl(request, claim.getProvider());
+    restoreBundledFullUrl(request, claim.getInsurer());
     String trace = UUID.randomUUID().toString();
     claim.setId(trace);
     claim.setIdentifier(List.of(new Identifier().setSystem(TRACE_SYSTEM).setValue(trace)));
@@ -64,6 +67,19 @@ final class PasInquiryRequest {
     request.getEntryFirstRep().setFullUrl("urn:uuid:" + trace);
     request.getTimestampElement().setValueAsString(now.toString());
     return request;
+  }
+
+  private static void restoreBundledFullUrl(Bundle request, Reference reference) {
+    if (!reference.hasReference() || reference.getReferenceElement().isAbsolute()) {
+      return;
+    }
+    // HAPI can make stored references relative. The retained entry URL identifies their server.
+    request.getEntry().stream()
+        .filter(entry -> entry.hasFullUrl() && entry.hasResource())
+        .map(entry -> new Reference(entry.getFullUrl()))
+        .filter(fullUrl -> matches(fullUrl, reference))
+        .findFirst()
+        .ifPresent(fullUrl -> reference.setReference(fullUrl.getReference()));
   }
 
   static Claim claim(Bundle request) {

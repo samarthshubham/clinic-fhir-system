@@ -16,6 +16,11 @@ const INSURANCE_PLAN_SYSTEM =
   'http://praxishealthplan.example/fhir/identifier/insurance-plan';
 const IDENTIFIER_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v2-0203';
 const US_CORE = 'http://hl7.org/fhir/us/core/StructureDefinition';
+export const SEED_CLINIC = {
+  id: 'seed-default-org',
+  npi: '1987654328',
+  phone: '5550100100',
+};
 
 export interface CreatedResource {
   id: string;
@@ -47,6 +52,7 @@ export interface StaffPractitioner {
   firstName: string;
   lastName: string;
   title: string;
+  npi?: string;
 }
 
 export interface PatientFields {
@@ -846,6 +852,15 @@ class ApiClient {
       id,
       meta: { profile: [`${US_CORE}/us-core-practitioner`] },
       identifier: [
+        ...(staff.npi
+          ? [
+              {
+                use: 'official',
+                system: 'http://hl7.org/fhir/sid/us-npi',
+                value: staff.npi,
+              },
+            ]
+          : []),
         {
           use: 'secondary',
           system: 'http://praxis.clinic/fhir/identifier/username',
@@ -857,12 +872,24 @@ class ApiClient {
     });
   }
 
-  async upsertOrganization(id: string): Promise<void> {
+  async upsertOrganization(
+    id: string,
+    clinic?: Pick<typeof SEED_CLINIC, 'npi' | 'phone'>,
+  ): Promise<void> {
     await this.put(`${HAPI_FHIR}/fhir/Organization/${id}`, {
       resourceType: 'Organization',
       id,
       active: true,
       name: 'Seed Dev Clinic',
+      ...(clinic && {
+        identifier: [
+          {
+            system: 'http://hl7.org/fhir/sid/us-npi',
+            value: clinic.npi,
+          },
+        ],
+        telecom: [{ system: 'phone', value: clinic.phone, use: 'work' }],
+      }),
       type: [
         {
           coding: [

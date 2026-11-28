@@ -15,6 +15,8 @@ import static io.github.samarthshubham.clinic.security.Permission.ORDER_WRITE;
 import static io.github.samarthshubham.clinic.security.Permission.PATIENT_READ;
 import static io.github.samarthshubham.clinic.security.Permission.PATIENT_WRITE;
 import static io.github.samarthshubham.clinic.security.Permission.PRACTITIONER_READ;
+import static io.github.samarthshubham.clinic.security.Permission.PRIOR_AUTH_READ;
+import static io.github.samarthshubham.clinic.security.Permission.PRIOR_AUTH_WRITE;
 import static io.github.samarthshubham.clinic.security.Permission.VITALS_WRITE;
 
 import java.util.Collection;
@@ -54,7 +56,9 @@ public final class RolePermissions {
           ALERT_READ,
           ALERT_WRITE,
           COVERAGE_READ,
-          COVERAGE_WRITE);
+          COVERAGE_WRITE,
+          PRIOR_AUTH_READ,
+          PRIOR_AUTH_WRITE);
 
   private static final Map<Role, Set<Permission>> PERMISSIONS =
       Map.of(
