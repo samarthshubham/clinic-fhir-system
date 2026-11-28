@@ -14,6 +14,9 @@ import ca.uhn.fhir.context.FhirContext;
 import io.github.samarthshubham.clinic.client.PasInquiryClient;
 import io.github.samarthshubham.clinic.client.PayerApiException;
 import io.github.samarthshubham.clinic.dto.ClinicianAlert;
+import io.github.samarthshubham.clinic.dto.PriorAuthResponse;
+import io.github.samarthshubham.clinic.dto.PriorAuthResponse.Status;
+import io.github.samarthshubham.clinic.exception.PasSubmissionUnavailableException;
 import io.github.samarthshubham.clinic.service.Notifier;
 import io.github.samarthshubham.clinic.support.FhirClientStub;
 import io.github.samarthshubham.clinic.support.GoldenFhir;
@@ -86,7 +89,7 @@ class PasDecisionServiceTest {
     initial.setPatient(new Reference("Patient/different"));
 
     assertThatThrownBy(() -> service.track(bundle("pas/request-polysomnography.json"), initial))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(PasSubmissionUnavailableException.class);
     assertThat(fhir.created()).isEmpty();
   }
 
@@ -168,6 +171,44 @@ class PasDecisionServiceTest {
     service.refreshPending();
     assertThat(fhir.updated()).hasSize(1);
     verify(notifier, times(2)).send(any(ClinicianAlert.class));
+  }
+
+  @Test
+  void listsOnlyMatchingPatientsAndUsesTheCurrentDecision() {
+    Bundle tracked = trackPended();
+    fhir.givenSearchResult(Bundle.class, searchPage(tracked));
+    var expected = new PriorAuthResponse("0001", Status.PENDED, null, null, null);
+    assertThat(service.listByPatient("gerald-horton")).containsExactly(expected);
+    fhir.givenSearchResult(Bundle.class, searchPage(tracked));
+    assertThat(service.listByPatient("other-patient")).isEmpty();
+    fhir.givenSearchResult(Bundle.class, searchPage(tracked));
+    assertThat(service.findByOrder(expected.orderId())).contains(expected);
+  }
+
+  @Test
+  void savesAnInitialFinalDecisionAndRaisesItsInboxEntryOnce() {
+    PriorAuthResponse result =
+        service.track(bundle("pas/request-polysomnography.json"), approval());
+    assertThat(result.status()).isEqualTo(Status.APPROVED);
+    assertThat(result.authorizationNumber()).isEqualTo("PHP-PA-A6041E2F");
+    Bundle stored = (Bundle) fhir.created().getFirst();
+    stored.setId("tracking-1");
+    fhir.givenSearchResult(Bundle.class, searchPage(stored));
+    service.refreshPending();
+    fhir.givenSearchResult(Bundle.class, searchPage((Bundle) fhir.updated().getFirst()));
+    service.refreshPending();
+    verifyNoInteractions(client);
+    verify(notifier).send(any(ClinicianAlert.class));
+  }
+
+  @Test
+  void reportsSubmittedForAnAcknowledgmentWithoutAReviewActionOrAuthorizationNumber() {
+    ClaimResponse receipt = response("pas/response-pended.json");
+    receipt.getItem().clear();
+    receipt.setPreAuthRef(null);
+    PriorAuthResponse result = service.track(bundle("pas/request-polysomnography.json"), receipt);
+    assertThat(result.status()).isEqualTo(Status.SUBMITTED);
+    assertThat(result.authorizationNumber()).isNull();
   }
 
   private Bundle trackPended() {

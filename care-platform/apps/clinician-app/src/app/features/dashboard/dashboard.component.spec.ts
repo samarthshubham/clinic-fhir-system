@@ -5,6 +5,7 @@ import { DashboardComponent } from './dashboard.component';
 import { AuthService } from '@care-platform/auth';
 import { DashboardService } from './dashboard.service';
 import { OrderDialogLauncher } from './order-dialog-launcher.service';
+import { PriorAuthService } from './prior-auth.service';
 import {
   CoverageResponse,
   DashboardResponse,
@@ -131,6 +132,7 @@ describe('DashboardComponent', () => {
         { provide: ActivatedRoute, useValue: { paramMap: params } },
         { provide: AuthService, useValue: { hasRole: () => true } },
         { provide: OrderDialogLauncher, useValue: launcher },
+        { provide: PriorAuthService, useValue: { list: () => of([]) } },
         {
           provide: DashboardService,
           useValue: {

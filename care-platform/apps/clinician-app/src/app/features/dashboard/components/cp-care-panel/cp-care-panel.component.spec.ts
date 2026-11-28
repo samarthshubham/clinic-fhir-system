@@ -1,9 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
-import { Subject, of } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { AuthService } from '@care-platform/auth';
 import { ToastService } from '@core/toast.service';
 import { CpOrderDialogComponent } from '@features/dashboard/components/cp-order-dialog/cp-order-dialog.component';
+import { CpPriorAuthDialogComponent } from '@features/dashboard/components/cp-prior-auth-dialog/cp-prior-auth-dialog.component';
+import {
+  PriorAuthResponse,
+  PriorAuthService,
+} from '@features/dashboard/prior-auth.service';
 import { CpCarePanelComponent } from './cp-care-panel.component';
 import { DashboardService } from '@features/dashboard/dashboard.service';
 import {
@@ -95,6 +100,7 @@ describe('CpCarePanelComponent', () => {
     response: Subject<TrendsResponse>;
   }[];
   let canOrder: boolean;
+  let listPriorAuths: ReturnType<typeof vi.fn>;
   let dialogResult: ServiceRequestResponse | undefined;
   let dialog: { open: ReturnType<typeof vi.fn> };
   let toast: { show: ReturnType<typeof vi.fn> };
@@ -102,6 +108,7 @@ describe('CpCarePanelComponent', () => {
   beforeEach(async () => {
     requests = [];
     canOrder = true;
+    listPriorAuths = vi.fn(() => of([]));
     dialogResult = undefined;
     dialog = {
       open: vi.fn(() => ({ afterClosed: () => of(dialogResult) })),
@@ -118,6 +125,7 @@ describe('CpCarePanelComponent', () => {
       imports: [CpCarePanelComponent],
       providers: [
         { provide: DashboardService, useValue: svc },
+        { provide: PriorAuthService, useValue: { list: listPriorAuths } },
         {
           provide: AuthService,
           useValue: {
@@ -348,6 +356,73 @@ describe('CpCarePanelComponent', () => {
     expect(rows[0].querySelector('.app-crd-card__detail')).toBeNull();
     expect(rows[0].textContent).toContain('Complete documentation');
     expect(rows[1].textContent).not.toContain('Complete documentation');
+  });
+
+  it('shows prior authorization details only on the matching order', async () => {
+    const approval: PriorAuthResponse = {
+      orderId: 'o1',
+      status: 'APPROVED',
+      authorizationNumber: 'PHP-PA-42',
+      denialReason: null,
+      denialReasonCode: null,
+    };
+    listPriorAuths.mockReturnValue(
+      of([
+        approval,
+        {
+          ...approval,
+          orderId: 'o2',
+          status: 'DENIED',
+          authorizationNumber: null,
+          denialReason: 'Criteria not met',
+          denialReasonCode: 'criteria',
+        },
+      ]),
+    );
+    const fixture = await render('p1', plan, [
+      order('o1', 'routine', null),
+      order('o2', 'routine', null),
+    ]);
+    const rows = fixture.nativeElement.querySelectorAll('.order-row');
+    expect(rows[0].textContent).toContain('Approved');
+    expect(rows[0].textContent).toContain('PHP-PA-42');
+    expect(rows[1].textContent).toContain('Denied');
+    expect(rows[1].textContent).toContain('Criteria not met');
+    expect(rows[1].textContent).not.toContain('PHP-PA-42');
+    expect(listPriorAuths).toHaveBeenCalledWith('p1');
+  });
+
+  it('opens prior authorization for an eligible unsubmitted order and refreshes after submission', async () => {
+    const awaitingAuth = {
+      ...order('o1', 'routine', null),
+      coverage: { paNeeded: 'auth-needed' } as PendingOrder['coverage'],
+    };
+    dialog.open.mockReturnValueOnce({
+      afterClosed: () => of({ orderId: 'o1' }),
+    });
+    const fixture = await render('p1', plan, [awaitingAuth]);
+    const buttons: HTMLButtonElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll('button'),
+    );
+    buttons
+      .find((button) =>
+        button.textContent.includes('Submit prior authorization'),
+      )
+      ?.click();
+    expect(dialog.open).toHaveBeenCalledWith(CpPriorAuthDialogComponent, {
+      data: awaitingAuth,
+      width: '480px',
+    });
+    expect(listPriorAuths).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the orders visible when authorization status is unavailable', async () => {
+    listPriorAuths.mockReturnValue(throwError(() => new Error('offline')));
+    const fixture = await render('p1', plan, [order('o1', 'routine', null)]);
+    expect(fixture.nativeElement.textContent).toContain(
+      'Could not load prior authorization statuses',
+    );
+    expect(fixture.nativeElement.textContent).toContain('Order o1');
   });
 
   it('should hide New order from roles that cannot order', async () => {

@@ -219,6 +219,18 @@ export const e2eTasks = {
     });
     return { id: patient.id };
   },
+  async ensurePasTerminology(): Promise<null> {
+    const systems = await Promise.all(
+      ['claim-type', 'CMSPlaceOfServiceCodes', 'cpt', 'x12-1365'].map(
+        readCodeSystem,
+      ),
+    );
+    for (const system of systems) {
+      await seedTerminology(PAYER_HAPI, system);
+    }
+    await waitForFragmentLookups(PAYER_HAPI, systems);
+    return null;
+  },
   async ensureMriDtrFixtures(): Promise<null> {
     await Promise.all(
       ['dtr-completionTime-codes', 'dtr-intendedaudience-codes'].map(

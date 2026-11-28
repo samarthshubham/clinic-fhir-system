@@ -19,7 +19,9 @@ public enum Permission implements GrantedAuthority {
   ALERT_READ("alert:read"),
   ALERT_WRITE("alert:write"),
   COVERAGE_READ("coverage:read"),
-  COVERAGE_WRITE("coverage:write");
+  COVERAGE_WRITE("coverage:write"),
+  PRIOR_AUTH_READ("priorauth:read"),
+  PRIOR_AUTH_WRITE("priorauth:write");
 
   private final String authority;
 

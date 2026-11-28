@@ -42,6 +42,7 @@ import org.springframework.util.StringUtils;
 public class PasBundleBuilder {
 
   private static final String PAS = "http://hl7.org/fhir/us/davinci-pas/StructureDefinition/";
+  static final String CLAIM_ID_PREFIX = "PX-PA-";
   private static final String IDENTIFIERS = "http://praxis.clinic/fhir/identifier/";
   private static final String THO = "http://terminology.hl7.org/CodeSystem/";
   private static final String X12 = "https://codesystem.x12.org/005010/";
@@ -83,7 +84,7 @@ public class PasBundleBuilder {
     validate(request, providerBaseUrl);
     validateBilling(billing);
     String orderId = request.order().getIdPart();
-    String submission = "PX-PA-" + orderId;
+    String submission = CLAIM_ID_PREFIX + orderId;
     String claimId = generatedId(providerBaseUrl, "Claim", orderId);
     String roleId =
         generatedId(
