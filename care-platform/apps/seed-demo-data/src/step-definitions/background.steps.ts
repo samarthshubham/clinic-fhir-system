@@ -37,7 +37,7 @@ Given(
   async function (this: SeedWorld, id: string) {
     await apiClient.upsertOrganization(
       id,
-      id === SEED_CLINIC.id ? SEED_CLINIC.npi : undefined,
+      id === SEED_CLINIC.id ? SEED_CLINIC : undefined,
     );
     this.log(`Provisioned organization: ${id}`);
   },

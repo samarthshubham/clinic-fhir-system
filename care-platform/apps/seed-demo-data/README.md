@@ -85,7 +85,7 @@ An HTML report is written to `apps/seed-demo-data/reports/seed-data-report.html`
 
 The Practitioners behind the dev staff logins `admin`, `clinician` and `frontdesk` (`user-admin`, `user-clinician`, `user-frontdesk`), PUT by id with the same names, title and username identifier that clinic-api's `StaffAccountBootstrap` writes at startup. Both paths set the clinician's fictional NPI for PAS submission. After a provider HAPI reset the seed restores the staff records, so the logins get their `practitioner_id` back without a clinic-api restart.
 
-The clinic organization (`seed-default-org`) has a separate fictional NPI for PAS submission and inquiry.
+The clinic organization (`seed-default-org`) has a fictional work phone number for PAS submission and a separate fictional NPI for PAS submission and inquiry.
 
 ### Payer data (`src/features/payer/`)
 

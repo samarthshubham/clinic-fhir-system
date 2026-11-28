@@ -810,7 +810,10 @@ describe('PUT to HAPI FHIR', () => {
     fetchMock.mockImplementation(async () => jsonResponse({}));
 
     await apiClient.upsertPractitioner('pr1');
-    await apiClient.upsertOrganization('org1', '1987654328');
+    await apiClient.upsertOrganization('org1', {
+      npi: '1987654328',
+      phone: '5550100100',
+    });
 
     const [practitioner, organization] = calls();
     expect(practitioner.url).toBe(`${HAPI}/Practitioner/pr1`);
@@ -822,6 +825,7 @@ describe('PUT to HAPI FHIR', () => {
     expect(JSON.parse(organization.init?.body as string)).toMatchObject({
       resourceType: 'Organization',
       id: 'org1',
+      telecom: [{ system: 'phone', value: '5550100100', use: 'work' }],
       identifier: [
         { system: 'http://hl7.org/fhir/sid/us-npi', value: '1987654328' },
       ],

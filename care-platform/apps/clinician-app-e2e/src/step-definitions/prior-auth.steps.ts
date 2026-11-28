@@ -24,10 +24,10 @@ When(
     const dialog = () => cy.get('cp-prior-auth-dialog');
     dialog().find('input[formcontrolname="placeOfService"]').type(place);
     dialog().contains('button', 'Submit to payer').click();
-    cy.wait<{ orderId: string }>('@submitPriorAuth', {
+    cy.wait<{ orderId: string }, { message?: string }>('@submitPriorAuth', {
       responseTimeout: 75_000,
     }).then(({ request, response }) => {
-      expect(response?.statusCode).to.equal(200);
+      expect(response?.statusCode, response?.body?.message).to.equal(200);
       cy.wrap(request.body.orderId).as('priorAuthOrderId');
     });
   },
@@ -60,8 +60,12 @@ When("the payer approves the test patient's cardiac stress test", () => {
           headers: { Authorization: `Bearer ${accessToken}` },
         }).then(({ body }) => {
           const row = body.items.find((item) => item.claimId === claimId);
-          expect(row, 'submitted case in reviewer queue').not.to.be.undefined;
-          cy.wrap(row!.authorizationReference).as('priorAuthNumber');
+          if (!row) {
+            throw new Error(
+              'The submitted authorization is missing from the reviewer queue',
+            );
+          }
+          cy.wrap(row.authorizationReference).as('priorAuthNumber');
         });
         cy.request({
           method: 'POST',

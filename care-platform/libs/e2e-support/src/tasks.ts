@@ -224,7 +224,7 @@ export const e2eTasks = {
     return { id: patient.id };
   },
   async ensurePasSubmissionFixtures(): Promise<null> {
-    await apiClient.upsertOrganization(SEED_CLINIC.id, SEED_CLINIC.npi);
+    await apiClient.upsertOrganization(SEED_CLINIC.id, SEED_CLINIC);
     const systems = await Promise.all(
       ['claim-type', 'CMSPlaceofServiceCodes', 'cpt', 'x12-1365'].map(
         readCodeSystem,

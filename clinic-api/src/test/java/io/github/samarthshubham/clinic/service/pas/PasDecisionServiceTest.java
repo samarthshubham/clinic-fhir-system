@@ -154,6 +154,36 @@ class PasDecisionServiceTest {
   }
 
   @Test
+  void matchesAnAbsoluteReplyAfterHapiMakesStoredReferencesRelative() {
+    Bundle tracked = trackPended();
+    Claim claim = PasInquiryRequest.claim((Bundle) tracked.getEntryFirstRep().getResource());
+    ClaimResponse decision =
+        approval()
+            .setPatient(claim.getPatient().copy())
+            .setRequestor(claim.getProvider().copy())
+            .setInsurer(claim.getInsurer().copy());
+    ClaimResponse storedResponse = (ClaimResponse) tracked.getEntry().get(1).getResource();
+    List.of(
+            claim.getPatient(),
+            claim.getProvider(),
+            claim.getInsurer(),
+            storedResponse.getPatient(),
+            storedResponse.getRequestor(),
+            storedResponse.getInsurer())
+        .forEach(
+            reference ->
+                reference.setReference(
+                    reference.getReferenceElement().toUnqualifiedVersionless().getValue()));
+    fhir.givenSearchResult(Bundle.class, searchPage(tracked));
+    when(client.inquire(any(Bundle.class))).thenReturn(Optional.of(decision));
+
+    service.refreshPending();
+
+    assertThat(fhir.updated()).hasSize(1);
+    verify(notifier).send(any(ClinicianAlert.class));
+  }
+
+  @Test
   void aLaterPollRecoversFromInquiryAndNotificationFailures() {
     fhir.givenSearchResult(Bundle.class, searchPage(trackPended()));
     when(client.inquire(any(Bundle.class)))
