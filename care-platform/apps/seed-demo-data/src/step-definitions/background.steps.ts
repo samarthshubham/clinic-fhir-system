@@ -1,5 +1,5 @@
-import { Given } from '@cucumber/cucumber';
-import { apiClient } from '../support/api-client';
+import { type DataTable, Given } from '@cucumber/cucumber';
+import { apiClient, SEED_CLINIC } from '../support/api-client';
 import { SeedWorld } from '../support/world';
 
 Given(
@@ -11,28 +11,34 @@ Given(
 );
 
 Given(
-  'staff practitioner {string} {string} {string} with title {string} is provisioned',
-  async function (
-    this: SeedWorld,
-    username: string,
-    firstName: string,
-    lastName: string,
-    title: string,
-  ) {
-    await apiClient.upsertStaffPractitioner({
+  'the following staff practitioners are provisioned:',
+  async function (this: SeedWorld, table: DataTable) {
+    for (const {
       username,
       firstName,
       lastName,
       title,
-    });
-    this.log(`Provisioned staff practitioner: user-${username}`);
+      npi,
+    } of table.hashes()) {
+      await apiClient.upsertStaffPractitioner({
+        username,
+        firstName,
+        lastName,
+        title,
+        npi,
+      });
+      this.log(`Provisioned staff practitioner: user-${username}`);
+    }
   },
 );
 
 Given(
   'organization {string} is provisioned',
   async function (this: SeedWorld, id: string) {
-    await apiClient.upsertOrganization(id);
+    await apiClient.upsertOrganization(
+      id,
+      id === SEED_CLINIC.id ? SEED_CLINIC.npi : undefined,
+    );
     this.log(`Provisioned organization: ${id}`);
   },
 );

@@ -39,13 +39,21 @@ public final class TestAuth {
         accessTtl,
         refreshTtl,
         List.of(
-            new AuthProperties.User("admin", hash, Role.ADMIN, "Alex", "Morgan", "Admin", null),
             new AuthProperties.User(
-                "clinician", hash, Role.CLINICIAN, "Anika", "Patel", "Internal Medicine", null),
+                "admin", hash, Role.ADMIN, "Alex", "Morgan", "Admin", null, null),
             new AuthProperties.User(
-                "frontdesk", hash, Role.FRONT_DESK, "Jordan", "Lee", "Front desk", null),
+                "clinician",
+                hash,
+                Role.CLINICIAN,
+                "Anika",
+                "Patel",
+                "Internal Medicine",
+                null,
+                "1234567893"),
             new AuthProperties.User(
-                "tony", hash, Role.PATIENT, "Tony", "Stark", null, OWN_PATIENT_ID)));
+                "frontdesk", hash, Role.FRONT_DESK, "Jordan", "Lee", "Front desk", null, null),
+            new AuthProperties.User(
+                "tony", hash, Role.PATIENT, "Tony", "Stark", null, OWN_PATIENT_ID, null)));
   }
 
   public static AuthProperties properties() {

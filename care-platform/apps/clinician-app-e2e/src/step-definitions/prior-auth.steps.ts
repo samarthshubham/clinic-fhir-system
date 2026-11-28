@@ -10,7 +10,7 @@ const orderRow = (display: string) =>
   cy.contains('li.order-row', display, { timeout: 15_000 });
 
 Given('the payer can validate a PAS request for a cardiac stress test', () => {
-  cy.task('ensurePasTerminology', null, { timeout: 780_000 });
+  cy.task('ensurePasSubmissionFixtures', null, { timeout: 780_000 });
 });
 
 When(

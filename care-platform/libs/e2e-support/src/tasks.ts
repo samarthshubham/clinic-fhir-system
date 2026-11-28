@@ -1,7 +1,11 @@
 import { execFileSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- reuses the seed app's cascade delete instead of duplicating it
-import { apiClient, type FhirResource } from '@seed-support/api-client';
+import {
+  apiClient,
+  type FhirResource,
+  SEED_CLINIC,
+} from '@seed-support/api-client';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- same relative dates as the seed
 import { daysAgo } from '@seed-support/date-helpers';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- uses the seed's fixture root
@@ -219,9 +223,10 @@ export const e2eTasks = {
     });
     return { id: patient.id };
   },
-  async ensurePasTerminology(): Promise<null> {
+  async ensurePasSubmissionFixtures(): Promise<null> {
+    await apiClient.upsertOrganization(SEED_CLINIC.id, SEED_CLINIC.npi);
     const systems = await Promise.all(
-      ['claim-type', 'CMSPlaceOfServiceCodes', 'cpt', 'x12-1365'].map(
+      ['claim-type', 'CMSPlaceofServiceCodes', 'cpt', 'x12-1365'].map(
         readCodeSystem,
       ),
     );

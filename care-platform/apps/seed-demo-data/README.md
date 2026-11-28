@@ -83,7 +83,9 @@ An HTML report is written to `apps/seed-demo-data/reports/seed-data-report.html`
 
 ### Staff practitioners (`staff-practitioners.feature`)
 
-The Practitioners behind the dev staff logins `admin`, `clinician` and `frontdesk` (`user-admin`, `user-clinician`, `user-frontdesk`), PUT by id with the same names, title and `http://praxis.clinic/fhir/identifier/username` identifier that clinic-api's `StaffAccountBootstrap` writes at startup. A rerun, or a clinic-api restart, leaves them unchanged. After a provider HAPI reset the seed restores them, so the logins get their `practitioner_id` back without a clinic-api restart (saving DTR documentation needs it).
+The Practitioners behind the dev staff logins `admin`, `clinician` and `frontdesk` (`user-admin`, `user-clinician`, `user-frontdesk`), PUT by id with the same names, title and username identifier that clinic-api's `StaffAccountBootstrap` writes at startup. Both paths set the clinician's fictional NPI for PAS submission. After a provider HAPI reset the seed restores the staff records, so the logins get their `practitioner_id` back without a clinic-api restart.
+
+The clinic organization (`seed-default-org`) has a separate fictional NPI for PAS submission and inquiry.
 
 ### Payer data (`src/features/payer/`)
 
@@ -97,7 +99,7 @@ The Practitioners behind the dev staff logins `admin`, `clinician` and `frontdes
 | `payer-questionnaires.feature` | the DTR `Questionnaire`s, CQL `Library`s and `ValueSet`s from `fixtures/davinci/dtr/` (MRI lumbar spine, polysomnography, CGM, echocardiogram), PUT under their fixed ids; then checks that payer-api's `$questionnaire-package` returns the right form for each order code         |
 | `payer-formulary.feature`      | RxNorm drugs in the seed profiles and their FormularyItem coverage, PUT by stable id. Runs before the directory publishes the Gold PPO plan with its formulary reference.                                                                                                           |
 | `payer-directory.feature`      | Plan-Net directory fixtures from `fixtures/davinci/plan-net/`, including the clinic’s two seeded clinicians. Updates the existing payer and plans in place and verifies public directory searches.                                                                                  |
-| `payer-prior-auths.feature` | Tony Stark’s cardiac stress test request, backdated eight days and submitted through PAS `Claim/$submit`. The seed checks for the pended decision and reuses it on subsequent seeds. |
+| `payer-prior-auths.feature`    | Tony Stark’s cardiac stress test request, backdated eight days and submitted through PAS `Claim/$submit`. The seed checks for the pended decision and reuses it on subsequent seeds.                                                                                                |
 
 The complete snapshots preserve the concepts from `hl7.terminology.r4#7.1.0` (claim type and CMS place of service) and `hl7.fhir.us.davinci-dtr#2.2.0` (information origin, completion time and intended audience). For a new or changed complete system, the seed writes its published concepts to the matching CodeSystem resource and verifies each code with versioned `CodeSystem/$lookup` before recording the source digest. For fragment imports it checks every final batch entry, then waits until each demo code resolves without a version, as PAS submits it. [HAPI 8.12 terminology uploader](https://github.com/hapifhir/hapi-fhir/blob/v8.12.0/hapi-fhir-jpaserver-base/src/main/java/ca/uhn/fhir/jpa/provider/TerminologyUploaderProvider.java)
 

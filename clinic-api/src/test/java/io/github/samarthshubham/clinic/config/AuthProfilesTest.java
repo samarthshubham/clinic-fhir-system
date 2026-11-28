@@ -57,7 +57,7 @@ class AuthProfilesTest {
                     null,
                     List.of(
                         new AuthProperties.User(
-                            "ghost", "hash", Role.PATIENT, "G", "H", null, " "))))
+                            "ghost", "hash", Role.PATIENT, "G", "H", null, " ", null))))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("PATIENT account 'ghost' needs a patient-id");
   }

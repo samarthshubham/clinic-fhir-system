@@ -31,7 +31,8 @@ public class StaffAccountBootstrap {
       for (AuthProperties.User user : staff) {
         practitionerService.upsertStaffPractitioner(
             user.username(),
-            new PractitionerRequest(user.firstName(), user.lastName(), user.title(), null, null));
+            new PractitionerRequest(
+                user.firstName(), user.lastName(), user.title(), user.npi(), null));
       }
       log.info("Upserted {} staff practitioners", staff.size());
     } catch (BaseServerResponseException e) {

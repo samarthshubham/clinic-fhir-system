@@ -121,4 +121,13 @@ class PasRequestServiceTest {
         .isInstanceOf(PasRequestException.class)
         .hasMessageContaining("both the clinic and payer Organizations");
   }
+
+  @Test
+  void requiresAnNpiForTheSubmittingClinic() {
+    input.requestor().getIdentifier().clear();
+
+    assertThatThrownBy(() -> service.build(orderId, billing()))
+        .isInstanceOf(PasRequestException.class)
+        .hasMessageContaining("submitting clinic must have an NPI");
+  }
 }

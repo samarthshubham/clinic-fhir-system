@@ -29,7 +29,7 @@ class StaffAccountBootstrapTest {
     verify(practitionerService)
         .upsertStaffPractitioner(
             "clinician",
-            new PractitionerRequest("Anika", "Patel", "Internal Medicine", null, null));
+            new PractitionerRequest("Anika", "Patel", "Internal Medicine", "1234567893", null));
     verify(practitionerService)
         .upsertStaffPractitioner(
             "frontdesk", new PractitionerRequest("Jordan", "Lee", "Front desk", null, null));

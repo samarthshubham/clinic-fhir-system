@@ -6,6 +6,8 @@ Feature: Seed staff practitioners
   practitioner_id back without a clinic-api restart.
 
   Scenario: Seed the staff practitioners
-    Given staff practitioner "admin" "Alex" "Morgan" with title "Clinic administrator" is provisioned
-    And staff practitioner "clinician" "Anika" "Patel" with title "Internal Medicine" is provisioned
-    And staff practitioner "frontdesk" "Jordan" "Lee" with title "Front desk" is provisioned
+    Given the following staff practitioners are provisioned:
+      | username  | firstName | lastName | title                | npi        |
+      | admin     | Alex      | Morgan   | Clinic administrator |            |
+      | clinician | Anika     | Patel    | Internal Medicine    | 1234567893 |
+      | frontdesk | Jordan    | Lee      | Front desk           |            |
